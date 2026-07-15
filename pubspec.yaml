@@ -1,0 +1,27 @@
+name: tower_lens
+description: "Scan or paste dense text and ask what it means."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  file_picker: ^11.0.2
+  permission_handler: ^12.0.3
+  path: ^1.9.1
+  camera: ^0.12.0+2
+  google_mlkit_text_recognition: ^0.16.0
+  intl: ^0.20.3
+  shared_preferences: ^2.5.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

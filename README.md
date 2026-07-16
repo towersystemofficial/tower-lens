@@ -21,5 +21,3 @@ samples, guidance on mobile development, and a full API reference.
 - Changes are made through branches and pull requests.
 - Automated agents must not commit directly to main.
 - Pull requests require human review before merging.
-
-Agent-generated changes must remain narrowly scoped to their assigned issue.

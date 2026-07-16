@@ -15,3 +15,9 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+## Development workflow
+
+- Changes are made through branches and pull requests.
+- Automated agents must not commit directly to main.
+- Pull requests require human review before merging.

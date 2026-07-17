@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'services/library_service.dart';
+import 'services/text_ai_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/library_screen.dart';
 import 'screens/tos_screen.dart';
@@ -43,6 +44,7 @@ class RootShell extends StatefulWidget {
 
 class _RootShellState extends State<RootShell> {
   final LibraryService _libraryService = LibraryService();
+  final TextAiService _textAiService = MockTextAiService();
   int _index = 0;
   bool _ready = false;
 
@@ -64,9 +66,9 @@ class _RootShellState extends State<RootShell> {
     }
 
     final screens = [
-      HomeScreen(libraryService: _libraryService),
+      HomeScreen(libraryService: _libraryService, textAiService: _textAiService),
       LibraryScreen(libraryService: _libraryService),
-      TosScreen(libraryService: _libraryService),
+      TosScreen(libraryService: _libraryService, textAiService: _textAiService),
       WatchlistScreen(libraryService: _libraryService),
     ];
 

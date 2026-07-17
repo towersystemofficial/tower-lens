@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../services/library_service.dart';
+import '../services/text_ai_service.dart';
 import 'camera_scan_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final LibraryService libraryService;
-  const HomeScreen({super.key, required this.libraryService});
+  final TextAiService textAiService;
+  const HomeScreen({super.key, required this.libraryService, required this.textAiService});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -25,10 +27,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _applyPreset(String task) => setState(() => _instructionController.text = task);
 
-  void _runMockTask() {
+  Future<void> _runMockTask() async {
+    final result = await widget.textAiService.runTask(
+      taskType: TextAiTaskType.general,
+      sourceText: _sourceTextController.text,
+      instruction: _instructionController.text,
+    );
     setState(() {
-      _output = 'Mock response: This is where the app will summarize, explain, '
-          'or answer questions about your text.';
+      _output = result;
     });
   }
 

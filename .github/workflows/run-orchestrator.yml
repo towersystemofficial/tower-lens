@@ -1,0 +1,114 @@
+name: Run Tower Lens Orchestrator
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: tower-lens-orchestrator-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  maybe-run-orchestrator:
+    if: >
+      (github.event.issue.pull_request != null) ||
+      (github.event.pull_request != null)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Determine pull request number
+        id: pr
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            echo "number=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Wait briefly for both reviewers
+        run: sleep 20
+
+      - name: Inspect pull request comments and reviews
+        id: inspect
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          comments="$(gh api \
+            "repos/$REPOSITORY/issues/$PR_NUMBER/comments" \
+            --paginate \
+            --jq '.[].body' || true)"
+
+          reviews="$(gh api \
+            "repos/$REPOSITORY/pulls/$PR_NUMBER/reviews" \
+            --paginate \
+            --jq '.[].body' || true)"
+
+          all_text="$comments
+          $reviews"
+
+          if grep -Fq '<!-- tower-lens-orchestrator -->' <<< "$all_text"; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "reason=orchestrator_already_ran" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if grep -Fq 'Independent QA Review' <<< "$all_text"; then
+            qa_found=true
+          else
+            qa_found=false
+          fi
+
+          if grep -Fq 'Scope & Simplicity Audit' <<< "$all_text"; then
+            minimalism_found=true
+          else
+            minimalism_found=false
+          fi
+
+          if [ "$qa_found" = true ] && [ "$minimalism_found" = true ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "reason=both_reviews_found" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "reason=waiting_for_reviewers" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Trigger orchestrator routine
+        if: steps.inspect.outputs.ready == 'true'
+        env:
+          ORCHESTRATOR_FIRE_URL: ${{ secrets.ORCHESTRATOR_FIRE_URL }}
+          ORCHESTRATOR_TOKEN: ${{ secrets.ORCHESTRATOR_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          payload="$(jq -n \
+            --arg text "Review this open Tower Lens pull request:
+
+          https://github.com/$REPOSITORY/pull/$PR_NUMBER
+
+          Read the linked issue, implementation summary, QA review, and minimalism review. Post the required orchestration status comment. Do not modify code, approve, merge, or create another pull request." \
+            '{text: $text}')"
+
+          curl --fail-with-body \
+            --request POST \
+            "$ORCHESTRATOR_FIRE_URL" \
+            --header "Authorization: Bearer $ORCHESTRATOR_TOKEN" \
+            --header "anthropic-beta: experimental-cc-routine-2026-04-01" \
+            --header "anthropic-version: 2023-06-01" \
+            --header "Content-Type: application/json" \
+            --data "$payload"

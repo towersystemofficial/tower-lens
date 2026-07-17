@@ -157,7 +157,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 child: Text(
                   _output.isEmpty ? 'Results will appear here.' : _output,
-                  style: TextStyle(color: _output.isEmpty ? Colors.grey.shade600 : Colors.black87),
+                  style: TextStyle(
+                    color: _output.isEmpty ? Colors.grey.shade600 : Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
               ),
             ],

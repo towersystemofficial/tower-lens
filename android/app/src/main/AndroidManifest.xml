@@ -2,6 +2,10 @@
     <!-- Required by LibraryService (Permission.manageExternalStorage) to grant
          file_picker's directory chooser access to arbitrary shared storage. -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <application
         android:label="tower_lens"
         android:name="${applicationName}"

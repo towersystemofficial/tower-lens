@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../services/library_service.dart';
+import '../services/text_ai_service.dart';
 import 'camera_scan_screen.dart';
 
 class TosScreen extends StatefulWidget {
   final LibraryService libraryService;
-  const TosScreen({super.key, required this.libraryService});
+  final TextAiService textAiService;
+  const TosScreen({super.key, required this.libraryService, required this.textAiService});
 
   @override
   State<TosScreen> createState() => _TosScreenState();
@@ -24,14 +26,14 @@ class _TosScreenState extends State<TosScreen> {
     }
   }
 
-  void _run() {
+  Future<void> _run() async {
+    final result = await widget.textAiService.runTask(
+      taskType: TextAiTaskType.tosSummary,
+      sourceText: _textController.text,
+      instruction: 'Summarize ToS/privacy policy',
+    );
     setState(() {
-      _output = 'Mock ToS summary:\n\n'
-          '• Key points: this is a placeholder until real AI analysis is wired up.\n'
-          '• Concerning clauses: none detected yet (mock).\n'
-          '• Data collected: unknown (mock).\n'
-          '• Cancellation/refund terms: unknown (mock).\n\n'
-          'This is an informational summary only, not legal advice.';
+      _output = result;
     });
   }
 

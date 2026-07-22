@@ -5,12 +5,13 @@
 
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/library_entry.dart';
 
-class LibraryService {
+class LibraryService extends ChangeNotifier {
   static const _prefsPathKey = 'library_path';
 
   String? _libraryPath;
@@ -39,7 +40,7 @@ class LibraryService {
   Future<bool> requestPermissionAndPickFolder() async {
     final status = await Permission.manageExternalStorage.request();
     if (!status.isGranted) return false;
-    final path = await FilePicker.getDirectoryPath(
+    final path = await FilePicker.platform.getDirectoryPath(
       dialogTitle: 'Select where Tower Lens should store your library',
     );
     if (path == null) return false;
@@ -47,6 +48,7 @@ class LibraryService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefsPathKey, path);
     await _ensureStructure();
+    notifyListeners();
     return true;
   }
 
@@ -54,8 +56,10 @@ class LibraryService {
     if (!isConfigured) return [];
     await _ensureStructure();
     final entries = await _rootDir.list().toList();
-    final names =
-        entries.whereType<Directory>().map((d) => p.basename(d.path)).toList();
+    final names = entries
+        .whereType<Directory>()
+        .map((d) => p.basename(d.path))
+        .toList();
     const priority = {'General': 0, 'ToS': 1, 'Ingredient': 2};
     names.sort((a, b) {
       final pa = priority[a] ?? 99;
@@ -71,6 +75,7 @@ class LibraryService {
     final safeName = name.trim();
     if (safeName.isEmpty) return;
     await Directory(p.join(_rootDir.path, safeName)).create(recursive: true);
+    notifyListeners();
   }
 
   Future<LibraryEntry> saveEntry({
@@ -83,6 +88,10 @@ class LibraryService {
     await _ensureStructure();
     final id = DateTime.now().millisecondsSinceEpoch.toString();
     final timestamp = DateTime.now();
+    final folderDir = Directory(p.join(_rootDir.path, folder));
+    await folderDir.create(recursive: true);
+    final filename = '${_slug(type)}_$id.md';
+    final file = File(p.join(folderDir.path, filename));
     final entry = LibraryEntry(
       id: id,
       type: type,
@@ -91,12 +100,10 @@ class LibraryService {
       instruction: instruction,
       output: output,
       timestamp: timestamp,
+      filePath: file.path,
     );
-    final folderDir = Directory(p.join(_rootDir.path, folder));
-    await folderDir.create(recursive: true);
-    final filename = '${_slug(type)}_$id.md';
-    final file = File(p.join(folderDir.path, filename));
     await file.writeAsString(_entryToMarkdown(entry));
+    notifyListeners();
     return entry;
   }
 
@@ -127,7 +134,10 @@ class LibraryService {
   Future<void> deleteEntry(LibraryEntry entry) async {
     if (entry.filePath == null) return;
     final f = File(entry.filePath!);
-    if (await f.exists()) await f.delete();
+    if (await f.exists()) {
+      await f.delete();
+      notifyListeners();
+    }
   }
 
   Future<void> deleteAll() async {
@@ -136,9 +146,11 @@ class LibraryService {
       await _rootDir.delete(recursive: true);
     }
     await _ensureStructure();
+    notifyListeners();
   }
 
-  String _slug(String s) => s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+  String _slug(String s) =>
+      s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
 
   String _escape(String s) => s.replaceAll('"', '\\"');
 
@@ -204,7 +216,9 @@ class LibraryService {
       }
       meta[key] = value.replaceAll('\\"', '"');
     }
-    final bodyStr = (i <= lines.length) ? lines.sublist(i).join('\n').trim() : '';
+    final bodyStr = (i <= lines.length)
+        ? lines.sublist(i).join('\n').trim()
+        : '';
     return (meta, bodyStr);
   }
 

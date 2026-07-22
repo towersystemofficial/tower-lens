@@ -23,22 +23,39 @@ class _LibraryScreenState extends State<LibraryScreen> {
   @override
   void initState() {
     super.initState();
+    widget.libraryService.addListener(_handleLibraryChanged);
+    _refresh();
+  }
+
+  void _handleLibraryChanged() {
     _refresh();
   }
 
   Future<void> _refresh() async {
+    if (!mounted) return;
     if (!widget.libraryService.isConfigured) {
-      setState(() {});
+      setState(() {
+        _folders = [];
+        _entries = [];
+        _loading = false;
+      });
       return;
     }
     setState(() => _loading = true);
     final folders = await widget.libraryService.listFolders();
     final entries = await widget.libraryService.listEntries();
+    if (!mounted) return;
     setState(() {
       _folders = folders;
       _entries = entries;
       _loading = false;
     });
+  }
+
+  @override
+  void dispose() {
+    widget.libraryService.removeListener(_handleLibraryChanged);
+    super.dispose();
   }
 
   Future<void> _setupFolder() async {
@@ -52,10 +69,20 @@ class _LibraryScreenState extends State<LibraryScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('New folder'),
-        content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(hintText: 'Folder name')),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Folder name'),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Create')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Create'),
+          ),
         ],
       ),
     );
@@ -70,9 +97,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Clear entire library?'),
-        content: const Text('This permanently deletes every saved item and folder from disk. This cannot be undone.'),
+        content: const Text(
+          'This permanently deletes every saved item and folder from disk. This cannot be undone.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
@@ -100,15 +132,20 @@ class _LibraryScreenState extends State<LibraryScreen> {
     if (_query.trim().isNotEmpty) {
       final q = _query.toLowerCase();
       list = list
-          .where((e) =>
-              e.sourceText.toLowerCase().contains(q) ||
-              e.instruction.toLowerCase().contains(q) ||
-              e.output.toLowerCase().contains(q))
+          .where(
+            (e) =>
+                e.sourceText.toLowerCase().contains(q) ||
+                e.instruction.toLowerCase().contains(q) ||
+                e.output.toLowerCase().contains(q),
+          )
           .toList();
     }
     list = [...list];
-    list.sort((a, b) =>
-        _newestFirst ? b.timestamp.compareTo(a.timestamp) : a.timestamp.compareTo(b.timestamp));
+    list.sort(
+      (a, b) => _newestFirst
+          ? b.timestamp.compareTo(a.timestamp)
+          : a.timestamp.compareTo(b.timestamp),
+    );
     return list;
   }
 
@@ -129,7 +166,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 20),
-                FilledButton(onPressed: _setupFolder, child: const Text('Choose Library Folder')),
+                FilledButton(
+                  onPressed: _setupFolder,
+                  child: const Text('Choose Library Folder'),
+                ),
               ],
             ),
           ),
@@ -143,14 +183,21 @@ class _LibraryScreenState extends State<LibraryScreen> {
       appBar: AppBar(
         title: const Text('Library'),
         actions: [
-          IconButton(icon: const Icon(Icons.create_new_folder_outlined), tooltip: 'New folder', onPressed: _newFolder),
+          IconButton(
+            icon: const Icon(Icons.create_new_folder_outlined),
+            tooltip: 'New folder',
+            onPressed: _newFolder,
+          ),
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'clear') _clearAll();
               if (value == 'change') _setupFolder();
             },
             itemBuilder: (context) => const [
-              PopupMenuItem(value: 'change', child: Text('Change folder location')),
+              PopupMenuItem(
+                value: 'change',
+                child: Text('Change folder location'),
+              ),
               PopupMenuItem(value: 'clear', child: Text('Clear all')),
             ],
           ),
@@ -187,7 +234,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             child: ChoiceChip(
                               label: Text(folder),
                               selected: selected,
-                              onSelected: (_) => setState(() => _selectedFolder = folder),
+                              onSelected: (_) =>
+                                  setState(() => _selectedFolder = folder),
                             ),
                           );
                         }).toList(),
@@ -195,9 +243,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     ),
                   ),
                   IconButton(
-                    icon: Icon(_newestFirst ? Icons.arrow_downward : Icons.arrow_upward),
+                    icon: Icon(
+                      _newestFirst ? Icons.arrow_downward : Icons.arrow_upward,
+                    ),
                     tooltip: _newestFirst ? 'Newest first' : 'Oldest first',
-                    onPressed: () => setState(() => _newestFirst = !_newestFirst),
+                    onPressed: () =>
+                        setState(() => _newestFirst = !_newestFirst),
                   ),
                 ],
               ),
@@ -212,17 +263,25 @@ class _LibraryScreenState extends State<LibraryScreen> {
                         final entry = _visibleEntries[index];
                         return ListTile(
                           leading: CircleAvatar(
-                            child: Text(entry.folder.isNotEmpty ? entry.folder[0].toUpperCase() : '?'),
+                            child: Text(
+                              entry.folder.isNotEmpty
+                                  ? entry.folder[0].toUpperCase()
+                                  : '?',
+                            ),
                           ),
                           title: Text(entry.preview),
-                          subtitle: Text('${entry.folder} • ${dateFormat.format(entry.timestamp)}'),
+                          subtitle: Text(
+                            '${entry.folder} • ${dateFormat.format(entry.timestamp)}',
+                          ),
                           trailing: IconButton(
                             icon: const Icon(Icons.delete_outline),
                             onPressed: () => _deleteEntry(entry),
                           ),
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => LibraryDetailScreen(entry: entry)),
+                            MaterialPageRoute(
+                              builder: (_) => LibraryDetailScreen(entry: entry),
+                            ),
                           ),
                         );
                       },

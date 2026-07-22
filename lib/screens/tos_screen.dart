@@ -15,6 +15,9 @@ class TosScreen extends StatefulWidget {
 class _TosScreenState extends State<TosScreen> {
   final TextEditingController _textController = TextEditingController();
   String _output = '';
+  bool _isRunning = false;
+
+  bool get _canRun => !_isRunning && _textController.text.trim().isNotEmpty;
 
   Future<void> _scanText() async {
     final result = await Navigator.push<String>(
@@ -27,14 +30,27 @@ class _TosScreenState extends State<TosScreen> {
   }
 
   Future<void> _run() async {
-    final result = await widget.textAiService.runTask(
-      taskType: TextAiTaskType.tosSummary,
-      sourceText: _textController.text,
-      instruction: 'Summarize ToS/privacy policy',
-    );
+    if (!_canRun) return;
     setState(() {
-      _output = result;
+      _isRunning = true;
+      _output = '';
     });
+    try {
+      final result = await widget.textAiService.runTask(
+        taskType: TextAiTaskType.tosSummary,
+        sourceText: _textController.text,
+        instruction: 'Summarize ToS/privacy policy',
+      );
+      if (!mounted) return;
+      setState(() => _output = result);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _output = 'Sorry, Tower Lens could not summarize this text. Please try again.';
+      });
+    } finally {
+      if (mounted) setState(() => _isRunning = false);
+    }
   }
 
   Future<void> _save() async {
@@ -75,12 +91,16 @@ class _TosScreenState extends State<TosScreen> {
                   const Expanded(
                     child: Text('Paste the ToS or privacy policy text', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
-                  IconButton(icon: const Icon(Icons.camera_alt_outlined), onPressed: _scanText),
+                  IconButton(
+                    icon: const Icon(Icons.camera_alt_outlined),
+                    onPressed: _isRunning ? null : _scanText,
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _textController,
+                onChanged: (_) => setState(() {}),
                 maxLines: 12,
                 minLines: 6,
                 decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Paste text here...'),
@@ -89,8 +109,17 @@ class _TosScreenState extends State<TosScreen> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: _run,
-                  child: const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Text('Summarize')),
+                  onPressed: _canRun ? _run : null,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: _isRunning
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Summarize'),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),

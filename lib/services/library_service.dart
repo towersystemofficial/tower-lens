@@ -39,7 +39,7 @@ class LibraryService {
   Future<bool> requestPermissionAndPickFolder() async {
     final status = await Permission.manageExternalStorage.request();
     if (!status.isGranted) return false;
-    final path = await FilePicker.getDirectoryPath(
+    final path = await FilePicker.platform.getDirectoryPath(
       dialogTitle: 'Select where Tower Lens should store your library',
     );
     if (path == null) return false;

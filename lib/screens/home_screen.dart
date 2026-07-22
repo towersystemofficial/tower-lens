@@ -16,6 +16,12 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _sourceTextController = TextEditingController();
   final TextEditingController _instructionController = TextEditingController();
   String _output = '';
+  bool _isRunning = false;
+
+  bool get _canRun =>
+      !_isRunning &&
+      _sourceTextController.text.trim().isNotEmpty &&
+      _instructionController.text.trim().isNotEmpty;
 
   static const List<String> _presetTasks = [
     'Summarize',
@@ -27,15 +33,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _applyPreset(String task) => setState(() => _instructionController.text = task);
 
-  Future<void> _runMockTask() async {
-    final result = await widget.textAiService.runTask(
-      taskType: TextAiTaskType.general,
-      sourceText: _sourceTextController.text,
-      instruction: _instructionController.text,
-    );
+  Future<void> _runTask() async {
+    if (!_canRun) return;
     setState(() {
-      _output = result;
+      _isRunning = true;
+      _output = '';
     });
+    try {
+      final result = await widget.textAiService.runTask(
+        taskType: TextAiTaskType.general,
+        sourceText: _sourceTextController.text,
+        instruction: _instructionController.text,
+      );
+      if (!mounted) return;
+      setState(() => _output = result);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _output = 'Sorry, Tower Lens could not complete this task. Please try again.';
+      });
+    } finally {
+      if (mounted) setState(() => _isRunning = false);
+    }
   }
 
   Future<void> _scanText() async {
@@ -96,13 +115,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   IconButton(
                     icon: const Icon(Icons.camera_alt_outlined),
                     tooltip: 'Scan text with camera',
-                    onPressed: _scanText,
+                    onPressed: _isRunning ? null : _scanText,
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _sourceTextController,
+                onChanged: (_) => setState(() {}),
                 maxLines: 10,
                 minLines: 6,
                 decoration: const InputDecoration(
@@ -115,6 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 8),
               TextField(
                 controller: _instructionController,
+                onChanged: (_) => setState(() {}),
                 maxLines: 2,
                 decoration: const InputDecoration(
                   hintText: 'e.g. Summarize this in plain language',
@@ -126,17 +147,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: _presetTasks
-                    .map((task) => ActionChip(label: Text(task), onPressed: () => _applyPreset(task)))
+                    .map((task) => ActionChip(
+                          label: Text(task),
+                          onPressed: _isRunning ? null : () => _applyPreset(task),
+                        ))
                     .toList(),
               ),
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: _runMockTask,
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text('Run'),
+                  onPressed: _canRun ? _runTask : null,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: _isRunning
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Run'),
                   ),
                 ),
               ),

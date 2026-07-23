@@ -8,6 +8,15 @@ abstract class TextAiService {
   });
 }
 
+class TextAiServiceException implements Exception {
+  const TextAiServiceException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 class MockTextAiService implements TextAiService {
   @override
   Future<String> runTask({

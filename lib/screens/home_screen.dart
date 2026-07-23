@@ -47,6 +47,9 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       if (!mounted) return;
       setState(() => _output = result);
+    } on TextAiServiceException catch (error) {
+      if (!mounted) return;
+      setState(() => _output = error.message);
     } catch (_) {
       if (!mounted) return;
       setState(() {

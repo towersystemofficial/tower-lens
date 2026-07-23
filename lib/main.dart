@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'services/library_service.dart';
 import 'services/text_ai_service.dart';
+import 'services/text_ai_service_factory.dart';
 import 'screens/home_screen.dart';
 import 'screens/library_screen.dart';
 import 'screens/tos_screen.dart';
@@ -44,7 +45,7 @@ class RootShell extends StatefulWidget {
 
 class _RootShellState extends State<RootShell> {
   final LibraryService _libraryService = LibraryService();
-  final TextAiService _textAiService = MockTextAiService();
+  final TextAiService _textAiService = createTextAiService();
   int _index = 0;
   bool _ready = false;
 

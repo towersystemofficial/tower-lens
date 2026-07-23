@@ -54,7 +54,6 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 | ToS/privacy mode: paste, mocked structured summary, save | Implemented (mocked AI) |
 | Ingredient/allergy watchlist: manage list, check text against it | Implemented (real logic, not AI-based) |
 | Camera + on-device OCR: live preview, live recognition, freeze, editable pre-selected text | Implemented |
-| Cohesive UI/UX redesign beyond the functional MVP shell | Not started — desired direction still needs definition after device testing |
 | Dark theme (forced default) | Implemented |
 | `TextAiService` abstraction with mock fallback | Implemented |
 | Real Anthropic API integration | **Implemented for private development** -- merged in PR #28; production still requires a backend |
@@ -94,16 +93,16 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 
 | Device check | Required evidence | Status |
 |---|---|---|
-| Install and launch | APK installs, launches, and shows all four tabs | **Pass** — Pixel 9a, 2026-07-22; CI `tower-lens-debug` app-code baseline `f719507`; installed, launched, and all four tabs visible |
-| Permissions and folder setup | Storage settings flow returns to the app; folder picker selects/creates the library | **Pass** — Pixel 9a, 2026-07-22; folder setup opened successfully, selected/created a test folder, returned to Tower Lens, and displayed the chosen folder |
-| Home manual input | Paste/type, run mock explanation, edit, save | **Pass** — Pixel 9a, 2026-07-22; manual text/instruction entry, loading state, mock output, save confirmation, editing the input, and rerunning against the edited text all passed |
-| Camera/OCR | Camera preview opens; capture/freeze produces editable recognized text; cancel/back works | **Pass** — Pixel 9a, 2026-07-22; camera permission, live preview, capture/freeze, OCR output, editing recognized text, and cancel/back behavior passed; returning to Home preserved the existing text |
-| Camera denial/recovery | Deny camera safely, then grant it and retry without reinstalling | **Pass** — Pixel 9a, 2026-07-22; after permission was revoked in Android Settings, reopening the scanner returned to the Android camera-permission prompt without crashing, and granting permission reopened the live preview without reinstalling |
-| Library | Saved item appears; refresh, search, sort, filter, open, and delete all work | **Fail** — Pixel 9a, 2026-07-22; saved item appeared and opened correctly. Existing newest/oldest sorting reversed the entries correctly. Searching for a known distinctive word returned no result. Deleting removed the item, but did so immediately without confirmation. Folder filtering is **Pass**: placing/saving an item inside a custom Library folder, selecting that folder's filter, and confirming that the item appeared while entries from other folders were hidden all worked. Returning to Library after saving a new Home item displayed it automatically without restarting or manual refresh |
-| ToS | Paste text, run summary, read output, save, and reopen from Library | **Pass** — Pixel 9a, 2026-07-22; paste/input, loading state, structured mock summary, save confirmation, and reopening the saved entry from Library with its original text and structured summary all passed |
-| Watchlist | Add/remove entries; matching and non-matching ingredient checks behave correctly | **Pass** — Pixel 9a, 2026-07-22; adding `peanut` succeeded, a scanned peanut bag triggered the expected warning, and an unrelated scanned item produced no warning. With both `peanut` and `milk` present, removing only `peanut` kept checking enabled through `milk`; rescanning the peanut bag no longer produced the peanut warning |
-| Rendering and state | Dark theme/output contrast are readable; loading disables duplicate requests; an error can be retried | **In progress** — Pixel 9a, 2026-07-22; Home and ToS text and outputs were comfortably readable against the dark background, and while a mock request was loading, the Run control was disabled and prevented a duplicate request. Retry-after-error still to test |
-| Restart persistence | Restart app; library path, saved scans, and Watchlist entries persist | **Pass** — Pixel 9a, 2026-07-22; after fully closing and reopening Tower Lens, the selected Library folder, saved ToS entry, and `milk` Watchlist item were all still present |
+| Install and launch | APK installs, launches, and shows all four tabs | Not run |
+| Permissions and folder setup | Storage settings flow returns to the app; folder picker selects/creates the library | Not run |
+| Home manual input | Paste/type, run mock explanation, edit, save | Not run |
+| Camera/OCR | Camera preview opens; capture/freeze produces editable recognized text; cancel/back works | Not run |
+| Camera denial/recovery | Deny camera safely, then grant it and retry without reinstalling | Not run |
+| Library | Saved item appears; refresh, search, sort, filter, open, and delete all work | Not run |
+| ToS | Paste text, run summary, read output, save, and reopen from Library | Not run |
+| Watchlist | Add/remove entries; matching and non-matching ingredient checks behave correctly | Not run |
+| Rendering and state | Dark theme/output contrast are readable; loading disables duplicate requests; an error can be retried | Not run |
+| Restart persistence | Restart app; library path, saved scans, and Watchlist entries persist | Not run |
 | Direct Anthropic private build | General and ToS calls return real responses; offline and invalid-key errors are understandable | Not run |
 | No-camera behavior | Verify on a camera-less device/emulator when available; manual input remains usable | Deferred — no suitable device yet |
 
@@ -127,16 +126,7 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 - Risks: low, pure UI state.
 - Completion evidence: both screens maintain an in-flight flag, disable relevant controls, render a progress indicator, and restore controls after success or failure (`30ef426`).
 
-### P2 — Product experience and completeness
-
-**Task: Restructure the app UI/UX around a deliberate visual and interaction design**
-- Objective: replace the functional MVP feel with a cohesive app experience whose navigation, hierarchy, spacing, components, visual identity, and screen-to-screen flow match the intended Tower Lens product.
-- Acceptance criteria: **UNKNOWN — DEFINE WITH USER** after the physical-device pass; begin with a short design brief and screen inventory, then implement the approved direction in small, testable increments rather than a single app-wide rewrite.
-- Scope to evaluate: bottom-navigation structure and labels, Home/ToS/Watchlist relationship, scan and paste entry points, information density, component consistency, typography, color and contrast beyond the current forced-dark-theme fix, empty/loading/error states, and the overall tactile feel of common flows.
-- Library requirement: replace the current top-of-screen folder-filter model with a hierarchical file-browser model. The main content area shows the current folder's immediate child files and folders; tapping a folder navigates into it; back/up navigation and breadcrumbs expose the current path; creating a folder places it inside the currently open folder; and users can move both files and folders to other locations in the tree. Preserve search, sorting, filtering where useful, opening entries, deletion, and local readable-file storage. Replace the current narrow sorting control with a visible dropdown that shows the active choice and initially supports Newest, Oldest, Name A–Z, Name Z–A, and Type. Keep the selected sort stable while navigating folders, and apply it consistently to the current folder's contents. Require an explicit confirmation dialog with Cancel and Delete actions before deleting any file or folder; nothing should be removed merely by tapping the delete control.
-- Save requirement: before saving a scan or analysis, let the user enter or edit its filename. Pre-fill a sensible generated default so saving can remain one tap when the user does not care about the name; validate or sanitize invalid filesystem characters and prevent accidental overwrites.
-- Dependencies: complete P0.5 first so verified functional defects are separated from design dissatisfaction. The design brief should precede UI code.
-- Risks: high overlap across screens; uncontrolled restyling could create bloat or regress accessibility and existing flows. Preserve behavior, local-first principles, and the `TextAiService`/storage boundaries.
+### P2 — Product completeness
 
 **Task: Route Watchlist ingredient-ambiguity explanations through real AI**
 - Objective: per original product scope, AI should be able to explain ambiguous ingredients on request -- currently Watchlist only does local substring matching.
@@ -166,8 +156,6 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 ## 7. Known bugs, technical debt, security/privacy concerns, unresolved decisions
 
 **Known bugs:**
-- **Library search failure found during Pixel 9a verification (2026-07-22):** a saved entry was visible and opened correctly, but searching for a distinctive word known to occur in that entry produced no visible result. Reproduce against current `main`, determine whether indexing, query matching, folder scope, or UI refresh is responsible, and fix in a separate narrowly scoped bug PR.
-- **Library deletion lacks confirmation (Pixel 9a verification, 2026-07-22):** deleting a saved entry successfully removed it, but the app displayed no confirmation dialog first. Add an explicit Cancel/Delete confirmation before removing saved files or folders; keep this as a focused safety fix rather than treating successful removal as a full pass.
 - **Resolved in PR #24:** the confirmed `file_picker` Android regression was addressed by pinning `file_picker: 10.3.8` exactly. CI and physical-device confirmation remain required before treating the full app as verified.
 - Issue #5 was closed as `completed` before its PR (#6) merged. Its required README sentence is now present on `main` via later commit `9822806`, but the historical process-integrity gap still needs the P3 workflow audit.
 
@@ -181,7 +169,6 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 - Real API integration must supply the key via `--dart-define` or equivalent, never committed or hardcoded. Longer-term, per original product scope, production API keys must never ship inside the client at all -- a backend/proxy is required before any public release, and is explicitly not yet started.
 
 **Unresolved product decisions:**
-- The target visual language, navigation model, and interaction feel for the planned UI/UX restructure; define these with references and a screen-by-screen brief before implementation. The Library navigation model is decided: it should behave as a hierarchical file browser rather than expose folders primarily as top-level filters. Its sort control should be a visible multi-option dropdown rather than a narrow newest/oldest toggle. Saving should expose an editable filename with an automatically generated default.
 - Whether/how the camera entry point should degrade on a device with no camera hardware (manifest currently allows install via `android:required="false"`, but the resulting UX on such a device is untested).
 - Exact backend/proxy architecture and timing for production API key custody.
 
@@ -199,11 +186,10 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 2. **P0.5 — Human on-device verification pass** against the current CI-produced APK. IN PROGRESS; use the preserved evidence table above.
 3. **P1 — Real Anthropic API integration. COMPLETE.** Merged in PR #28; retain this step as completion history. Re-check real responses and error presentation during P0.5.
 4. **P1 — Loading state UI. COMPLETE.** Merged in PR #23; retain this step as completion history. Re-check it during the physical-device pass.
-5. **P2 — Define the UI/UX redesign.** After P0.5, produce a concise design brief and screen inventory with the user before changing UI code; implement the approved direction as small increments.
-6. **P3 — Issue-closing process fix.** Independent of all app-code tasks (touches only `.github/workflows/`), safe to run in parallel with any of the above.
-7. **P2 — Watchlist AI-explanation feature.** Depends on task 3 (P1) being complete; sequence it against the UI redesign once that brief establishes the Watchlist flow.
-8. Everything under "Deferred / explicitly out of scope" remains untouched until the above is solid and a deliberate decision is made to begin commercial-phase work.
+5. **P3 — Issue-closing process fix.** Independent of all app-code tasks (touches only `.github/workflows/`), safe to run in parallel with any of the above.
+6. **P2 — Watchlist AI-explanation feature.** Depends on task 3 (P1) being complete; do not start before then.
+7. Everything under "Deferred / explicitly out of scope" remains untouched until the above is solid and a deliberate decision is made to begin commercial-phase work.
 
 ## 10. Next task for Codex
 
-**Perform and record P0.5 on-device verification.** Download the `tower-lens-debug` artifact from the latest successful `main` Android CI run, install it on the Pixel 9a, and complete every non-deferred row in the preserved checklist. Test the mock/local paths first. Test real Anthropic only with a separate private build containing the development key; never upload or distribute that APK. Any failure becomes a narrowly scoped bug task and PR. Once the gate passes, define the P2 UI/UX redesign brief and screen inventory with the user before choosing whether the first implementation increment is the app shell/navigation or the Watchlist ingredient-ambiguity flow.
+**Perform and record P0.5 on-device verification.** Download the `tower-lens-debug` artifact from the latest successful `main` Android CI run, install it on the Pixel 9a, and complete every non-deferred row in the preserved checklist. Test the mock/local paths first. Test real Anthropic only with a separate private build containing the development key; never upload or distribute that APK. Any failure becomes a narrowly scoped bug task and PR. Once the gate passes, begin P2 Watchlist ingredient-ambiguity explanations.

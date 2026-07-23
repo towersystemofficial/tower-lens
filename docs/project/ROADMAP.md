@@ -103,7 +103,7 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 | ToS | Paste text, run summary, read output, save, and reopen from Library | **Pass** — Pixel 9a, 2026-07-22; paste/input, loading state, structured mock summary, save confirmation, and reopening the saved entry from Library with its original text and structured summary all passed |
 | Watchlist | Add/remove entries; matching and non-matching ingredient checks behave correctly | **Pass** — Pixel 9a, 2026-07-22; adding `peanut` succeeded, a scanned peanut bag triggered the expected warning, and an unrelated scanned item produced no warning. With both `peanut` and `milk` present, removing only `peanut` kept checking enabled through `milk`; rescanning the peanut bag no longer produced the peanut warning |
 | Rendering and state | Dark theme/output contrast are readable; loading disables duplicate requests; an error can be retried | Not run |
-| Restart persistence | Restart app; library path, saved scans, and Watchlist entries persist | Not run |
+| Restart persistence | Restart app; library path, saved scans, and Watchlist entries persist | **Pass** — Pixel 9a, 2026-07-22; after fully closing and reopening Tower Lens, the selected Library folder, saved ToS entry, and `milk` Watchlist item were all still present |
 | Direct Anthropic private build | General and ToS calls return real responses; offline and invalid-key errors are understandable | Not run |
 | No-camera behavior | Verify on a camera-less device/emulator when available; manual input remains usable | Deferred — no suitable device yet |
 

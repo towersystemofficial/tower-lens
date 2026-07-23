@@ -100,7 +100,7 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 | Camera/OCR | Camera preview opens; capture/freeze produces editable recognized text; cancel/back works | **Pass** — Pixel 9a, 2026-07-22; camera permission, live preview, capture/freeze, OCR output, editing recognized text, and cancel/back behavior passed; returning to Home preserved the existing text |
 | Camera denial/recovery | Deny camera safely, then grant it and retry without reinstalling | **Pass** — Pixel 9a, 2026-07-22; after permission was revoked in Android Settings, reopening the scanner returned to the Android camera-permission prompt without crashing, and granting permission reopened the live preview without reinstalling |
 | Library | Saved item appears; refresh, search, sort, filter, open, and delete all work | **Fail** — Pixel 9a, 2026-07-22; saved item appeared and opened correctly. Searching for a known distinctive word returned no result. Deleting removed the item, but did so immediately without confirmation. Refresh, sort, and filter still to test |
-| ToS | Paste text, run summary, read output, save, and reopen from Library | Not run |
+| ToS | Paste text, run summary, read output, save, and reopen from Library | **In progress** — Pixel 9a, 2026-07-22; paste/input, loading state, and structured mock summary passed. Save and reopen from Library still to test |
 | Watchlist | Add/remove entries; matching and non-matching ingredient checks behave correctly | Not run |
 | Rendering and state | Dark theme/output contrast are readable; loading disables duplicate requests; an error can be retried | Not run |
 | Restart persistence | Restart app; library path, saved scans, and Watchlist entries persist | Not run |

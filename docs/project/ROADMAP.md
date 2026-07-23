@@ -54,6 +54,7 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 | ToS/privacy mode: paste, mocked structured summary, save | Implemented (mocked AI) |
 | Ingredient/allergy watchlist: manage list, check text against it | Implemented (real logic, not AI-based) |
 | Camera + on-device OCR: live preview, live recognition, freeze, editable pre-selected text | Implemented |
+| Cohesive UI/UX redesign beyond the functional MVP shell | Not started — desired direction still needs definition after device testing |
 | Dark theme (forced default) | Implemented |
 | `TextAiService` abstraction with mock fallback | Implemented |
 | Real Anthropic API integration | **Implemented for private development** -- merged in PR #28; production still requires a backend |
@@ -126,7 +127,14 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 - Risks: low, pure UI state.
 - Completion evidence: both screens maintain an in-flight flag, disable relevant controls, render a progress indicator, and restore controls after success or failure (`30ef426`).
 
-### P2 — Product completeness
+### P2 — Product experience and completeness
+
+**Task: Restructure the app UI/UX around a deliberate visual and interaction design**
+- Objective: replace the functional MVP feel with a cohesive app experience whose navigation, hierarchy, spacing, components, visual identity, and screen-to-screen flow match the intended Tower Lens product.
+- Acceptance criteria: **UNKNOWN — DEFINE WITH USER** after the physical-device pass; begin with a short design brief and screen inventory, then implement the approved direction in small, testable increments rather than a single app-wide rewrite.
+- Scope to evaluate: bottom-navigation structure and labels, Home/ToS/Watchlist relationship, scan and paste entry points, information density, component consistency, typography, color and contrast beyond the current forced-dark-theme fix, empty/loading/error states, and the overall tactile feel of common flows.
+- Dependencies: complete P0.5 first so verified functional defects are separated from design dissatisfaction. The design brief should precede UI code.
+- Risks: high overlap across screens; uncontrolled restyling could create bloat or regress accessibility and existing flows. Preserve behavior, local-first principles, and the `TextAiService`/storage boundaries.
 
 **Task: Route Watchlist ingredient-ambiguity explanations through real AI**
 - Objective: per original product scope, AI should be able to explain ambiguous ingredients on request -- currently Watchlist only does local substring matching.
@@ -169,6 +177,7 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 - Real API integration must supply the key via `--dart-define` or equivalent, never committed or hardcoded. Longer-term, per original product scope, production API keys must never ship inside the client at all -- a backend/proxy is required before any public release, and is explicitly not yet started.
 
 **Unresolved product decisions:**
+- The target visual language, navigation model, and interaction feel for the planned UI/UX restructure; define these with references and a screen-by-screen brief before implementation.
 - Whether/how the camera entry point should degrade on a device with no camera hardware (manifest currently allows install via `android:required="false"`, but the resulting UX on such a device is untested).
 - Exact backend/proxy architecture and timing for production API key custody.
 
@@ -186,10 +195,11 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 2. **P0.5 — Human on-device verification pass** against the current CI-produced APK. IN PROGRESS; use the preserved evidence table above.
 3. **P1 — Real Anthropic API integration. COMPLETE.** Merged in PR #28; retain this step as completion history. Re-check real responses and error presentation during P0.5.
 4. **P1 — Loading state UI. COMPLETE.** Merged in PR #23; retain this step as completion history. Re-check it during the physical-device pass.
-5. **P3 — Issue-closing process fix.** Independent of all app-code tasks (touches only `.github/workflows/`), safe to run in parallel with any of the above.
-6. **P2 — Watchlist AI-explanation feature.** Depends on task 3 (P1) being complete; do not start before then.
-7. Everything under "Deferred / explicitly out of scope" remains untouched until the above is solid and a deliberate decision is made to begin commercial-phase work.
+5. **P2 — Define the UI/UX redesign.** After P0.5, produce a concise design brief and screen inventory with the user before changing UI code; implement the approved direction as small increments.
+6. **P3 — Issue-closing process fix.** Independent of all app-code tasks (touches only `.github/workflows/`), safe to run in parallel with any of the above.
+7. **P2 — Watchlist AI-explanation feature.** Depends on task 3 (P1) being complete; sequence it against the UI redesign once that brief establishes the Watchlist flow.
+8. Everything under "Deferred / explicitly out of scope" remains untouched until the above is solid and a deliberate decision is made to begin commercial-phase work.
 
 ## 10. Next task for Codex
 
-**Perform and record P0.5 on-device verification.** Download the `tower-lens-debug` artifact from the latest successful `main` Android CI run, install it on the Pixel 9a, and complete every non-deferred row in the preserved checklist. Test the mock/local paths first. Test real Anthropic only with a separate private build containing the development key; never upload or distribute that APK. Any failure becomes a narrowly scoped bug task and PR. Once the gate passes, begin P2 Watchlist ingredient-ambiguity explanations.
+**Perform and record P0.5 on-device verification.** Download the `tower-lens-debug` artifact from the latest successful `main` Android CI run, install it on the Pixel 9a, and complete every non-deferred row in the preserved checklist. Test the mock/local paths first. Test real Anthropic only with a separate private build containing the development key; never upload or distribute that APK. Any failure becomes a narrowly scoped bug task and PR. Once the gate passes, define the P2 UI/UX redesign brief and screen inventory with the user before choosing whether the first implementation increment is the app shell/navigation or the Watchlist ingredient-ambiguity flow.

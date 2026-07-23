@@ -99,7 +99,7 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 | Home manual input | Paste/type, run mock explanation, edit, save | **In progress** — Pixel 9a, 2026-07-22; manual text/instruction entry, loading state, mock output, and save confirmation passed; editing still to test |
 | Camera/OCR | Camera preview opens; capture/freeze produces editable recognized text; cancel/back works | Not run |
 | Camera denial/recovery | Deny camera safely, then grant it and retry without reinstalling | Not run |
-| Library | Saved item appears; refresh, search, sort, filter, open, and delete all work | **In progress** — Pixel 9a, 2026-07-22; saved item appeared and opened with its original text, instruction, and mock output; refresh, search, sort, filter, and delete still to test |
+| Library | Saved item appears; refresh, search, sort, filter, open, and delete all work | **Fail** — Pixel 9a, 2026-07-22; saved item appeared and opened with its original text, instruction, and mock output, but searching for a distinctive word from that known entry returned no visible result. Refresh, sort, filter, and delete still to test |
 | ToS | Paste text, run summary, read output, save, and reopen from Library | Not run |
 | Watchlist | Add/remove entries; matching and non-matching ingredient checks behave correctly | Not run |
 | Rendering and state | Dark theme/output contrast are readable; loading disables duplicate requests; an error can be retried | Not run |
@@ -134,6 +134,7 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 - Acceptance criteria: **UNKNOWN — DEFINE WITH USER** after the physical-device pass; begin with a short design brief and screen inventory, then implement the approved direction in small, testable increments rather than a single app-wide rewrite.
 - Scope to evaluate: bottom-navigation structure and labels, Home/ToS/Watchlist relationship, scan and paste entry points, information density, component consistency, typography, color and contrast beyond the current forced-dark-theme fix, empty/loading/error states, and the overall tactile feel of common flows.
 - Library requirement: replace the current top-of-screen folder-filter model with a hierarchical file-browser model. The main content area shows the current folder's immediate child files and folders; tapping a folder navigates into it; back/up navigation and breadcrumbs expose the current path; creating a folder places it inside the currently open folder; and users can move both files and folders to other locations in the tree. Preserve search, sort, filtering where useful, opening entries, deletion, and local readable-file storage.
+- Save requirement: before saving a scan or analysis, let the user enter or edit its filename. Pre-fill a sensible generated default so saving can remain one tap when the user does not care about the name; validate or sanitize invalid filesystem characters and prevent accidental overwrites.
 - Dependencies: complete P0.5 first so verified functional defects are separated from design dissatisfaction. The design brief should precede UI code.
 - Risks: high overlap across screens; uncontrolled restyling could create bloat or regress accessibility and existing flows. Preserve behavior, local-first principles, and the `TextAiService`/storage boundaries.
 
@@ -165,6 +166,7 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 ## 7. Known bugs, technical debt, security/privacy concerns, unresolved decisions
 
 **Known bugs:**
+- **Library search failure found during Pixel 9a verification (2026-07-22):** a saved entry was visible and opened correctly, but searching for a distinctive word known to occur in that entry produced no visible result. Reproduce against current `main`, determine whether indexing, query matching, folder scope, or UI refresh is responsible, and fix in a separate narrowly scoped bug PR.
 - **Resolved in PR #24:** the confirmed `file_picker` Android regression was addressed by pinning `file_picker: 10.3.8` exactly. CI and physical-device confirmation remain required before treating the full app as verified.
 - Issue #5 was closed as `completed` before its PR (#6) merged. Its required README sentence is now present on `main` via later commit `9822806`, but the historical process-integrity gap still needs the P3 workflow audit.
 
@@ -178,7 +180,7 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 - Real API integration must supply the key via `--dart-define` or equivalent, never committed or hardcoded. Longer-term, per original product scope, production API keys must never ship inside the client at all -- a backend/proxy is required before any public release, and is explicitly not yet started.
 
 **Unresolved product decisions:**
-- The target visual language, navigation model, and interaction feel for the planned UI/UX restructure; define these with references and a screen-by-screen brief before implementation. The Library navigation model is decided: it should behave as a hierarchical file browser rather than expose folders primarily as top-level filters.
+- The target visual language, navigation model, and interaction feel for the planned UI/UX restructure; define these with references and a screen-by-screen brief before implementation. The Library navigation model is decided: it should behave as a hierarchical file browser rather than expose folders primarily as top-level filters. Saving should expose an editable filename with an automatically generated default.
 - Whether/how the camera entry point should degrade on a device with no camera hardware (manifest currently allows install via `android:required="false"`, but the resulting UX on such a device is untested).
 - Exact backend/proxy architecture and timing for production API key custody.
 

@@ -8,7 +8,7 @@ Intended users: people dealing with dense or high-friction text -- students, peo
 
 Core non-negotiable principles: offline-first/local-by-default storage, user-controlled deletion, no ads (unless explicitly revisited later), no forced subscriptions, and no provider API secrets ever shipped inside a production client.
 
-## 2. Current architecture and dependencies (verified against `origin/main`, commit `07ed09e`)
+## 2. Current architecture and dependencies (verified against `main` after merged PR #28)
 
 **Framework:** Flutter, Android-first. iOS/other platforms are untouched `flutter create` scaffolding only.
 
@@ -20,9 +20,10 @@ Core non-negotiable principles: offline-first/local-by-default storage, user-con
 - `google_mlkit_text_recognition: ^0.16.0`
 - `intl: ^0.20.3`
 - `shared_preferences: ^2.5.5`
+- `http: ^1.5.0`
 - `cupertino_icons: ^1.0.8`
 
-No HTTP/networking or Anthropic SDK dependency exists yet -- real API integration has not started.
+The app uses a small native HTTP implementation for the Anthropic Messages API; no Anthropic Dart SDK is used.
 
 **Storage architecture:** Local library entries are saved as real files (not app-sandboxed) at a user-chosen folder location, using `permission_handler`'s `MANAGE_EXTERNAL_STORAGE` + `file_picker`'s directory chooser, written via plain `dart:io` file operations as Markdown files with YAML-style frontmatter (fields: id, type, folder, timestamp) and Markdown body sections (Source Text / Instruction / Output). Auto-organized into `TowerLens/General`, `TowerLens/ToS`, `TowerLens/Ingredient`, plus user-created custom folders. A local search/sort/filter index is expected to scan the directory live rather than maintain a separate cache (per design decision; not independently re-verified against current `library_service.dart` contents in this pass).
 
@@ -37,10 +38,12 @@ No HTTP/networking or Anthropic SDK dependency exists yet -- real API integratio
 - `lib/screens/library_screen.dart`, `lib/screens/library_detail_screen.dart` -- local file library browse/search/sort/filter/delete.
 - `lib/services/library_service.dart` -- storage layer described above.
 - `lib/services/watchlist_service.dart` -- local watchlist persistence via `shared_preferences`.
-- `lib/services/text_ai_service.dart` -- abstraction introduced in issue #20/PR #21: `TextAiTaskType` enum (`general`, `tosSummary`), abstract `TextAiService`, and a `MockTextAiService` implementation. This is the seam real API integration should plug into.
+- `lib/services/text_ai_service.dart` -- abstraction introduced in issue #20/PR #21: `TextAiTaskType` enum (`general`, `tosSummary`), abstract `TextAiService`, and `MockTextAiService`.
+- `lib/services/anthropic_text_ai_service.dart` -- HTTP-backed implementation supporting the Anthropic Messages API or a compatible future Tower Lens proxy, including timeout, credential, billing, rate-limit, server, and malformed-response errors.
+- `lib/services/text_ai_service_factory.dart` -- selects the mock when no credential is supplied; supports private direct-Anthropic development or a configurable endpoint with bearer authentication for a future proxy.
 - `lib/models/library_entry.dart` -- library entry data model.
-- `test/library_service_test.dart`, `test/text_ai_service_test.dart`, `test/widget_test.dart` -- existing automated tests.
-- `.github/workflows/android-ci.yml` -- Android test/build workflow added on `main`; its successful execution still needs to be confirmed from GitHub Actions.
+- `test/library_service_test.dart`, `test/text_ai_service_test.dart`, `test/anthropic_text_ai_service_test.dart`, `test/widget_test.dart` -- existing automated tests, including four mocked HTTP tests that make no paid API calls.
+- `.github/workflows/android-ci.yml` -- installs Flutter, resolves dependencies, runs analysis and tests, builds the debug APK, and uploads it as the `tower-lens-debug` artifact with 14-day retention. The repaired workflow and PR #28 both completed successfully.
 
 ## 3. Feature status
 
@@ -52,8 +55,8 @@ No HTTP/networking or Anthropic SDK dependency exists yet -- real API integratio
 | Ingredient/allergy watchlist: manage list, check text against it | Implemented (real logic, not AI-based) |
 | Camera + on-device OCR: live preview, live recognition, freeze, editable pre-selected text | Implemented |
 | Dark theme (forced default) | Implemented |
-| `TextAiService` abstraction (mock only) | Implemented |
-| Real Anthropic API integration | **Not started** |
+| `TextAiService` abstraction with mock fallback | Implemented |
+| Real Anthropic API integration | **Implemented for private development** -- merged in PR #28; production still requires a backend |
 | Backend/proxy for production API key handling | Not started (correctly deferred per scope) |
 | Credits / metered billing | Not started (correctly deferred per scope) |
 | Accounts / authentication | Not started (correctly deferred per scope) |
@@ -67,9 +70,9 @@ No HTTP/networking or Anthropic SDK dependency exists yet -- real API integratio
 
 ## 4. Current milestone and next milestone
 
-**Current milestone:** The full local vertical-slice feature set (Home, Library, ToS, Watchlist, Camera/OCR) is implemented against mocked AI responses behind a swappable `TextAiService` interface. Permissions and dark theme issues found during development have been fixed and merged. The blocking `file_picker` pin, AI-call loading/error state, library refresh notifications, initial `LibraryService` tests, and an Android CI workflow are also merged.
+**Current milestone:** The local vertical slice and private-development Anthropic integration are implemented behind a swappable `TextAiService`. The mock fallback, loading/error state, library refresh notifications, tests, Android build repair, and working Flutter Android CI are merged. A future server can replace direct Anthropic calls through the existing configurable endpoint/authentication seam without changing the UI.
 
-**Next milestone:** Confirm the restored Android build in GitHub Actions and on a physical device, re-verify the entire feature set against the current `main`, then begin real Claude API integration behind the existing `TextAiService` seam.
+**Next milestone:** Install the current CI-produced APK on the Pixel 9a and complete the physical-device verification record below. After the baseline passes, the next product feature is AI explanation of ambiguous Watchlist ingredients. Any failing device behavior becomes its own narrowly scoped bug task before that feature begins.
 
 ## 5–6. Prioritized backlog
 
@@ -86,17 +89,34 @@ No HTTP/networking or Anthropic SDK dependency exists yet -- real API integratio
 
 ### P0.5 — Gate, not an agent task
 
-**Human on-device verification pass.** Before any further feature work, a physical device build should be run against `main` (post file_picker fix) and every implemented feature manually re-checked: permissions flow (one-tap `MANAGE_EXTERNAL_STORAGE` grant → folder picker), dark theme rendering across all four tabs, Home/ToS output readability, Library save/browse/search/sort/filter/delete, Watchlist add/remove/check, Camera live-preview/freeze/select flow. Nothing since the very first successful local build has been confirmed working on-device.
+**Human on-device verification pass.** Before further feature work, install the current CI-produced debug APK on the Pixel 9a and record the tested commit/run plus the result of every row below. Use the mock build for the complete local flow first. Direct-Anthropic testing is a separate final row and must use a private APK whose key is never committed or distributed.
+
+| Device check | Required evidence | Status |
+|---|---|---|
+| Install and launch | APK installs, launches, and shows all four tabs | Not run |
+| Permissions and folder setup | Storage settings flow returns to the app; folder picker selects/creates the library | Not run |
+| Home manual input | Paste/type, run mock explanation, edit, save | Not run |
+| Camera/OCR | Camera preview opens; capture/freeze produces editable recognized text; cancel/back works | Not run |
+| Camera denial/recovery | Deny camera safely, then grant it and retry without reinstalling | Not run |
+| Library | Saved item appears; refresh, search, sort, filter, open, and delete all work | Not run |
+| ToS | Paste text, run summary, read output, save, and reopen from Library | Not run |
+| Watchlist | Add/remove entries; matching and non-matching ingredient checks behave correctly | Not run |
+| Rendering and state | Dark theme/output contrast are readable; loading disables duplicate requests; an error can be retried | Not run |
+| Restart persistence | Restart app; library path, saved scans, and Watchlist entries persist | Not run |
+| Direct Anthropic private build | General and ToS calls return real responses; offline and invalid-key errors are understandable | Not run |
+| No-camera behavior | Verify on a camera-less device/emulator when available; manual input remains usable | Deferred — no suitable device yet |
+
+**Pass rule:** P0.5 is complete only when every non-deferred row is marked Pass with the tested app commit or Actions run recorded. A failure is documented and moved into a separate bugfix PR; it is not silently waived.
 
 ### P1 — Real API integration
 
-**Task: Implement real Anthropic API-backed `TextAiService`**
-- Objective: add a concrete `TextAiService` implementation that calls the real Claude API, without breaking the existing mock path.
-- Acceptance criteria: new class (e.g. `AnthropicTextAiService`) implements the existing `TextAiService` interface; uses model `claude-sonnet-5`; API key supplied via `--dart-define` at build time, never committed to the repo or hardcoded; `MockTextAiService` remains available/used for tests; Home and ToS screens can be pointed at either implementation via constructor injection (already the established pattern).
-- Files: likely a new `lib/services/anthropic_text_ai_service.dart`; `pubspec.yaml` (new HTTP or Anthropic SDK dependency -- **UNKNOWN — VERIFY** which package, not yet decided); `lib/main.dart` (which implementation gets constructed).
-- Dependencies: requires P0 (working build) and ideally P0.5 (confirmed-working baseline) first.
-- Tests: unit test(s) mocking the HTTP layer; existing `MockTextAiService`-based tests should be unaffected.
-- Risks: API key handling is the primary risk -- must not leak into version control or client-side production builds; error handling for network failures/rate limits is currently entirely unaddressed and needs design.
+**Task: Implement real Anthropic API-backed `TextAiService` — COMPLETE (merged in PR #28)**
+- Objective: add a concrete `TextAiService` implementation that calls the real Claude API without breaking the existing mock path.
+- Acceptance criteria met: `AnthropicTextAiService` implements the interface; the default model is configurable and currently `claude-haiku-4-5-20251001`; direct-development credentials come from `--dart-define`; the mock remains the no-credential fallback; Home and ToS use the factory through the established injected service boundary.
+- Files: `lib/services/anthropic_text_ai_service.dart`, `lib/services/text_ai_service_factory.dart`, `lib/main.dart`, `pubspec.yaml`, `pubspec.lock`, README configuration documentation, and mocked HTTP tests.
+- Tests: four mocked HTTP tests cover Messages API parsing, backend bearer authentication, rate-limit timing, and malformed successful responses; existing tests remain in CI.
+- Remaining risk: a key compiled into an APK is extractable. Direct Anthropic configuration is private-development-only; distributed/production builds require the deferred backend/proxy.
+- Completion evidence: PR #28 merged; dependency resolution, `flutter analyze`, tests, and debug APK build completed successfully in CI.
 
 **Task: Loading state for AI calls — COMPLETE (merged in PR #23)**
 - Objective: Home and ToS screens currently have no loading indicator despite `TextAiService.runTask` being genuinely async (mock includes an artificial delay specifically to surface this gap).
@@ -141,7 +161,7 @@ No HTTP/networking or Anthropic SDK dependency exists yet -- real API integratio
 
 **Technical debt:**
 - No automated integration/widget test coverage for Library, ToS, Watchlist, or Camera screens. `LibraryService` has notification-focused unit tests, alongside the `TextAiService` mock unit test and the default Flutter widget smoke test.
-- Home/ToS loading and basic error states are implemented; broader real-network error design remains part of P1 API integration.
+- Home/ToS loading and retry-safe error states are implemented. The Anthropic service maps timeouts, connection failures, credential/billing errors, rate limits, server errors, and malformed responses; physical verification of those user-visible paths remains part of P0.5.
 - Storage/search-filter approach (live directory scan, no cache) has not been stress-tested at scale; fine for the expected personal-use volume (dozens to low hundreds of entries) but unverified beyond that.
 
 **Security/privacy concerns:**
@@ -151,21 +171,20 @@ No HTTP/networking or Anthropic SDK dependency exists yet -- real API integratio
 **Unresolved product decisions:**
 - Whether/how the camera entry point should degrade on a device with no camera hardware (manifest currently allows install via `android:required="false"`, but the resulting UX on such a device is untested).
 - Exact backend/proxy architecture and timing for production API key custody.
-- Exact HTTP/SDK dependency choice for real Anthropic API integration (not yet selected).
 
 ## 8. Release and monetization phases
 
-**MVP (current phase):** fully local, no accounts, no payments, no backend, mocked AI responses swappable for real ones behind `TextAiService`. No monetization infrastructure exists or is needed yet.
+**MVP (current phase):** local-first, no accounts, no payments, and no backend. Mock responses remain the safe default; private builds can use the real Anthropic service behind `TextAiService`. No monetization infrastructure exists or is needed yet.
 
-**Post-MVP, pre-commercial:** real Claude API integration via direct client calls with a dev-supplied key (`--dart-define`), acceptable only for continued local/sideloaded development -- not viable for public release per the no-client-side-secrets principle.
+**Post-MVP, pre-commercial:** complete physical-device verification and use direct Claude API calls only for private development with a key supplied by `--dart-define`. This is not viable for distributed/public releases under the no-client-side-secrets principle.
 
 **Commercial phase (not started, no work should begin here until MVP + real API integration are solid):** backend/proxy holding the real API key server-side, credit-based metering (or subscription -- undecided), Google Play Billing integration for Android, no ads, no forced subscription, fair pay-as-you-go framing per original product principles.
 
 ## 9. Recommended execution order
 
 1. **P0 — Pin `file_picker` to `10.3.8`. COMPLETE.** Merged in PR #24; retain this step as completion history.
-2. **P0.5 — Human on-device verification pass** against the fixed build. Not an agent task, but should happen before further agent-driven feature work stacks up on an unverified base.
-3. **P1 — Real Anthropic API integration**, touching `lib/services/` and `pubspec.yaml`. Should not run in parallel with any other task touching `lib/services/text_ai_service.dart`.
+2. **P0.5 — Human on-device verification pass** against the current CI-produced APK. IN PROGRESS; use the preserved evidence table above.
+3. **P1 — Real Anthropic API integration. COMPLETE.** Merged in PR #28; retain this step as completion history. Re-check real responses and error presentation during P0.5.
 4. **P1 — Loading state UI. COMPLETE.** Merged in PR #23; retain this step as completion history. Re-check it during the physical-device pass.
 5. **P3 — Issue-closing process fix.** Independent of all app-code tasks (touches only `.github/workflows/`), safe to run in parallel with any of the above.
 6. **P2 — Watchlist AI-explanation feature.** Depends on task 3 (P1) being complete; do not start before then.
@@ -173,4 +192,4 @@ No HTTP/networking or Anthropic SDK dependency exists yet -- real API integratio
 
 ## 10. Next task for Codex
 
-**Verify the current `main` build, then perform P0.5 on-device verification.** The `file_picker: 10.3.8` fix is merged and the repository now contains an Android CI workflow. First confirm that the workflow completes its test and debug-APK jobs for `main`; correct only evidence-backed CI/configuration failures if present. Then, when a physical device is available, run the preserved P0.5 checklist. Do not begin real Anthropic integration until that baseline is confirmed unless the user explicitly chooses to accept the risk.
+**Perform and record P0.5 on-device verification.** Download the `tower-lens-debug` artifact from the latest successful `main` Android CI run, install it on the Pixel 9a, and complete every non-deferred row in the preserved checklist. Test the mock/local paths first. Test real Anthropic only with a separate private build containing the development key; never upload or distribute that APK. Any failure becomes a narrowly scoped bug task and PR. Once the gate passes, begin P2 Watchlist ingredient-ambiguity explanations.

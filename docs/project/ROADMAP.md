@@ -96,7 +96,7 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 |---|---|---|
 | Install and launch | APK installs, launches, and shows all four tabs | **Pass** — Pixel 9a, 2026-07-22; CI `tower-lens-debug` app-code baseline `f719507`; installed, launched, and all four tabs visible |
 | Permissions and folder setup | Storage settings flow returns to the app; folder picker selects/creates the library | **Pass** — Pixel 9a, 2026-07-22; folder setup opened successfully, selected/created a test folder, returned to Tower Lens, and displayed the chosen folder |
-| Home manual input | Paste/type, run mock explanation, edit, save | Not run |
+| Home manual input | Paste/type, run mock explanation, edit, save | **In progress** — Pixel 9a, 2026-07-22; manual text/instruction entry, loading state, and mock output passed; edit/save still to test |
 | Camera/OCR | Camera preview opens; capture/freeze produces editable recognized text; cancel/back works | Not run |
 | Camera denial/recovery | Deny camera safely, then grant it and retry without reinstalling | Not run |
 | Library | Saved item appears; refresh, search, sort, filter, open, and delete all work | Not run |

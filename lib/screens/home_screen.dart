@@ -6,7 +6,16 @@ import 'camera_scan_screen.dart';
 class HomeScreen extends StatefulWidget {
   final LibraryService libraryService;
   final TextAiService textAiService;
-  const HomeScreen({super.key, required this.libraryService, required this.textAiService});
+  final bool usesRealAi;
+  final VoidCallback onConfigureAi;
+
+  const HomeScreen({
+    super.key,
+    required this.libraryService,
+    required this.textAiService,
+    required this.usesRealAi,
+    required this.onConfigureAi,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -103,7 +112,20 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Tower Lens')),
+      appBar: AppBar(
+        title: const Text('Tower Lens'),
+        actions: [
+          IconButton(
+            tooltip: widget.usesRealAi
+                ? 'Real Anthropic AI configured'
+                : 'Configure Anthropic API key',
+            onPressed: widget.onConfigureAi,
+            icon: Icon(
+              widget.usesRealAi ? Icons.cloud_done : Icons.key_outlined,
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),

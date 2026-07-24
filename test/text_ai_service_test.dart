@@ -1,7 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tower_lens/services/anthropic_text_ai_service.dart';
 import 'package:tower_lens/services/text_ai_service.dart';
+import 'package:tower_lens/services/text_ai_service_factory.dart';
 
 void main() {
+  group('TextAiService factory', () {
+    test('uses the mock service without a runtime credential', () {
+      expect(createTextAiService(), isA<MockTextAiService>());
+    });
+
+    test('uses Anthropic when a runtime API key is supplied', () {
+      expect(
+        createTextAiService(apiKey: 'runtime-test-key'),
+        isA<AnthropicTextAiService>(),
+      );
+    });
+  });
+
   group('MockTextAiService', () {
     final service = MockTextAiService();
 

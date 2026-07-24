@@ -27,15 +27,22 @@ Agent-generated changes must remain narrowly scoped to their assigned issue.
 
 ## AI service configuration
 
-Tower Lens uses the local mock AI service unless a remote credential is supplied
-at build time. For private development against Anthropic:
+Tower Lens uses the local mock AI service unless a remote credential is supplied.
+For private development, a user can tap the key icon on Home or ToS and enter
+their own Anthropic API key. The key is stored in the app's private preferences
+on that device and can be removed from the same dialog. This is a temporary
+development path, not the production credential architecture.
+
+A build-time key remains available for local development:
 
 ```sh
 flutter run --dart-define=ANTHROPIC_API_KEY=your-development-key
 ```
 
-An API key compiled into an APK can be extracted. Do not commit the key or use
-this direct configuration for an APK distributed to testers.
+An API key compiled into an APK can be extracted. A key stored in app preferences
+can also be recovered from a rooted device or device backup. Do not commit keys,
+share configured APKs or backups, or use direct Anthropic credentials for a
+public release.
 
 The remote endpoint and model are configurable so the same client can later use
 an Anthropic-compatible Tower Lens proxy:

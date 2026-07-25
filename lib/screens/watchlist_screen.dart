@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/library_service.dart';
 import '../services/watchlist_service.dart';
+import '../widgets/markdown_editor.dart';
 import 'camera_scan_screen.dart';
 
 class WatchlistScreen extends StatefulWidget {
@@ -178,11 +179,11 @@ class _WatchlistScreenState extends State<WatchlistScreen> with SingleTickerProv
             ],
           ),
           const SizedBox(height: 8),
-          TextField(
+          MarkdownEditor(
             controller: _checkTextController,
             maxLines: 8,
             minLines: 4,
-            decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Paste an ingredient list here...'),
+            hintText: 'Paste an ingredient list here...',
           ),
           const SizedBox(height: 16),
           SizedBox(

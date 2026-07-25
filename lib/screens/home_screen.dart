@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
+import '../widgets/markdown_content.dart';
+import '../widgets/markdown_editor.dart';
 import 'camera_scan_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -26,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _instructionController = TextEditingController();
   String _output = '';
   bool _isRunning = false;
+  bool _hasSuccessfulOutput = false;
 
   bool get _canRun =>
       !_isRunning &&
@@ -47,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _isRunning = true;
       _output = '';
+      _hasSuccessfulOutput = false;
     });
     try {
       final result = await widget.textAiService.runTask(
@@ -55,7 +59,10 @@ class _HomeScreenState extends State<HomeScreen> {
         instruction: _instructionController.text,
       );
       if (!mounted) return;
-      setState(() => _output = result);
+      setState(() {
+        _output = result;
+        _hasSuccessfulOutput = true;
+      });
     } on TextAiServiceException catch (error) {
       if (!mounted) return;
       setState(() => _output = error.message);
@@ -145,27 +152,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              TextField(
+              MarkdownEditor(
                 controller: _sourceTextController,
                 onChanged: (_) => setState(() {}),
                 maxLines: 10,
                 minLines: 6,
-                decoration: const InputDecoration(
-                  hintText: 'Paste or type the text you want help with...',
-                  border: OutlineInputBorder(),
-                ),
+                hintText: 'Paste or type the text you want help with...',
               ),
               const SizedBox(height: 20),
               const Text('What do you want done with it?', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              TextField(
+              MarkdownEditor(
                 controller: _instructionController,
                 onChanged: (_) => setState(() {}),
                 maxLines: 2,
-                decoration: const InputDecoration(
-                  hintText: 'e.g. Summarize this in plain language',
-                  border: OutlineInputBorder(),
-                ),
+                hintText: 'e.g. Summarize this in plain language',
               ),
               const SizedBox(height: 12),
               Wrap(
@@ -199,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 children: [
                   const Expanded(child: Text('Output', style: TextStyle(fontWeight: FontWeight.bold))),
-                  if (_output.isNotEmpty)
+                  if (_hasSuccessfulOutput)
                     TextButton.icon(
                       onPressed: _saveToLibrary,
                       icon: const Icon(Icons.save_outlined),
@@ -216,11 +217,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   border: Border.all(color: Colors.grey.shade400),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(
-                  _output.isEmpty ? 'Results will appear here.' : _output,
-                  style: TextStyle(
-                    color: _output.isEmpty ? Colors.grey.shade600 : Theme.of(context).colorScheme.onSurface,
-                  ),
+                child: MarkdownContent(
+                  data: _output,
+                  emptyPlaceholder: 'Results will appear here.',
                 ),
               ),
             ],

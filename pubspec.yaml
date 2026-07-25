@@ -18,6 +18,8 @@ dependencies:
   intl: ^0.20.3
   shared_preferences: ^2.5.5
   http: ^1.5.0
+  flutter_markdown_plus: ^1.0.12
+  markdown_editor_live: ^0.6.0
 
 dev_dependencies:
   flutter_test:

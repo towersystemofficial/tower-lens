@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:markdown_editor_live/markdown_editor_live.dart'
+    show MarkdownEditingController;
 import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
+import '../widgets/markdown_content.dart';
+import '../widgets/markdown_editor.dart';
 import 'camera_scan_screen.dart';
 
 class TosScreen extends StatefulWidget {
@@ -22,11 +26,14 @@ class TosScreen extends StatefulWidget {
 }
 
 class _TosScreenState extends State<TosScreen> {
-  final TextEditingController _textController = TextEditingController();
+  final MarkdownEditingController _textController =
+      MarkdownEditingController();
   String _output = '';
   bool _isRunning = false;
+  bool _hasSuccessfulOutput = false;
 
-  bool get _canRun => !_isRunning && _textController.text.trim().isNotEmpty;
+  bool get _canRun =>
+      !_isRunning && _textController.sourceText.trim().isNotEmpty;
 
   Future<void> _scanText() async {
     final result = await Navigator.push<String>(
@@ -34,7 +41,12 @@ class _TosScreenState extends State<TosScreen> {
       MaterialPageRoute(builder: (_) => const CameraScanScreen()),
     );
     if (result != null && result.trim().isNotEmpty) {
-      setState(() => _textController.text = result);
+      setState(() {
+        _textController.value = TextEditingValue(
+          text: result,
+          selection: TextSelection.collapsed(offset: result.length),
+        );
+      });
     }
   }
 
@@ -43,15 +55,19 @@ class _TosScreenState extends State<TosScreen> {
     setState(() {
       _isRunning = true;
       _output = '';
+      _hasSuccessfulOutput = false;
     });
     try {
       final result = await widget.textAiService.runTask(
         taskType: TextAiTaskType.tosSummary,
-        sourceText: _textController.text,
+        sourceText: _textController.sourceText,
         instruction: 'Summarize ToS/privacy policy',
       );
       if (!mounted) return;
-      setState(() => _output = result);
+      setState(() {
+        _output = result;
+        _hasSuccessfulOutput = true;
+      });
     } on TextAiServiceException catch (error) {
       if (!mounted) return;
       setState(() => _output = error.message);
@@ -73,7 +89,7 @@ class _TosScreenState extends State<TosScreen> {
     await widget.libraryService.saveEntry(
       type: 'tos',
       folder: 'ToS',
-      sourceText: _textController.text,
+      sourceText: _textController.sourceText,
       instruction: 'Summarize ToS/privacy policy',
       output: _output,
     );
@@ -123,12 +139,12 @@ class _TosScreenState extends State<TosScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              TextField(
+              MarkdownEditor(
                 controller: _textController,
                 onChanged: (_) => setState(() {}),
                 maxLines: 12,
                 minLines: 6,
-                decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Paste text here...'),
+                hintText: 'Paste text here...',
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -151,7 +167,7 @@ class _TosScreenState extends State<TosScreen> {
               Row(
                 children: [
                   const Expanded(child: Text('Output', style: TextStyle(fontWeight: FontWeight.bold))),
-                  if (_output.isNotEmpty)
+                  if (_hasSuccessfulOutput)
                     TextButton.icon(onPressed: _save, icon: const Icon(Icons.save_outlined), label: const Text('Save')),
                 ],
               ),
@@ -161,7 +177,10 @@ class _TosScreenState extends State<TosScreen> {
                 padding: const EdgeInsets.all(12),
                 constraints: const BoxConstraints(minHeight: 80),
                 decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(4)),
-                child: Text(_output.isEmpty ? 'Results will appear here.' : _output),
+                child: MarkdownContent(
+                  data: _output,
+                  emptyPlaceholder: 'Results will appear here.',
+                ),
               ),
               const SizedBox(height: 12),
               Text('Informational summary only -- not legal advice.',

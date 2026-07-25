@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import '../models/library_entry.dart';
+import '../widgets/markdown_content.dart';
 
 class LibraryDetailScreen extends StatelessWidget {
   final LibraryEntry entry;
@@ -20,15 +21,15 @@ class LibraryDetailScreen extends StatelessWidget {
             const SizedBox(height: 16),
             const Text('Source Text', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            SelectableText(entry.sourceText.isEmpty ? '(none)' : entry.sourceText),
+            MarkdownContent(data: entry.sourceText),
             const SizedBox(height: 16),
             const Text('Instruction', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            SelectableText(entry.instruction.isEmpty ? '(none)' : entry.instruction),
+            MarkdownContent(data: entry.instruction),
             const SizedBox(height: 16),
             const Text('Output', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            SelectableText(entry.output.isEmpty ? '(none)' : entry.output),
+            MarkdownContent(data: entry.output),
           ],
         ),
       ),

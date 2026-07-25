@@ -182,7 +182,10 @@ class _WatchlistScreenState extends State<WatchlistScreen> with SingleTickerProv
             controller: _checkTextController,
             maxLines: 8,
             minLines: 4,
-            decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Paste an ingredient list here...'),
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: 'Paste an ingredient list here...',
+            ),
           ),
           const SizedBox(height: 16),
           SizedBox(

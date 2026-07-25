@@ -3,7 +3,10 @@ import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:markdown_editor_live/markdown_editor_live.dart'
+    show MarkdownEditingController;
 import 'package:permission_handler/permission_handler.dart';
+import '../widgets/markdown_editor.dart';
 
 class CameraScanScreen extends StatefulWidget {
   const CameraScanScreen({super.key});
@@ -20,7 +23,8 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
   bool _permissionDenied = false;
   bool _frozen = false;
   String _liveText = '';
-  final TextEditingController _resultController = TextEditingController();
+  final MarkdownEditingController _resultController =
+      MarkdownEditingController();
 
   @override
   void initState() {
@@ -91,9 +95,11 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
     await _controller!.stopImageStream();
     setState(() {
       _frozen = true;
-      _resultController.text = _liveText.trim();
-      _resultController.selection =
-          TextSelection(baseOffset: 0, extentOffset: _resultController.text.length);
+      final result = _liveText.trim();
+      _resultController.value = TextEditingValue(
+        text: result,
+        selection: TextSelection(baseOffset: 0, extentOffset: result.length),
+      );
     });
   }
 
@@ -106,7 +112,7 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
     await _controller!.startImageStream(_onFrame);
   }
 
-  void _confirm() => Navigator.pop(context, _resultController.text);
+  void _confirm() => Navigator.pop(context, _resultController.sourceText);
 
   @override
   void dispose() {
@@ -149,16 +155,11 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
         ),
         body: Padding(
           padding: const EdgeInsets.all(16),
-          child: TextField(
+          child: MarkdownEditor(
             controller: _resultController,
             autofocus: true,
-            maxLines: null,
             expands: true,
-            textAlignVertical: TextAlignVertical.top,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: 'Recognized text will appear here.',
-            ),
+            hintText: 'Recognized text will appear here.',
           ),
         ),
       );

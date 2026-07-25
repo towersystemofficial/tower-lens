@@ -40,4 +40,30 @@ void main() {
     final BuildContext context = tester.element(find.text('Home'));
     expect(Theme.of(context).brightness, Brightness.dark);
   });
+
+  testWidgets('saving an API key dismisses the dialog without an exception',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.pumpWidget(const TowerLensApp());
+    for (var i = 0;
+        i < 10 &&
+            find.byTooltip('Configure Anthropic API key').evaluate().isEmpty;
+        i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    await tester.tap(find.byTooltip('Configure Anthropic API key').first);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), 'sk-ant-test-key');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byTooltip('Real Anthropic AI configured'), findsOneWidget);
+    expect(
+      find.text('API key saved. Tower Lens will use real Anthropic responses.'),
+      findsOneWidget,
+    );
+  });
 }

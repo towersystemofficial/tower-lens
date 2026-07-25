@@ -75,63 +75,10 @@ class _RootShellState extends State<RootShell> {
   }
 
   Future<void> _configureApiKey() async {
-    final controller = TextEditingController(text: _apiKey);
-    var obscureText = true;
     final result = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Anthropic API key'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Temporary private-development setup. The key is stored in '
-                'Tower Lens app settings on this device. Remove it before '
-                'sharing the APK or device backup.',
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                obscureText: obscureText,
-                autocorrect: false,
-                enableSuggestions: false,
-                decoration: InputDecoration(
-                  labelText: 'API key',
-                  hintText: 'sk-ant-...',
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    tooltip: obscureText ? 'Show key' : 'Hide key',
-                    onPressed: () =>
-                        setDialogState(() => obscureText = !obscureText),
-                    icon: Icon(
-                      obscureText ? Icons.visibility : Icons.visibility_off,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            if (_apiKey.isNotEmpty)
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, ''),
-                child: const Text('Remove key'),
-              ),
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () =>
-                  Navigator.pop(dialogContext, controller.text.trim()),
-              child: const Text('Save'),
-            ),
-          ],
-        ),
-      ),
+      builder: (dialogContext) => _ApiKeyDialog(initialApiKey: _apiKey),
     );
-    controller.dispose();
     if (result == null) return;
 
     final preferences = await SharedPreferences.getInstance();
@@ -192,6 +139,79 @@ class _RootShellState extends State<RootShell> {
           NavigationDestination(icon: Icon(Icons.warning_amber_outlined), selectedIcon: Icon(Icons.warning_amber), label: 'Watchlist'),
         ],
       ),
+    );
+  }
+}
+
+class _ApiKeyDialog extends StatefulWidget {
+  final String initialApiKey;
+
+  const _ApiKeyDialog({required this.initialApiKey});
+
+  @override
+  State<_ApiKeyDialog> createState() => _ApiKeyDialogState();
+}
+
+class _ApiKeyDialogState extends State<_ApiKeyDialog> {
+  late String _apiKey;
+  bool _obscureText = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _apiKey = widget.initialApiKey;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Anthropic API key'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Temporary private-development setup. The key is stored in '
+            'Tower Lens app settings on this device. Remove it before '
+            'sharing the APK or device backup.',
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            initialValue: _apiKey,
+            onChanged: (value) => _apiKey = value,
+            obscureText: _obscureText,
+            autocorrect: false,
+            enableSuggestions: false,
+            decoration: InputDecoration(
+              labelText: 'API key',
+              hintText: 'sk-ant-...',
+              border: const OutlineInputBorder(),
+              suffixIcon: IconButton(
+                tooltip: _obscureText ? 'Show key' : 'Hide key',
+                onPressed: () =>
+                    setState(() => _obscureText = !_obscureText),
+                icon: Icon(
+                  _obscureText ? Icons.visibility : Icons.visibility_off,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        if (widget.initialApiKey.isNotEmpty)
+          TextButton(
+            onPressed: () => Navigator.pop(context, ''),
+            child: const Text('Remove key'),
+          ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _apiKey.trim()),
+          child: const Text('Save'),
+        ),
+      ],
     );
   }
 }

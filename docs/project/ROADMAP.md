@@ -104,7 +104,7 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 | Watchlist | Add/remove entries; matching and non-matching ingredient checks behave correctly | **Pass** — Pixel 9a, 2026-07-22; adding `peanut` succeeded, a scanned peanut bag triggered the expected warning, and an unrelated scanned item produced no warning. With both `peanut` and `milk` present, removing only `peanut` kept checking enabled through `milk`; rescanning the peanut bag no longer produced the peanut warning |
 | Rendering and state | Dark theme/output contrast are readable; loading disables duplicate requests; an error can be retried | **In progress** — Pixel 9a, 2026-07-22; Home and ToS text and outputs were comfortably readable against the dark background, and while a mock request was loading, the Run control was disabled and prevented a duplicate request. Retry-after-error still to test |
 | Restart persistence | Restart app; library path, saved scans, and Watchlist entries persist | **Pass** — Pixel 9a, 2026-07-22; after fully closing and reopening Tower Lens, the selected Library folder, saved ToS entry, and `milk` Watchlist item were all still present |
-| Direct Anthropic private build | General and ToS calls return real responses; offline and invalid-key errors are understandable | Not run |
+| Direct Anthropic private build | General and ToS calls return real responses; offline and invalid-key errors are understandable | **In progress** — Pixel 9a, 2026-07-24; user-entered valid key produced successful real Home and ToS summaries. Invalid keys produced the intended credential error, but saving either a valid or invalid key first triggered Flutter assertion `_dependents.isEmpty` and left the UI unresponsive until restart. Offline, timeout, billing, rate-limit, server, and malformed-response presentation remain unverified |
 | No-camera behavior | Verify on a camera-less device/emulator when available; manual input remains usable | Deferred — no suitable device yet |
 
 **Pass rule:** P0.5 is complete only when every non-deferred row is marked Pass with the tested app commit or Actions run recorded. A failure is documented and moved into a separate bugfix PR; it is not silently waived.
@@ -144,6 +144,12 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 - Files: `lib/screens/watchlist_screen.dart`, `lib/services/text_ai_service.dart` (likely a new `TextAiTaskType`).
 - Dependencies: P1.
 
+**Task: Refine the prompts sent to the AI service**
+- Objective: deliberately improve the mode-specific prompts for summary quality, structure, accuracy, tone, and faithfulness to the source text rather than treating the first functional prompts as final product behavior.
+- Acceptance criteria: **UNKNOWN — DEFINE WITH USER** using representative inputs and expected outputs before changing prompt code; preserve user instructions in general mode and keep ToS output clearly informational rather than legal advice.
+- Files: `lib/services/anthropic_text_ai_service.dart` and prompt-focused automated tests.
+- Dependencies: complete the current API-key/error verification first so transport and lifecycle failures are separated from output-quality decisions.
+
 ### P3 — Process/tooling fix (independent, can run anytime)
 
 **Task: Fix issue-closing logic so an issue isn't marked complete unless its linked PR actually merged**
@@ -166,6 +172,7 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 ## 7. Known bugs, technical debt, security/privacy concerns, unresolved decisions
 
 **Known bugs:**
+- **API-key dialog lifecycle assertion found during Pixel 9a verification (2026-07-24):** saving either a valid or invalid user-entered key triggered Flutter assertion `_dependents.isEmpty` while dismissing the dialog, followed by an unresponsive UI until restart. The key itself persisted and real requests worked after restart. The focused fix moves input ownership into the dialog lifecycle and adds widget regression coverage; physical-device confirmation remains required after merge.
 - **Library search failure found during Pixel 9a verification (2026-07-22):** a saved entry was visible and opened correctly, but searching for a distinctive word known to occur in that entry produced no visible result. Reproduce against current `main`, determine whether indexing, query matching, folder scope, or UI refresh is responsible, and fix in a separate narrowly scoped bug PR.
 - **Library deletion lacks confirmation (Pixel 9a verification, 2026-07-22):** deleting a saved entry successfully removed it, but the app displayed no confirmation dialog first. Add an explicit Cancel/Delete confirmation before removing saved files or folders; keep this as a focused safety fix rather than treating successful removal as a full pass.
 - **Resolved in PR #24:** the confirmed `file_picker` Android regression was addressed by pinning `file_picker: 10.3.8` exactly. CI and physical-device confirmation remain required before treating the full app as verified.
@@ -202,8 +209,9 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 5. **P2 — Define the UI/UX redesign.** After P0.5, produce a concise design brief and screen inventory with the user before changing UI code; implement the approved direction as small increments.
 6. **P3 — Issue-closing process fix.** Independent of all app-code tasks (touches only `.github/workflows/`), safe to run in parallel with any of the above.
 7. **P2 — Watchlist AI-explanation feature.** Depends on task 3 (P1) being complete; sequence it against the UI redesign once that brief establishes the Watchlist flow.
-8. Everything under "Deferred / explicitly out of scope" remains untouched until the above is solid and a deliberate decision is made to begin commercial-phase work.
+8. **P2 — AI prompt refinement.** Define representative inputs and desired outputs with the user, then refine and test mode-specific prompts after API transport/error behavior is stable.
+9. Everything under "Deferred / explicitly out of scope" remains untouched until the above is solid and a deliberate decision is made to begin commercial-phase work.
 
 ## 10. Next task for Codex
 
-**Perform and record P0.5 on-device verification.** Download the `tower-lens-debug` artifact from the latest successful `main` Android CI run, install it on the Pixel 9a, and complete every non-deferred row in the preserved checklist. Test the mock/local paths first. Test real Anthropic only with a separate private build containing the development key; never upload or distribute that APK. Any failure becomes a narrowly scoped bug task and PR. Once the gate passes, define the P2 UI/UX redesign brief and screen inventory with the user before choosing whether the first implementation increment is the app shell/navigation or the Watchlist ingredient-ambiguity flow.
+**Finish the focused API-key dialog fix, then rerun the remaining P0.5 checks in one batch.** CI must analyze, test, and build the fix before installing its artifact on the Pixel 9a. Confirm that saving, replacing, and removing both valid and invalid keys never shows a Flutter assertion or freezes the UI; then verify offline/retry behavior and the remaining mapped Anthropic errors where they can be tested safely. After that, fix Library search and deletion confirmation as separate coherent changes. Prompt refinement remains a later product-quality task after API transport/error behavior is stable.

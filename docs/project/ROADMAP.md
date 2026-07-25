@@ -73,7 +73,7 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 
 **Current milestone:** The local vertical slice and private-development Anthropic integration are implemented behind a swappable `TextAiService`. The mock fallback, loading/error state, library refresh notifications, tests, Android build repair, and working Flutter Android CI are merged. A future server can replace direct Anthropic calls through the existing configurable endpoint/authentication seam without changing the UI.
 
-**Next milestone:** Install the current CI-produced APK on the Pixel 9a and complete the physical-device verification record below. After the baseline passes, the next product feature is AI explanation of ambiguous Watchlist ingredients. Any failing device behavior becomes its own narrowly scoped bug task before that feature begins.
+**Next milestone:** Rebuild the Library as a safe hierarchical file browser, combining deletion confirmation with the broader folder/navigation/move/sort/filename work. This is the next implementation block. Device verification and focused automated coverage should accompany each increment.
 
 ## 5–6. Prioritized backlog
 
@@ -144,30 +144,25 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 - Files: `lib/screens/watchlist_screen.dart`, `lib/services/text_ai_service.dart` (likely a new `TextAiTaskType`).
 - Dependencies: P1.
 
+**Task: Import existing text files into Tower Lens**
+- Objective: let users import existing PDF, TXT, and Markdown files as source material instead of requiring camera OCR or manual paste.
+- Acceptance criteria: users can choose a supported file, review the extracted text before submitting it, and preserve the original filename as the editable save-name default; unsupported, unreadable, or empty files produce a recoverable error.
+- Formats: PDF (`.pdf`), plain text (`.txt`), and Markdown (`.md`).
+- Dependencies: implement alongside the Step 4 coverage work so parsing, error handling, and save/reopen behavior receive automated tests.
+
 **Task: Refine the prompts sent to the AI service**
 - Objective: deliberately improve the mode-specific prompts for summary quality, structure, accuracy, tone, and faithfulness to the source text rather than treating the first functional prompts as final product behavior.
 - Acceptance criteria: **UNKNOWN — DEFINE WITH USER** using representative inputs and expected outputs before changing prompt code; preserve user instructions in general mode and keep ToS output clearly informational rather than legal advice.
 - Files: `lib/services/anthropic_text_ai_service.dart` and prompt-focused automated tests.
 - Dependencies: complete the current API-key/error verification first so transport and lifecycle failures are separated from output-quality decisions.
 
-### P3 — Process/tooling fix (independent, can run anytime)
-
-**Task: Fix issue-closing logic so an issue isn't marked complete unless its linked PR actually merged**
-- Objective: issue #5 was historically closed as `completed` before its linked PR #6 merged. The required README sentence is now present on `main` through later commit `9822806`, but that repairs the missing deliverable rather than proving the issue-closing logic itself was fixed. Preserve and audit this process-integrity task.
-- Acceptance criteria: **UNKNOWN — VERIFY** -- this is a workflow/CI change (`.github/workflows/run-orchestrator.yml`), not a Flutter app change; exact fix depends on how issue-closing is currently triggered (not established in this pass).
-- Files: `.github/workflows/run-orchestrator.yml`, possibly orchestrator prompt/config (not in this repo's tracked files -- **UNKNOWN — VERIFY** where the orchestrator's actual logic lives).
-- Dependencies: none, safe to run in parallel with app-code tasks since it doesn't touch `lib/`.
-- Risks: low technically, but low-confidence on exact fix location without more inspection.
-
 ### Deferred / explicitly out of scope for now (per product principles, not forgotten)
 
-- Backend/proxy for production API key custody.
-- Credits, metered billing, Google Play Billing integration.
-- Accounts/authentication.
-- Price-check/marketplace estimate mode.
+- No-camera device/emulator verification until suitable hardware or an emulator is available.
 - iOS support.
 - Ads (not planned unless explicitly revisited).
-- PDF/Obsidian export beyond the existing native Markdown format.
+- PDF/Obsidian-specific export beyond native Markdown. PDF, TXT, and Markdown **import** are planned in Step 4 and are not deferred.
+
 
 ## 7. Known bugs, technical debt, security/privacy concerns, unresolved decisions
 
@@ -176,7 +171,6 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 - **Resolved — Library search failure (verified 2026-07-25):** distinctive source/output keywords, case-insensitive queries, structured Markdown output, and search within the selected folder now work on the Pixel 9a.
 - **Library deletion lacks confirmation (Pixel 9a verification, 2026-07-22):** deleting a saved entry successfully removed it, but the app displayed no confirmation dialog first. Add an explicit Cancel/Delete confirmation before removing saved files or folders; keep this as a focused safety fix rather than treating successful removal as a full pass.
 - **Resolved in PR #24:** the confirmed `file_picker` Android regression was addressed by pinning `file_picker: 10.3.8` exactly. CI and physical-device confirmation remain required before treating the full app as verified.
-- Issue #5 was closed as `completed` before its PR (#6) merged. Its required README sentence is now present on `main` via later commit `9822806`, but the historical process-integrity gap still needs the P3 workflow audit.
 
 **Technical debt:**
 - No automated integration/widget test coverage for Library, ToS, Watchlist, or Camera screens. `LibraryService` has notification-focused unit tests, alongside the `TextAiService` mock unit test and the default Flutter widget smoke test.
@@ -202,16 +196,22 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 
 ## 9. Recommended execution order
 
-1. **P0 — Pin `file_picker` to `10.3.8`. COMPLETE.** Merged in PR #24; retain this step as completion history.
-2. **P0.5 — Human on-device verification pass** against the current CI-produced APK. IN PROGRESS; use the preserved evidence table above.
-3. **P1 — Real Anthropic API integration. COMPLETE.** Merged in PR #28; retain this step as completion history. Re-check real responses and error presentation during P0.5.
-4. **P1 — Loading state UI. COMPLETE.** Merged in PR #23; retain this step as completion history. Re-check it during the physical-device pass.
-5. **P2 — Define the UI/UX redesign.** After P0.5, produce a concise design brief and screen inventory with the user before changing UI code; implement the approved direction as small increments.
-6. **P3 — Issue-closing process fix.** Independent of all app-code tasks (touches only `.github/workflows/`), safe to run in parallel with any of the above.
-7. **P2 — Watchlist AI-explanation feature.** Depends on task 3 (P1) being complete; sequence it against the UI redesign once that brief establishes the Watchlist flow.
-8. **P2 — AI prompt refinement.** Define representative inputs and desired outputs with the user, then refine and test mode-specific prompts after API transport/error behavior is stable.
-9. Everything under "Deferred / explicitly out of scope" remains untouched until the above is solid and a deliberate decision is made to begin commercial-phase work.
+1. **Library safety and hierarchical file browser — NEXT.** Merge the former deletion-confirmation and Library-restructure steps into one milestone: confirmation for file/folder deletion, nested folders, breadcrumbs and up navigation, create/move operations, visible sorting, editable generated filenames, overwrite protection, and preservation of search, filtering, Markdown, and local-first storage.
+
+4. **Automated coverage and file import.** Complete coverage for Library, ToS, Watchlist, camera/OCR where testable, duplicate-request prevention and retry, save/restart/reopen persistence, and Library scale. Add user-facing import for PDF, TXT, and Markdown files, including extraction/parsing, review, error handling, and save/reopen tests.
+
+5. **AI prompt refinement.** Define representative Home and ToS inputs and expected outputs, then improve and regression-test mode-specific prompts for structure, detail, tone, accuracy safeguards, and source faithfulness.
+
+6. **Watchlist AI explanations.** Preserve immediate local matching while adding on-request AI explanations for ambiguous ingredients.
+
+7. **Define and implement the UI/UX redesign.** Produce the concise visual direction and screen inventory here, then apply the approved navigation, typography, spacing, colors, components, and flows in small increments. This is the former Step 2; the old workflow-integrity Step 7 has been removed.
+
+8. **Price-check mode.** Add the previously deferred price-check/marketplace-estimate mode after the core app, import flow, prompts, Watchlist explanations, and redesign are established.
+
+9. **Prepare for public distribution.** Add the backend/proxy, production-safe API-key custody, accounts/authentication as needed, credits or subscriptions and Google Play Billing, and resolve broad Android storage permission before store release.
+
+Steps 2 and 3 are no longer separate roadmap entries: the former Step 2 moved to Step 7, and the former Step 3 merged into Step 1.
 
 ## 10. Next task for Codex
 
-**Finish the live Markdown-input revision, then implement Library deletion confirmation as the next focused safety fix.** CI must analyze, test, and build the revised editor before installing its artifact on the Pixel 9a. Verify live formatting in Home, ToS, and scanned-text review, and confirm Watchlist remains plain text. Prompt refinement remains a later product-quality task now that API transport/error behavior is stable.
+**Implement Step 1: Library safety and the hierarchical file-browser foundation.** Begin with the smallest coherent increment that establishes the folder-tree model and explicit Cancel/Delete confirmation without breaking existing search, sorting, Markdown files, or local-first storage. Continue the remaining Step 1 capabilities in testable increments rather than one app-wide rewrite.

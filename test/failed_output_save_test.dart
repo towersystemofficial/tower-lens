@@ -31,7 +31,10 @@ void main() {
 
     await tester.enterText(find.byType(TextField).at(0), 'Source text');
     await tester.enterText(find.byType(TextField).at(1), 'Summarize');
-    await tester.tap(find.widgetWithText(FilledButton, 'Run'));
+    await tester.pump();
+    final runButton = find.widgetWithText(FilledButton, 'Run');
+    await tester.ensureVisible(runButton);
+    await tester.tap(runButton);
     await tester.pumpAndSettle();
 
     expect(find.text('No internet connection.'), findsOneWidget);
@@ -51,7 +54,10 @@ void main() {
     );
 
     await tester.enterText(find.byType(TextField), 'Policy text');
-    await tester.tap(find.widgetWithText(FilledButton, 'Summarize'));
+    await tester.pump();
+    final summarizeButton = find.widgetWithText(FilledButton, 'Summarize');
+    await tester.ensureVisible(summarizeButton);
+    await tester.tap(summarizeButton);
     await tester.pumpAndSettle();
 
     expect(find.text('No internet connection.'), findsOneWidget);

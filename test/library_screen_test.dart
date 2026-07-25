@@ -32,8 +32,9 @@ void main() {
       }
     });
 
-    testWidgets('navigates nested folders with breadcrumbs and up',
-        (tester) async {
+    testWidgets(
+      'navigates nested folders with breadcrumbs and up',
+      (tester) async {
       await service.createFolder('Research');
       await service.createFolder('Papers', parentFolder: 'Research');
 
@@ -57,10 +58,13 @@ void main() {
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
-    });
+      },
+      timeout: const Timeout(Duration(seconds: 20)),
+    );
 
-    testWidgets('file deletion requires confirmation and supports cancel',
-        (tester) async {
+    testWidgets(
+      'file deletion requires confirmation and supports cancel',
+      (tester) async {
       final entry = await service.saveEntry(
         type: 'general',
         folder: 'General',
@@ -93,10 +97,13 @@ void main() {
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
-    });
+      },
+      timeout: const Timeout(Duration(seconds: 20)),
+    );
 
-    testWidgets('folder deletion requires confirmation and removes descendants',
-        (tester) async {
+    testWidgets(
+      'folder deletion requires confirmation and removes descendants',
+      (tester) async {
       await service.createFolder('Research');
       final entry = await service.saveEntry(
         type: 'general',
@@ -123,6 +130,8 @@ void main() {
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
-    });
+      },
+      timeout: const Timeout(Duration(seconds: 20)),
+    );
   });
 }

@@ -3,7 +3,8 @@ import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
-import 'package:markdown_editor_live/markdown_editor_live.dart';
+import 'package:markdown_editor_live/markdown_editor_live.dart'
+    show MarkdownEditingController;
 import 'package:permission_handler/permission_handler.dart';
 import '../widgets/markdown_editor.dart';
 

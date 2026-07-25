@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:markdown_editor_live/markdown_editor_live.dart';
+import 'package:markdown_editor_live/markdown_editor_live.dart'
+    show MarkdownEditingController;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tower_lens/screens/watchlist_screen.dart';
 import 'package:tower_lens/services/library_service.dart';

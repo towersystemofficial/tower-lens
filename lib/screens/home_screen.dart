@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:markdown_editor_live/markdown_editor_live.dart';
+import 'package:markdown_editor_live/markdown_editor_live.dart'
+    show MarkdownEditingController;
 import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
 import '../widgets/markdown_content.dart';

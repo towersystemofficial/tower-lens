@@ -54,6 +54,9 @@ void main() {
       await tester.tap(find.byTooltip('Up one folder'));
       await pumpFrames(tester);
       expect(find.text('Papers'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
     });
 
     testWidgets('file deletion requires confirmation and supports cancel',
@@ -87,6 +90,9 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
       await pumpFrames(tester);
       expect(await File(entry.filePath!).exists(), isFalse);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
     });
 
     testWidgets('folder deletion requires confirmation and removes descendants',
@@ -114,6 +120,9 @@ void main() {
       await pumpFrames(tester);
       expect(await File(entry.filePath!).exists(), isFalse);
       expect(find.text('Research'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
     });
   });
 }

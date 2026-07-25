@@ -5,6 +5,7 @@ import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
 import '../widgets/markdown_content.dart';
 import '../widgets/markdown_editor.dart';
+import '../widgets/library_save_dialog.dart';
 import 'camera_scan_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -111,15 +112,42 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
     }
-    await widget.libraryService.saveEntry(
-      type: 'general',
-      folder: 'General',
-      sourceText: _sourceTextController.sourceText,
-      instruction: _instructionController.sourceText,
-      output: _output,
+    if (!mounted) return;
+    final destination = await showLibrarySaveDialog(
+      context: context,
+      libraryService: widget.libraryService,
+      defaultFolder: 'General',
+      defaultFilename: generatedLibraryFilename('summary'),
     );
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved to Library.')));
+    if (destination == null) return;
+    try {
+      final entry = await widget.libraryService.saveEntry(
+        type: 'general',
+        folder: destination.folder,
+        filename: destination.filename,
+        sourceText: _sourceTextController.sourceText,
+        instruction: _instructionController.sourceText,
+        output: _output,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Saved ${entry.filename} to Library.')),
+        );
+      }
+    } on LibraryFileExistsException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('A file with that name already exists in this folder.'),
+          ),
+        );
+      }
+    } on ArgumentError {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Choose a valid filename.')),
+        );
+      }
     }
   }
 

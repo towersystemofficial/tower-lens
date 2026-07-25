@@ -11,6 +11,15 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/library_entry.dart';
 
+class LibraryFileExistsException implements Exception {
+  final String filename;
+
+  const LibraryFileExistsException(this.filename);
+
+  @override
+  String toString() => 'A Library file named "$filename" already exists.';
+}
+
 class LibraryService extends ChangeNotifier {
   static const _prefsPathKey = 'library_path';
 
@@ -97,6 +106,21 @@ class LibraryService extends ChangeNotifier {
     return names;
   }
 
+  Future<List<String>> listAllFolders() async {
+    final folders = <String>[];
+
+    Future<void> visit(String parent) async {
+      final children = await listFolders(parentFolder: parent);
+      for (final child in children) {
+        folders.add(child);
+        await visit(child);
+      }
+    }
+
+    await visit('');
+    return folders;
+  }
+
   Future<void> createFolder(
     String name, {
     String parentFolder = '',
@@ -137,6 +161,7 @@ class LibraryService extends ChangeNotifier {
     required String sourceText,
     required String instruction,
     required String output,
+    String? filename,
   }) async {
     await _ensureStructure();
     final safeFolder = _validatedFolderPath(folder);
@@ -144,8 +169,16 @@ class LibraryService extends ChangeNotifier {
     final timestamp = DateTime.now();
     final folderDir = _folderDirectory(safeFolder);
     await folderDir.create(recursive: true);
-    final filename = '${_slug(type)}_$id.md';
-    final file = File(p.join(folderDir.path, filename));
+    final safeFilename = filename == null
+        ? '${_slug(type)}_$id.md'
+        : _sanitizedFilename(filename);
+    final existingNames = (await folderDir.list().toList())
+        .whereType<File>()
+        .map((file) => p.basename(file.path).toLowerCase());
+    if (existingNames.contains(safeFilename.toLowerCase())) {
+      throw LibraryFileExistsException(safeFilename);
+    }
+    final file = File(p.join(folderDir.path, safeFilename));
     final entry = LibraryEntry(
       id: id,
       type: type,
@@ -204,6 +237,26 @@ class LibraryService extends ChangeNotifier {
 
   String _slug(String s) =>
       s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+
+  String _sanitizedFilename(String filename) {
+    var safeName = filename
+        .trim()
+        .replaceAll(RegExp(r'[<>:"/\\|?*\x00-\x1f]'), '-')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(RegExp(r'-+'), '-')
+        .replaceAll(RegExp(r'[. ]+$'), '');
+    if (safeName.toLowerCase().endsWith('.md')) {
+      safeName = safeName.substring(0, safeName.length - 3).trimRight();
+    }
+    if (safeName.isEmpty || safeName == '.' || safeName == '..') {
+      throw ArgumentError.value(
+        filename,
+        'filename',
+        'Choose a valid filename',
+      );
+    }
+    return '$safeName.md';
+  }
 
   String _escape(String s) => s.replaceAll('"', '\\"');
 

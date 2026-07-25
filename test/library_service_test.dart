@@ -113,5 +113,42 @@ void main() {
       expect(entries.single.output, contains('distinctive quasar'));
       expect(entries.single.matchesSearch('  DISTINCTIVE QUASAR  '), isTrue);
     });
+
+    test('lists every nested folder for save destination selection', () async {
+      await service.createFolder('Research');
+      await service.createFolder('Papers', parentFolder: 'Research');
+
+      expect(
+        await service.listAllFolders(),
+        containsAll(['Research', 'Research/Papers']),
+      );
+    });
+
+    test('uses chosen filenames, sanitizes them, and prevents overwrites',
+        () async {
+      final first = await service.saveEntry(
+        type: 'general',
+        folder: 'General',
+        filename: 'My: Research / Notes',
+        sourceText: 'source',
+        instruction: 'summarize',
+        output: 'output',
+      );
+
+      expect(first.filename, 'My- Research - Notes.md');
+      expect(File(first.filePath!).existsSync(), isTrue);
+
+      await expectLater(
+        service.saveEntry(
+          type: 'general',
+          folder: 'General',
+          filename: 'my- research - notes.MD',
+          sourceText: 'source',
+          instruction: 'summarize',
+          output: 'output',
+        ),
+        throwsA(isA<LibraryFileExistsException>()),
+      );
+    });
   });
 }

@@ -19,6 +19,18 @@ class LibraryEntry {
     this.filePath,
   });
 
+  String get filename {
+    final path = filePath ?? '';
+    return path.split(RegExp(r'[/\\]')).last;
+  }
+
+  String get displayName {
+    final name = filename;
+    return name.toLowerCase().endsWith('.md')
+        ? name.substring(0, name.length - 3)
+        : name;
+  }
+
   String get preview {
     final t = sourceText.trim().replaceAll('\n', ' ');
     if (t.isEmpty) return '(no source text)';
@@ -29,7 +41,6 @@ class LibraryEntry {
     final normalizedQuery = query.trim().toLowerCase();
     if (normalizedQuery.isEmpty) return true;
 
-    final filename = (filePath ?? '').split(RegExp(r'[/\\]')).last;
     return [
       sourceText,
       instruction,

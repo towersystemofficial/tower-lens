@@ -49,6 +49,53 @@ void main() {
 
       expect(notifications, 2);
     });
+
+    test('creates, lists, scans, and deletes nested folders', () async {
+      await service.createFolder('Research');
+      await service.createFolder('Papers', parentFolder: 'Research');
+      await service.saveEntry(
+        type: 'general',
+        folder: 'Research/Papers',
+        sourceText: 'Nested source',
+        instruction: 'summarize',
+        output: 'Nested output',
+      );
+
+      expect(await service.listFolders(), contains('Research'));
+      expect(
+        await service.listFolders(parentFolder: 'Research'),
+        contains('Research/Papers'),
+      );
+      expect(
+        await service.listEntries(folder: 'Research', recursive: false),
+        isEmpty,
+      );
+      expect(
+        await service.listEntries(folder: 'Research', recursive: true),
+        hasLength(1),
+      );
+
+      await service.deleteFolder('Research');
+
+      expect(await service.listFolders(), isNot(contains('Research')));
+      expect(await service.listEntries(), isEmpty);
+    });
+
+    test('rejects folder paths that can escape the library root', () async {
+      await expectLater(
+        service.createFolder('../outside'),
+        throwsArgumentError,
+      );
+      await expectLater(
+        service.listFolders(parentFolder: '../outside'),
+        throwsArgumentError,
+      );
+      await expectLater(
+        service.deleteFolder(''),
+        throwsArgumentError,
+      );
+    });
+
     test('preserves and searches structured output headings', () async {
       await service.saveEntry(
         type: 'tos',
@@ -66,6 +113,5 @@ void main() {
       expect(entries.single.output, contains('distinctive quasar'));
       expect(entries.single.matchesSearch('  DISTINCTIVE QUASAR  '), isTrue);
     });
-
   });
 }

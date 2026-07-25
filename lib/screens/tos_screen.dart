@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:markdown_editor_live/markdown_editor_live.dart';
 import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
 import '../widgets/markdown_content.dart';
@@ -24,12 +25,14 @@ class TosScreen extends StatefulWidget {
 }
 
 class _TosScreenState extends State<TosScreen> {
-  final TextEditingController _textController = TextEditingController();
+  final MarkdownEditingController _textController =
+      MarkdownEditingController();
   String _output = '';
   bool _isRunning = false;
   bool _hasSuccessfulOutput = false;
 
-  bool get _canRun => !_isRunning && _textController.text.trim().isNotEmpty;
+  bool get _canRun =>
+      !_isRunning && _textController.sourceText.trim().isNotEmpty;
 
   Future<void> _scanText() async {
     final result = await Navigator.push<String>(
@@ -37,7 +40,12 @@ class _TosScreenState extends State<TosScreen> {
       MaterialPageRoute(builder: (_) => const CameraScanScreen()),
     );
     if (result != null && result.trim().isNotEmpty) {
-      setState(() => _textController.text = result);
+      setState(() {
+        _textController.value = TextEditingValue(
+          text: result,
+          selection: TextSelection.collapsed(offset: result.length),
+        );
+      });
     }
   }
 
@@ -51,7 +59,7 @@ class _TosScreenState extends State<TosScreen> {
     try {
       final result = await widget.textAiService.runTask(
         taskType: TextAiTaskType.tosSummary,
-        sourceText: _textController.text,
+        sourceText: _textController.sourceText,
         instruction: 'Summarize ToS/privacy policy',
       );
       if (!mounted) return;
@@ -80,7 +88,7 @@ class _TosScreenState extends State<TosScreen> {
     await widget.libraryService.saveEntry(
       type: 'tos',
       folder: 'ToS',
-      sourceText: _textController.text,
+      sourceText: _textController.sourceText,
       instruction: 'Summarize ToS/privacy policy',
       output: _output,
     );

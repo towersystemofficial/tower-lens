@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:markdown_editor_live/markdown_editor_live.dart';
 import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
 import '../widgets/markdown_content.dart';
@@ -24,16 +25,18 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final TextEditingController _sourceTextController = TextEditingController();
-  final TextEditingController _instructionController = TextEditingController();
+  final MarkdownEditingController _sourceTextController =
+      MarkdownEditingController();
+  final MarkdownEditingController _instructionController =
+      MarkdownEditingController();
   String _output = '';
   bool _isRunning = false;
   bool _hasSuccessfulOutput = false;
 
   bool get _canRun =>
       !_isRunning &&
-      _sourceTextController.text.trim().isNotEmpty &&
-      _instructionController.text.trim().isNotEmpty;
+      _sourceTextController.sourceText.trim().isNotEmpty &&
+      _instructionController.sourceText.trim().isNotEmpty;
 
   static const List<String> _presetTasks = [
     'Summarize',
@@ -43,7 +46,12 @@ class _HomeScreenState extends State<HomeScreen> {
     'Generate report',
   ];
 
-  void _applyPreset(String task) => setState(() => _instructionController.text = task);
+  void _applyPreset(String task) => setState(() {
+        _instructionController.value = TextEditingValue(
+          text: task,
+          selection: TextSelection.collapsed(offset: task.length),
+        );
+      });
 
   Future<void> _runTask() async {
     if (!_canRun) return;
@@ -55,8 +63,8 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final result = await widget.textAiService.runTask(
         taskType: TextAiTaskType.general,
-        sourceText: _sourceTextController.text,
-        instruction: _instructionController.text,
+        sourceText: _sourceTextController.sourceText,
+        instruction: _instructionController.sourceText,
       );
       if (!mounted) return;
       setState(() {
@@ -82,7 +90,12 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (_) => const CameraScanScreen()),
     );
     if (result != null && result.trim().isNotEmpty) {
-      setState(() => _sourceTextController.text = result);
+      setState(() {
+        _sourceTextController.value = TextEditingValue(
+          text: result,
+          selection: TextSelection.collapsed(offset: result.length),
+        );
+      });
     }
   }
 
@@ -100,8 +113,8 @@ class _HomeScreenState extends State<HomeScreen> {
     await widget.libraryService.saveEntry(
       type: 'general',
       folder: 'General',
-      sourceText: _sourceTextController.text,
-      instruction: _instructionController.text,
+      sourceText: _sourceTextController.sourceText,
+      instruction: _instructionController.sourceText,
       output: _output,
     );
     if (mounted) {

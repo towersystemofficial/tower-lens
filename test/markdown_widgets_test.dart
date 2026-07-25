@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:markdown_editor_live/markdown_editor_live.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tower_lens/screens/watchlist_screen.dart';
+import 'package:tower_lens/services/library_service.dart';
 import 'package:tower_lens/widgets/markdown_content.dart';
 import 'package:tower_lens/widgets/markdown_editor.dart';
 
@@ -22,7 +26,7 @@ void main() {
   });
 
   testWidgets('Markdown editor toolbar formats selected text', (tester) async {
-    final controller = TextEditingController(text: 'important');
+    final controller = MarkdownEditingController(text: 'important');
     controller.selection = const TextSelection(
       baseOffset: 0,
       extentOffset: 9,
@@ -43,11 +47,15 @@ void main() {
     await tester.pump();
 
     expect(controller.text, '**important**');
+    await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();
   });
 
-  testWidgets('Markdown editor previews formatted input', (tester) async {
-    final controller = TextEditingController(text: '# Preview heading');
+  testWidgets('Markdown editor formats input live without a preview action',
+      (tester) async {
+    final controller = MarkdownEditingController(
+      text: '# Live heading\n\n**Bold text**',
+    );
 
     await tester.pumpWidget(
       MaterialApp(
@@ -60,11 +68,33 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Preview'));
+    final textField = tester.widget<TextField>(find.byType(TextField));
+    expect(textField.controller, same(controller));
+    expect(textField.controller, isA<MarkdownEditingController>());
+    expect(controller.sourceText, contains('**Bold text**'));
+    expect(find.text('Preview'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
+  testWidgets('Watchlist ingredient input remains plain text', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WatchlistScreen(libraryService: LibraryService()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Check Text'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Markdown preview'), findsOneWidget);
-    expect(find.text('Preview heading'), findsOneWidget);
-    controller.dispose();
+    final input = tester.widget<TextField>(
+      find.widgetWithText(TextField, 'Paste an ingredient list here...'),
+    );
+    expect(input.controller, isNot(isA<MarkdownEditingController>()));
+    expect(find.byTooltip('Bold'), findsNothing);
+    expect(find.text('Preview'), findsNothing);
   });
 }

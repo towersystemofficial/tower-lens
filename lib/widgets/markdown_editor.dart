@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:markdown_editor_live/markdown_editor_live.dart';
 
-import 'markdown_content.dart';
-
-class MarkdownEditor extends StatelessWidget {
-  final TextEditingController controller;
+class MarkdownEditor extends StatefulWidget {
+  final MarkdownEditingController controller;
   final String hintText;
   final ValueChanged<String>? onChanged;
   final int? minLines;
@@ -22,12 +21,55 @@ class MarkdownEditor extends StatelessWidget {
     this.expands = false,
   });
 
+  @override
+  State<MarkdownEditor> createState() => _MarkdownEditorState();
+}
+
+class _MarkdownEditorState extends State<MarkdownEditor> {
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode();
+    _focusNode.addListener(_handleFocusChanged);
+    widget.controller.addListener(_handleSelectionChanged);
+  }
+
+  @override
+  void didUpdateWidget(MarkdownEditor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_handleSelectionChanged);
+      widget.controller.addListener(_handleSelectionChanged);
+    }
+  }
+
+  void _handleFocusChanged() {
+    if (!_focusNode.hasFocus) {
+      widget.controller.focusedLine = null;
+    }
+  }
+
+  void _handleSelectionChanged() {
+    widget.controller.updateFocusedLineFromSelection();
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_handleSelectionChanged);
+    _focusNode
+      ..removeListener(_handleFocusChanged)
+      ..dispose();
+    super.dispose();
+  }
+
   void _replaceSelection(
     String prefix,
     String suffix, {
     required String placeholder,
   }) {
-    final value = controller.value;
+    final value = widget.controller.value;
     final selection = value.selection.isValid
         ? value.selection
         : TextSelection.collapsed(offset: value.text.length);
@@ -39,18 +81,18 @@ class MarkdownEditor extends StatelessWidget {
         selection.textAfter(value.text);
     final selectionStart = selection.start + prefix.length;
 
-    controller.value = TextEditingValue(
+    widget.controller.value = TextEditingValue(
       text: updatedText,
       selection: TextSelection(
         baseOffset: selectionStart,
         extentOffset: selectionStart + content.length,
       ),
     );
-    onChanged?.call(updatedText);
+    widget.onChanged?.call(widget.controller.sourceText);
   }
 
   void _prefixLines(String prefix) {
-    final value = controller.value;
+    final value = widget.controller.value;
     final selection = value.selection.isValid
         ? value.selection
         : TextSelection.collapsed(offset: value.text.length);
@@ -64,41 +106,17 @@ class MarkdownEditor extends StatelessWidget {
         replacement +
         selection.textAfter(value.text);
 
-    controller.value = TextEditingValue(
+    widget.controller.value = TextEditingValue(
       text: updatedText,
       selection: TextSelection(
         baseOffset: selection.start,
         extentOffset: selection.start + replacement.length,
       ),
     );
-    onChanged?.call(updatedText);
+    widget.onChanged?.call(widget.controller.sourceText);
   }
 
-  Future<void> _showPreview(BuildContext context) {
-    return showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Markdown preview'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: SingleChildScrollView(
-            child: MarkdownContent(
-              data: controller.text,
-              emptyPlaceholder: 'Nothing to preview yet.',
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildToolbar(BuildContext context) {
+  Widget _buildToolbar() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -149,11 +167,6 @@ class MarkdownEditor extends StatelessWidget {
               placeholder: 'link text',
             ),
           ),
-          TextButton.icon(
-            onPressed: () => _showPreview(context),
-            icon: const Icon(Icons.visibility_outlined),
-            label: const Text('Preview'),
-          ),
         ],
       ),
     );
@@ -161,15 +174,16 @@ class MarkdownEditor extends StatelessWidget {
 
   Widget _buildTextField() {
     return TextField(
-      controller: controller,
-      onChanged: onChanged,
-      autofocus: autofocus,
-      expands: expands,
-      minLines: expands ? null : minLines,
-      maxLines: expands ? null : maxLines,
-      textAlignVertical: expands ? TextAlignVertical.top : null,
+      controller: widget.controller,
+      focusNode: _focusNode,
+      onChanged: (_) => widget.onChanged?.call(widget.controller.sourceText),
+      autofocus: widget.autofocus,
+      expands: widget.expands,
+      minLines: widget.expands ? null : widget.minLines,
+      maxLines: widget.expands ? null : widget.maxLines,
+      textAlignVertical: widget.expands ? TextAlignVertical.top : null,
       decoration: InputDecoration(
-        hintText: hintText,
+        hintText: widget.hintText,
         border: const OutlineInputBorder(),
       ),
     );
@@ -177,8 +191,8 @@ class MarkdownEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final toolbar = _buildToolbar(context);
-    if (expands) {
+    final toolbar = _buildToolbar();
+    if (widget.expands) {
       return Column(
         children: [
           toolbar,

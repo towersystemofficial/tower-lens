@@ -223,15 +223,40 @@ class LibraryService extends ChangeNotifier {
   }
 
   Map<String, String> _parseSections(String body) {
-    final sections = <String, String>{};
-    final regex = RegExp(r'^## (.+)$', multiLine: true);
-    final matches = regex.allMatches(body).toList();
-    for (int i = 0; i < matches.length; i++) {
-      final name = matches[i].group(1)!.trim();
-      final start = matches[i].end;
-      final end = i + 1 < matches.length ? matches[i + 1].start : body.length;
-      sections[name] = body.substring(start, end).trim();
+    const sourceMarker = '## Source Text';
+    const instructionMarker = '## Instruction';
+    const outputMarker = '## Output';
+
+    final sourceMarkerIndex = body.indexOf(sourceMarker);
+    final instructionMarkerIndex = body.indexOf(
+      instructionMarker,
+      sourceMarkerIndex + sourceMarker.length,
+    );
+    final outputMarkerIndex = body.indexOf(
+      outputMarker,
+      instructionMarkerIndex + instructionMarker.length,
+    );
+
+    if (sourceMarkerIndex == -1 ||
+        instructionMarkerIndex == -1 ||
+        outputMarkerIndex == -1) {
+      return {};
     }
-    return sections;
+
+    return {
+      'Source Text': body
+          .substring(
+            sourceMarkerIndex + sourceMarker.length,
+            instructionMarkerIndex,
+          )
+          .trim(),
+      'Instruction': body
+          .substring(
+            instructionMarkerIndex + instructionMarker.length,
+            outputMarkerIndex,
+          )
+          .trim(),
+      'Output': body.substring(outputMarkerIndex + outputMarker.length).trim(),
+    };
   }
 }

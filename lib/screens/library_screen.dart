@@ -125,20 +125,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   List<LibraryEntry> get _visibleEntries {
-    var list = _entries;
-    if (_selectedFolder != 'All') {
-      list = list.where((e) => e.folder == _selectedFolder).toList();
-    }
-    if (_query.trim().isNotEmpty) {
-      final q = _query.toLowerCase();
-      list = list
-          .where(
-            (e) =>
-                e.sourceText.toLowerCase().contains(q) ||
-                e.instruction.toLowerCase().contains(q) ||
-                e.output.toLowerCase().contains(q),
-          )
-          .toList();
+    final query = _query.trim();
+    var list = query.isNotEmpty
+        ? _entries.where((entry) => entry.matchesSearch(query)).toList()
+        : _entries;
+    if (query.isEmpty && _selectedFolder != 'All') {
+      list = list.where((entry) => entry.folder == _selectedFolder).toList();
     }
     list = [...list];
     list.sort(

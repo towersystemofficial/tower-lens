@@ -33,6 +33,23 @@ class LibraryService extends ChangeNotifier {
     }
   }
 
+  String _validatedFolderPath(String folder) {
+    final normalized = p.normalize(folder.trim());
+    if (normalized == '.' || normalized.isEmpty) return '';
+    if (p.isAbsolute(normalized) ||
+        p.split(normalized).any((segment) => segment == '..')) {
+      throw ArgumentError.value(folder, 'folder', 'Invalid library folder');
+    }
+    return normalized;
+  }
+
+  Directory _folderDirectory(String folder) {
+    final safeFolder = _validatedFolderPath(folder);
+    return safeFolder.isEmpty
+        ? _rootDir
+        : Directory(p.join(_rootDir.path, safeFolder));
+  }
+
   /// Requests "All files access" then opens the folder picker. Note: on
   /// Android this permission request opens the system Settings screen for
   /// the user to toggle manually, then returns to the app -- this matches
@@ -52,30 +69,66 @@ class LibraryService extends ChangeNotifier {
     return true;
   }
 
-  Future<List<String>> listFolders() async {
+  /// Lists the immediate child folders of [parentFolder].
+  ///
+  /// Returned paths are relative to the TowerLens root, so nested folders can
+  /// be passed back to the other folder APIs without exposing storage paths.
+  Future<List<String>> listFolders({String parentFolder = ''}) async {
     if (!isConfigured) return [];
     await _ensureStructure();
-    final entries = await _rootDir.list().toList();
-    final names = entries
+    final safeParent = _validatedFolderPath(parentFolder);
+    final parent = _folderDirectory(safeParent);
+    if (!await parent.exists()) return [];
+    final names = (await parent.list().toList())
         .whereType<Directory>()
-        .map((d) => p.basename(d.path))
+        .map((directory) => p.relative(directory.path, from: _rootDir.path))
         .toList();
     const priority = {'General': 0, 'ToS': 1, 'Ingredient': 2};
     names.sort((a, b) {
-      final pa = priority[a] ?? 99;
-      final pb = priority[b] ?? 99;
-      if (pa != pb) return pa.compareTo(pb);
-      return a.compareTo(b);
+      if (safeParent.isEmpty) {
+        final pa = priority[a] ?? 99;
+        final pb = priority[b] ?? 99;
+        if (pa != pb) return pa.compareTo(pb);
+      }
+      return p.basename(a).toLowerCase().compareTo(
+            p.basename(b).toLowerCase(),
+          );
     });
     return names;
   }
 
-  Future<void> createFolder(String name) async {
+  Future<void> createFolder(
+    String name, {
+    String parentFolder = '',
+  }) async {
     if (!isConfigured) return;
     final safeName = name.trim();
-    if (safeName.isEmpty) return;
-    await Directory(p.join(_rootDir.path, safeName)).create(recursive: true);
+    if (safeName.isEmpty ||
+        safeName == '.' ||
+        safeName == '..' ||
+        safeName.contains('/') ||
+        safeName.contains('\\')) {
+      throw ArgumentError.value(name, 'name', 'Invalid folder name');
+    }
+    final parent = _validatedFolderPath(parentFolder);
+    await Directory(p.join(_folderDirectory(parent).path, safeName)).create(
+      recursive: true,
+    );
     notifyListeners();
+  }
+
+  Future<void> deleteFolder(String folder) async {
+    if (!isConfigured) return;
+    final safeFolder = _validatedFolderPath(folder);
+    if (safeFolder.isEmpty) {
+      throw ArgumentError('The library root cannot be deleted');
+    }
+    final directory = _folderDirectory(safeFolder);
+    if (await directory.exists()) {
+      await directory.delete(recursive: true);
+      await _ensureStructure();
+      notifyListeners();
+    }
   }
 
   Future<LibraryEntry> saveEntry({
@@ -86,16 +139,17 @@ class LibraryService extends ChangeNotifier {
     required String output,
   }) async {
     await _ensureStructure();
+    final safeFolder = _validatedFolderPath(folder);
     final id = DateTime.now().millisecondsSinceEpoch.toString();
     final timestamp = DateTime.now();
-    final folderDir = Directory(p.join(_rootDir.path, folder));
+    final folderDir = _folderDirectory(safeFolder);
     await folderDir.create(recursive: true);
     final filename = '${_slug(type)}_$id.md';
     final file = File(p.join(folderDir.path, filename));
     final entry = LibraryEntry(
       id: id,
       type: type,
-      folder: folder,
+      folder: safeFolder,
       sourceText: sourceText,
       instruction: instruction,
       output: output,
@@ -107,24 +161,23 @@ class LibraryService extends ChangeNotifier {
     return entry;
   }
 
-  Future<List<LibraryEntry>> listEntries({String? folder}) async {
+  Future<List<LibraryEntry>> listEntries({
+    String? folder,
+    bool recursive = true,
+  }) async {
     if (!isConfigured) return [];
     await _ensureStructure();
-    final dirs = folder != null
-        ? [Directory(p.join(_rootDir.path, folder))]
-        : (await _rootDir.list().toList()).whereType<Directory>().toList();
+    final directory = _folderDirectory(folder ?? '');
+    if (!await directory.exists()) return [];
+    final files = await directory.list(recursive: recursive).toList();
     final entries = <LibraryEntry>[];
-    for (final dir in dirs) {
-      if (!await dir.exists()) continue;
-      final files = await dir.list().toList();
-      for (final f in files.whereType<File>()) {
-        if (!f.path.endsWith('.md')) continue;
-        try {
-          final content = await f.readAsString();
-          entries.add(_entryFromMarkdown(content, f.path));
-        } catch (_) {
-          // Skip an unreadable/malformed file rather than crash the list.
-        }
+    for (final file in files.whereType<File>()) {
+      if (!file.path.endsWith('.md')) continue;
+      try {
+        final content = await file.readAsString();
+        entries.add(_entryFromMarkdown(content, file.path));
+      } catch (_) {
+        // Skip an unreadable/malformed file rather than crash the list.
       }
     }
     entries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
@@ -133,9 +186,9 @@ class LibraryService extends ChangeNotifier {
 
   Future<void> deleteEntry(LibraryEntry entry) async {
     if (entry.filePath == null) return;
-    final f = File(entry.filePath!);
-    if (await f.exists()) {
-      await f.delete();
+    final file = File(entry.filePath!);
+    if (await file.exists()) {
+      await file.delete();
       notifyListeners();
     }
   }
@@ -211,7 +264,9 @@ class LibraryService extends ChangeNotifier {
       if (idx == -1) continue;
       final key = line.substring(0, idx).trim();
       var value = line.substring(idx + 1).trim();
-      if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
+      if (value.length >= 2 &&
+          value.startsWith('"') &&
+          value.endsWith('"')) {
         value = value.substring(1, value.length - 1);
       }
       meta[key] = value.replaceAll('\\"', '"');

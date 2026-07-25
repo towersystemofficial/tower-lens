@@ -49,5 +49,23 @@ void main() {
 
       expect(notifications, 2);
     });
+    test('preserves and searches structured output headings', () async {
+      await service.saveEntry(
+        type: 'tos',
+        folder: 'ToS',
+        sourceText: 'Policy source',
+        instruction: 'Summarize ToS/privacy policy',
+        output:
+            '## Key points\n\nThe distinctive quasar clause limits account transfers.',
+      );
+
+      final entries = await service.listEntries();
+
+      expect(entries, hasLength(1));
+      expect(entries.single.output, contains('## Key points'));
+      expect(entries.single.output, contains('distinctive quasar'));
+      expect(entries.single.matchesSearch('  DISTINCTIVE QUASAR  '), isTrue);
+    });
+
   });
 }

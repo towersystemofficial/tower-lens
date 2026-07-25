@@ -24,4 +24,19 @@ class LibraryEntry {
     if (t.isEmpty) return '(no source text)';
     return t.length > 90 ? '${t.substring(0, 90)}…' : t;
   }
+
+  bool matchesSearch(String query) {
+    final normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) return true;
+
+    final filename = (filePath ?? '').split(RegExp(r'[/\\]')).last;
+    return [
+      sourceText,
+      instruction,
+      output,
+      folder,
+      type,
+      filename,
+    ].any((value) => value.toLowerCase().contains(normalizedQuery));
+  }
 }

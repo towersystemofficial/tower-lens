@@ -6,6 +6,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tower_lens/screens/library_screen.dart';
 import 'package:tower_lens/services/library_service.dart';
 
+Future<void> pumpFrames(WidgetTester tester) async {
+  for (var i = 0; i < 12; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+}
+
 void main() {
   group('LibraryScreen', () {
     late Directory tempDir;
@@ -34,19 +40,19 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(home: LibraryScreen(libraryService: service)),
       );
-      await tester.pumpAndSettle();
+      await pumpFrames(tester);
 
       await tester.tap(find.text('Research'));
-      await tester.pumpAndSettle();
+      await pumpFrames(tester);
       expect(find.text('Papers'), findsOneWidget);
       expect(find.text('TowerLens'), findsOneWidget);
 
       await tester.tap(find.text('Papers'));
-      await tester.pumpAndSettle();
+      await pumpFrames(tester);
       expect(find.byTooltip('Up one folder'), findsOneWidget);
 
       await tester.tap(find.byTooltip('Up one folder'));
-      await tester.pumpAndSettle();
+      await pumpFrames(tester);
       expect(find.text('Papers'), findsOneWidget);
     });
 
@@ -63,23 +69,23 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(home: LibraryScreen(libraryService: service)),
       );
-      await tester.pumpAndSettle();
+      await pumpFrames(tester);
       await tester.tap(find.text('General'));
-      await tester.pumpAndSettle();
+      await pumpFrames(tester);
 
       await tester.tap(find.byTooltip('Delete saved item'));
-      await tester.pumpAndSettle();
+      await pumpFrames(tester);
       expect(find.text('Delete saved item?'), findsOneWidget);
       expect(await File(entry.filePath!).exists(), isTrue);
 
       await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
+      await pumpFrames(tester);
       expect(await File(entry.filePath!).exists(), isTrue);
 
       await tester.tap(find.byTooltip('Delete saved item'));
-      await tester.pumpAndSettle();
+      await pumpFrames(tester);
       await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
-      await tester.pumpAndSettle();
+      await pumpFrames(tester);
       expect(await File(entry.filePath!).exists(), isFalse);
     });
 
@@ -97,15 +103,15 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(home: LibraryScreen(libraryService: service)),
       );
-      await tester.pumpAndSettle();
+      await pumpFrames(tester);
 
       await tester.tap(find.byTooltip('Delete folder').last);
-      await tester.pumpAndSettle();
+      await pumpFrames(tester);
       expect(find.text('Delete Research?'), findsOneWidget);
       expect(await File(entry.filePath!).exists(), isTrue);
 
       await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
-      await tester.pumpAndSettle();
+      await pumpFrames(tester);
       expect(await File(entry.filePath!).exists(), isFalse);
       expect(find.text('Research'), findsNothing);
     });

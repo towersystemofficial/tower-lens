@@ -150,7 +150,15 @@ void main() {
         );
         await pumpFrames(tester);
 
-        await tester.tap(find.byTooltip('Delete folder').last);
+        final researchFolder = find.byKey(
+          const ValueKey('folder:Research'),
+        );
+        await tester.tap(
+          find.descendant(
+            of: researchFolder,
+            matching: find.byTooltip('Delete folder'),
+          ),
+        );
         await pumpFrames(tester);
         expect(find.text('Delete Research?'), findsOneWidget);
         expect(service.deletedFolder, isNull);

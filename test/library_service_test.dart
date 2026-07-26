@@ -1,7 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tower_lens/models/library_entry.dart';
 import 'package:tower_lens/services/library_service.dart';
 
 void main() {
@@ -148,6 +150,149 @@ void main() {
           output: 'output',
         ),
         throwsA(isA<LibraryFileExistsException>()),
+      );
+    });
+
+    test('renames and moves files without losing content or metadata',
+        () async {
+      await service.createFolder('Research');
+      final original = await service.saveEntry(
+        type: 'general',
+        folder: 'Research',
+        filename: 'Original.md',
+        sourceText: 'source',
+        instruction: 'summarize',
+        output: '## Structured output',
+      );
+
+      final renamed = await service.renameEntry(original, 'Better title');
+      expect(renamed.filename, 'Better title.md');
+      expect(File(original.filePath!).existsSync(), isFalse);
+
+      final moved = await service.moveEntry(renamed, 'ToS');
+      expect(moved.folder, 'ToS');
+      expect(moved.filename, 'Better title.md');
+      expect(File(renamed.filePath!).existsSync(), isFalse);
+
+      final reopened = await service.listEntries(
+        folder: 'ToS',
+        recursive: false,
+      );
+      expect(reopened, hasLength(1));
+      expect(reopened.single.sourceText, 'source');
+      expect(reopened.single.output, '## Structured output');
+      expect(reopened.single.folder, 'ToS');
+    });
+
+    test('file rename and move preserve overwrite protection', () async {
+      final first = await service.saveEntry(
+        type: 'general',
+        folder: 'General',
+        filename: 'First',
+        sourceText: 'first',
+        instruction: 'summarize',
+        output: 'first',
+      );
+      await service.saveEntry(
+        type: 'general',
+        folder: 'General',
+        filename: 'Taken',
+        sourceText: 'taken',
+        instruction: 'summarize',
+        output: 'taken',
+      );
+      await service.saveEntry(
+        type: 'tos',
+        folder: 'ToS',
+        filename: 'First',
+        sourceText: 'destination',
+        instruction: 'summarize',
+        output: 'destination',
+      );
+
+      await expectLater(
+        service.renameEntry(first, 'taken'),
+        throwsA(isA<LibraryFileExistsException>()),
+      );
+      await expectLater(
+        service.moveEntry(first, 'ToS'),
+        throwsA(isA<LibraryFileExistsException>()),
+      );
+      expect(File(first.filePath!).existsSync(), isTrue);
+    });
+
+    test('renames and moves folders while updating descendant metadata',
+        () async {
+      await service.createFolder('Research');
+      await service.createFolder('Papers', parentFolder: 'Research');
+      await service.saveEntry(
+        type: 'general',
+        folder: 'Research/Papers',
+        filename: 'Nested',
+        sourceText: 'source',
+        instruction: 'summarize',
+        output: 'output',
+      );
+
+      final renamed = await service.renameFolder('Research', 'Sources');
+      expect(renamed, 'Sources');
+      expect(await service.listFolders(), contains('Sources'));
+      expect(await service.listFolders(), isNot(contains('Research')));
+
+      final moved = await service.moveFolder('Sources', 'ToS');
+      expect(moved, 'ToS/Sources');
+      expect(
+        await service.listFolders(parentFolder: 'ToS'),
+        contains('ToS/Sources'),
+      );
+
+      final entries = await service.listEntries(
+        folder: 'ToS/Sources',
+        recursive: true,
+      );
+      expect(entries, hasLength(1));
+      expect(entries.single.folder, 'ToS/Sources/Papers');
+      expect(
+        await File(entries.single.filePath!).readAsString(),
+        contains('folder: "ToS/Sources/Papers"'),
+      );
+    });
+
+    test('prevents folder collisions and moves into descendants', () async {
+      await service.createFolder('Research');
+      await service.createFolder('Papers', parentFolder: 'Research');
+      await service.createFolder('Archive');
+
+      await expectLater(
+        service.renameFolder('Research', 'archive'),
+        throwsA(isA<LibraryFolderExistsException>()),
+      );
+      await expectLater(
+        service.moveFolder('Research', 'Research/Papers'),
+        throwsArgumentError,
+      );
+      expect(await service.listFolders(), contains('Research'));
+    });
+
+    test('rejects entry paths outside the library root', () async {
+      final outside = LibraryEntry(
+        id: 'outside',
+        type: 'general',
+        folder: 'General',
+        sourceText: 'source',
+        instruction: 'summarize',
+        output: 'output',
+        timestamp: DateTime(2026, 7, 25),
+        filePath: p.join(tempDir.parent.path, 'outside.md'),
+      );
+
+      await expectLater(
+        service.renameEntry(outside, 'renamed'),
+        throwsArgumentError,
+      );
+      await expectLater(
+        service.moveEntry(outside, 'General'),
+        throwsArgumentError,
       );
     });
   });

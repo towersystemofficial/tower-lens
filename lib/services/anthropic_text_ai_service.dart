@@ -23,7 +23,7 @@ class AnthropicTextAiService implements TextAiService {
   final http.Client _client;
 
   @override
-  Future<String> runTask({
+  Future<TextAiResult> runTask({
     required TextAiTaskType taskType,
     required String sourceText,
     required String instruction,
@@ -84,7 +84,7 @@ class AnthropicTextAiService implements TextAiService {
       if (text == null || text.isEmpty) {
         throw const FormatException('Missing text content');
       }
-      return text;
+      return _parseResult(text);
     } on FormatException {
       throw const TextAiServiceException(
         'The AI service returned an unreadable response. Please try again.',
@@ -97,12 +97,43 @@ class AnthropicTextAiService implements TextAiService {
   }
 
   String _systemPrompt(TextAiTaskType taskType) {
+    const titleInstruction =
+        'Begin with a separate line in exactly this format: '
+        '<title>A specific 2 to 6 word title</title>. '
+        'The title must describe the source, use plain text, and contain no '
+        'filename extension, Markdown, or punctuation. Do not mention the '
+        'title instruction again. Then provide the requested response.';
     switch (taskType) {
       case TextAiTaskType.general:
-        return 'You are Tower Lens, a careful reading assistant. Follow the user instruction using only the supplied source text. Clearly distinguish what the text says from any inference. Use plain language and do not invent details.';
+        return 'You are Tower Lens, a careful reading assistant. '
+            '$titleInstruction Follow the user instruction using only the '
+            'supplied source text. Clearly distinguish what the text says '
+            'from any inference. Use plain language and do not invent details.';
       case TextAiTaskType.tosSummary:
-        return 'You are Tower Lens, a careful terms-of-service reading assistant. Summarize key obligations, concerning clauses, data collection and sharing, cancellation, refunds, dispute terms, and anything unusual using only the supplied source. Use plain language and end with: This is an informational summary only, not legal advice.';
+        return 'You are Tower Lens, a careful terms-of-service reading '
+            'assistant. $titleInstruction Summarize key obligations, '
+            'concerning clauses, data collection and sharing, cancellation, '
+            'refunds, dispute terms, and anything unusual using only the '
+            'supplied source. Use plain language and end with: This is an '
+            'informational summary only, not legal advice.';
     }
+  }
+
+  TextAiResult _parseResult(String text) {
+    final match = RegExp(
+      r'^\s*<title>([^\r\n<>]+)</title>\s*(?:\r?\n)?',
+      caseSensitive: false,
+    ).firstMatch(text);
+    if (match == null) {
+      return TextAiResult(output: text);
+    }
+
+    final title = match.group(1)?.trim();
+    final output = text.substring(match.end).trim();
+    if (title == null || title.isEmpty || output.isEmpty) {
+      return TextAiResult(output: text);
+    }
+    return TextAiResult(output: output, suggestedTitle: title);
   }
 
   String _errorMessage(http.Response response) {

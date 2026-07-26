@@ -15,7 +15,11 @@ void main() {
         return http.Response(
           jsonEncode({
             'content': [
-              {'type': 'text', 'text': 'A clear summary.'},
+              {
+                'type': 'text',
+                'text':
+                    '<title>Understanding Dense Text</title>\nA clear summary.',
+              },
             ],
           }),
           200,
@@ -34,12 +38,14 @@ void main() {
         instruction: 'Explain simply',
       );
 
-      expect(result, 'A clear summary.');
+      expect(result.output, 'A clear summary.');
+      expect(result.suggestedTitle, 'Understanding Dense Text');
       expect(capturedRequest.headers['x-api-key'], 'test-key');
       expect(capturedRequest.headers['anthropic-version'], '2023-06-01');
       final requestBody = jsonDecode(capturedRequest.body) as Map<String, dynamic>;
       expect(requestBody['model'], 'test-model');
       expect(requestBody['messages'], isNotEmpty);
+      expect(requestBody['system'], contains('<title>'));
     });
 
     test('supports a backend endpoint with bearer authentication', () async {
@@ -119,6 +125,34 @@ void main() {
         ),
         throwsA(isA<TextAiServiceException>()),
       );
+    });
+
+    test('keeps legacy plain-text responses with no suggested title', () async {
+      final client = MockClient(
+        (_) async => http.Response(
+          jsonEncode({
+            'content': [
+              {'type': 'text', 'text': 'A legacy plain-text response.'},
+            ],
+          }),
+          200,
+        ),
+      );
+      final service = AnthropicTextAiService(
+        endpoint: Uri.parse('https://example.test/v1/messages'),
+        model: 'test-model',
+        apiKey: 'test-key',
+        client: client,
+      );
+
+      final result = await service.runTask(
+        taskType: TextAiTaskType.general,
+        sourceText: 'Text',
+        instruction: 'Summarize',
+      );
+
+      expect(result.output, 'A legacy plain-text response.');
+      expect(result.suggestedTitle, isNull);
     });
   });
 }

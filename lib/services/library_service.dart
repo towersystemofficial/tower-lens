@@ -20,6 +20,15 @@ class LibraryFileExistsException implements Exception {
   String toString() => 'A Library file named "$filename" already exists.';
 }
 
+class LibraryFolderExistsException implements Exception {
+  final String folderName;
+
+  const LibraryFolderExistsException(this.folderName);
+
+  @override
+  String toString() => 'A Library folder named "$folderName" already exists.';
+}
+
 class LibraryService extends ChangeNotifier {
   static const _prefsPathKey = 'library_path';
 
@@ -126,15 +135,11 @@ class LibraryService extends ChangeNotifier {
     String parentFolder = '',
   }) async {
     if (!isConfigured) return;
-    final safeName = name.trim();
-    if (safeName.isEmpty ||
-        safeName == '.' ||
-        safeName == '..' ||
-        safeName.contains('/') ||
-        safeName.contains('\\')) {
-      throw ArgumentError.value(name, 'name', 'Invalid folder name');
-    }
+    final safeName = _validatedFolderName(name);
     final parent = _validatedFolderPath(parentFolder);
+    if (await _folderNameExists(parent, safeName)) {
+      throw LibraryFolderExistsException(safeName);
+    }
     await Directory(p.join(_folderDirectory(parent).path, safeName)).create(
       recursive: true,
     );
@@ -218,12 +223,106 @@ class LibraryService extends ChangeNotifier {
   }
 
   Future<void> deleteEntry(LibraryEntry entry) async {
-    if (entry.filePath == null) return;
-    final file = File(entry.filePath!);
+    final file = _validatedEntryFile(entry);
+    if (file == null) return;
     if (await file.exists()) {
       await file.delete();
       notifyListeners();
     }
+  }
+
+  Future<LibraryEntry> renameEntry(
+    LibraryEntry entry,
+    String filename,
+  ) async {
+    final source = _validatedEntryFile(entry);
+    if (source == null || !await source.exists()) return entry;
+    final safeFilename = _sanitizedFilename(filename);
+    final destination = File(p.join(source.parent.path, safeFilename));
+    if (p.equals(source.path, destination.path)) return entry;
+    await _ensureFileDestinationAvailable(
+      destination,
+      sourcePath: source.path,
+    );
+    final movedFile = await source.rename(destination.path);
+    final updated = _entryWithLocation(
+      entry,
+      folder: entry.folder,
+      filePath: movedFile.path,
+    );
+    await movedFile.writeAsString(_entryToMarkdown(updated));
+    notifyListeners();
+    return updated;
+  }
+
+  Future<LibraryEntry> moveEntry(
+    LibraryEntry entry,
+    String destinationFolder,
+  ) async {
+    final source = _validatedEntryFile(entry);
+    if (source == null || !await source.exists()) return entry;
+    final safeDestination = _validatedFolderPath(destinationFolder);
+    final destinationDirectory = _folderDirectory(safeDestination);
+    if (!await destinationDirectory.exists()) {
+      throw ArgumentError.value(
+        destinationFolder,
+        'destinationFolder',
+        'Library folder does not exist',
+      );
+    }
+    final destination = File(
+      p.join(destinationDirectory.path, p.basename(source.path)),
+    );
+    if (p.equals(source.path, destination.path)) return entry;
+    await _ensureFileDestinationAvailable(destination);
+    final movedFile = await source.rename(destination.path);
+    final updated = _entryWithLocation(
+      entry,
+      folder: safeDestination,
+      filePath: movedFile.path,
+    );
+    await movedFile.writeAsString(_entryToMarkdown(updated));
+    notifyListeners();
+    return updated;
+  }
+
+  Future<String> renameFolder(String folder, String name) async {
+    final safeFolder = _validatedMovableFolder(folder);
+    final safeName = _validatedFolderName(name);
+    final parent = p.dirname(safeFolder);
+    final safeParent = parent == '.' ? '' : parent;
+    final destination = safeParent.isEmpty
+        ? safeName
+        : p.join(safeParent, safeName);
+    return _relocateFolder(safeFolder, destination);
+  }
+
+  Future<String> moveFolder(
+    String folder,
+    String destinationFolder,
+  ) async {
+    final safeFolder = _validatedMovableFolder(folder);
+    final safeDestination = _validatedFolderPath(destinationFolder);
+    if (safeDestination == safeFolder ||
+        p.isWithin(safeFolder, safeDestination)) {
+      throw ArgumentError.value(
+        destinationFolder,
+        'destinationFolder',
+        'A folder cannot be moved inside itself',
+      );
+    }
+    final destinationDirectory = _folderDirectory(safeDestination);
+    if (!await destinationDirectory.exists()) {
+      throw ArgumentError.value(
+        destinationFolder,
+        'destinationFolder',
+        'Library folder does not exist',
+      );
+    }
+    final destination = safeDestination.isEmpty
+        ? p.basename(safeFolder)
+        : p.join(safeDestination, p.basename(safeFolder));
+    return _relocateFolder(safeFolder, destination);
   }
 
   Future<void> deleteAll() async {
@@ -237,6 +336,160 @@ class LibraryService extends ChangeNotifier {
 
   String _slug(String s) =>
       s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+
+  String _validatedFolderName(String name) {
+    final safeName = name.trim();
+    if (safeName.isEmpty ||
+        safeName == '.' ||
+        safeName == '..' ||
+        RegExp(r'[<>:"/\\|?*\x00-\x1f]').hasMatch(safeName) ||
+        RegExp(r'[. ]$').hasMatch(safeName)) {
+      throw ArgumentError.value(name, 'name', 'Invalid folder name');
+    }
+    return safeName;
+  }
+
+  String _validatedMovableFolder(String folder) {
+    final safeFolder = _validatedFolderPath(folder);
+    if (safeFolder.isEmpty) {
+      throw ArgumentError.value(
+        folder,
+        'folder',
+        'The library root cannot be moved or renamed',
+      );
+    }
+    return safeFolder;
+  }
+
+  Future<bool> _folderNameExists(
+    String parentFolder,
+    String folderName, {
+    String? sourcePath,
+  }) async {
+    final parent = _folderDirectory(parentFolder);
+    if (!await parent.exists()) return false;
+    final normalizedSource = sourcePath == null ? null : p.normalize(sourcePath);
+    await for (final entity in parent.list()) {
+      if (entity is! Directory ||
+          p.basename(entity.path).toLowerCase() != folderName.toLowerCase()) {
+        continue;
+      }
+      if (normalizedSource == null ||
+          !p.equals(p.normalize(entity.path), normalizedSource)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Future<void> _ensureFileDestinationAvailable(
+    File destination, {
+    String? sourcePath,
+  }) async {
+    final normalizedSource = sourcePath == null ? null : p.normalize(sourcePath);
+    await for (final entity in destination.parent.list()) {
+      if (entity is! File ||
+          p.basename(entity.path).toLowerCase() !=
+              p.basename(destination.path).toLowerCase()) {
+        continue;
+      }
+      if (normalizedSource == null ||
+          !p.equals(p.normalize(entity.path), normalizedSource)) {
+        throw LibraryFileExistsException(p.basename(destination.path));
+      }
+    }
+  }
+
+  File? _validatedEntryFile(LibraryEntry entry) {
+    final path = entry.filePath;
+    if (path == null) return null;
+    final normalizedRoot = p.normalize(_rootDir.path);
+    final normalizedPath = p.normalize(path);
+    if (!p.isWithin(normalizedRoot, normalizedPath)) {
+      throw ArgumentError.value(
+        path,
+        'entry.filePath',
+        'Library entry is outside the library root',
+      );
+    }
+    return File(normalizedPath);
+  }
+
+  LibraryEntry _entryWithLocation(
+    LibraryEntry entry, {
+    required String folder,
+    required String filePath,
+  }) {
+    return LibraryEntry(
+      id: entry.id,
+      type: entry.type,
+      folder: folder,
+      sourceText: entry.sourceText,
+      instruction: entry.instruction,
+      output: entry.output,
+      timestamp: entry.timestamp,
+      filePath: filePath,
+    );
+  }
+
+  Future<String> _relocateFolder(
+    String sourceFolder,
+    String destinationFolder,
+  ) async {
+    final safeSource = _validatedMovableFolder(sourceFolder);
+    final safeDestination = _validatedFolderPath(destinationFolder);
+    final source = _folderDirectory(safeSource);
+    if (!await source.exists()) return safeSource;
+    final destinationParent = p.dirname(safeDestination);
+    final safeDestinationParent =
+        destinationParent == '.' ? '' : destinationParent;
+    final destinationName = p.basename(safeDestination);
+    if (await _folderNameExists(
+      safeDestinationParent,
+      destinationName,
+      sourcePath: source.path,
+    )) {
+      throw LibraryFolderExistsException(destinationName);
+    }
+    final destination = _folderDirectory(safeDestination);
+    if (p.equals(source.path, destination.path)) return safeSource;
+    final movedDirectory = await source.rename(destination.path);
+    await _rewriteFolderMetadata(movedDirectory);
+    notifyListeners();
+    return safeDestination;
+  }
+
+  Future<void> _rewriteFolderMetadata(Directory directory) async {
+    await for (final entity in directory.list(recursive: true)) {
+      if (entity is! File ||
+          !entity.path.toLowerCase().endsWith('.md')) {
+        continue;
+      }
+      final content = await entity.readAsString();
+      if (!content.trimLeft().startsWith('---') ||
+          !content.contains('## Source Text') ||
+          !content.contains('## Instruction') ||
+          !content.contains('## Output')) {
+        // Leave malformed/non-Library Markdown files untouched.
+        continue;
+      }
+      final entry = _entryFromMarkdown(content, entity.path);
+      final relativeParent = p.relative(
+        entity.parent.path,
+        from: _rootDir.path,
+      );
+      final folder = relativeParent == '.' ? '' : relativeParent;
+      await entity.writeAsString(
+        _entryToMarkdown(
+          _entryWithLocation(
+            entry,
+            folder: folder,
+            filePath: entity.path,
+          ),
+        ),
+      );
+    }
+  }
 
   String _sanitizedFilename(String filename) {
     var safeName = filename

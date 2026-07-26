@@ -397,7 +397,10 @@ void main() {
       await tester.tap(find.text('General').last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Research/Papers').last);
-      await tester.tap(find.widgetWithText(FilledButton, 'Move'));
+      await tester.pumpAndSettle();
+      final moveButton = find.widgetWithText(FilledButton, 'Move');
+      await tester.ensureVisible(moveButton);
+      await tester.tap(moveButton);
       await pumpFrames(tester);
 
       expect(service.movedEntry?.folder, 'Research/Papers');
@@ -440,7 +443,10 @@ void main() {
       await tester.tap(find.text('TowerLens').last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('ToS').last);
-      await tester.tap(find.widgetWithText(FilledButton, 'Move'));
+      await tester.pumpAndSettle();
+      final moveButton = find.widgetWithText(FilledButton, 'Move');
+      await tester.ensureVisible(moveButton);
+      await tester.tap(moveButton);
       await pumpFrames(tester);
       expect(service.movedFolder, 'ToS/Sources');
       expect(find.text('Sources'), findsNothing);

@@ -150,7 +150,15 @@ void main() {
         );
         await pumpFrames(tester);
 
-        await tester.tap(find.byTooltip('Delete folder').last);
+        final researchFolder = find.byKey(
+          const ValueKey('folder:Research'),
+        );
+        await tester.tap(
+          find.descendant(
+            of: researchFolder,
+            matching: find.byTooltip('Delete folder'),
+          ),
+        );
         await pumpFrames(tester);
         expect(find.text('Delete Research?'), findsOneWidget);
         expect(service.deletedFolder, isNull);
@@ -162,5 +170,55 @@ void main() {
       },
       timeout: const Timeout(Duration(seconds: 20)),
     );
+
+    testWidgets('name sorting uses the visible filename', (tester) async {
+      service.entries.addAll([
+        LibraryEntry(
+          id: 'newer-zebra',
+          type: 'general',
+          folder: 'General',
+          sourceText: 'Alpha preview',
+          instruction: 'summarize',
+          output: 'output',
+          timestamp: DateTime(2026, 7, 25, 12),
+          filePath: '/library/TowerLens/General/Zebra.md',
+        ),
+        LibraryEntry(
+          id: 'older-apple',
+          type: 'general',
+          folder: 'General',
+          sourceText: 'Zebra preview',
+          instruction: 'summarize',
+          output: 'output',
+          timestamp: DateTime(2026, 7, 24, 12),
+          filePath: '/library/TowerLens/General/Apple.md',
+        ),
+      ]);
+
+      await tester.pumpWidget(
+        MaterialApp(home: LibraryScreen(libraryService: service)),
+      );
+      await pumpFrames(tester);
+      await tester.tap(find.text('General'));
+      await pumpFrames(tester);
+
+      await tester.tap(find.text('Newest'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Name A–Z').last);
+      await pumpFrames(tester);
+
+      final apple = tester.getTopLeft(find.text('Apple')).dy;
+      final zebra = tester.getTopLeft(find.text('Zebra')).dy;
+      expect(apple, lessThan(zebra));
+
+      await tester.tap(find.text('Name A–Z'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Name Z–A').last);
+      await pumpFrames(tester);
+
+      final zebraDescending = tester.getTopLeft(find.text('Zebra')).dy;
+      final appleDescending = tester.getTopLeft(find.text('Apple')).dy;
+      expect(zebraDescending, lessThan(appleDescending));
+    });
   });
 }

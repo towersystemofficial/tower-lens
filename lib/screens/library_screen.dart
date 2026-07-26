@@ -222,19 +222,32 @@ class _LibraryScreenState extends State<LibraryScreen> {
         case LibrarySort.oldest:
           return a.timestamp.compareTo(b.timestamp);
         case LibrarySort.nameAscending:
-          return _filename(a).compareTo(_filename(b));
+          return _name(a).compareTo(_name(b));
         case LibrarySort.nameDescending:
-          return _filename(b).compareTo(_filename(a));
+          return _name(b).compareTo(_name(a));
         case LibrarySort.type:
           final typeOrder = a.type.compareTo(b.type);
-          return typeOrder != 0 ? typeOrder : _filename(a).compareTo(_filename(b));
+          return typeOrder != 0 ? typeOrder : _name(a).compareTo(_name(b));
       }
     });
     return list;
   }
 
-  String _filename(LibraryEntry entry) =>
-      p.basename(entry.filePath ?? '').toLowerCase();
+  List<String> get _visibleFolders {
+    final folders = [..._folders];
+    folders.sort(
+      (a, b) => p
+          .basename(a)
+          .toLowerCase()
+          .compareTo(p.basename(b).toLowerCase()),
+    );
+    if (_sort == LibrarySort.nameDescending) {
+      return folders.reversed.toList();
+    }
+    return folders;
+  }
+
+  String _name(LibraryEntry entry) => entry.displayName.toLowerCase();
 
   String _sortLabel(LibrarySort sort) {
     switch (sort) {
@@ -396,7 +409,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   : ListView(
                       children: [
                         if (showFolders)
-                          for (final folder in _folders)
+                          for (final folder in _visibleFolders)
                             ListTile(
                               key: ValueKey('folder:$folder'),
                               leading: const Icon(Icons.folder_outlined),
@@ -412,11 +425,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
                           ListTile(
                             key: ValueKey('entry:${entry.filePath}'),
                             leading: const Icon(Icons.description_outlined),
-                            title: Text(entry.preview),
+                            title: Text(entry.displayName),
                             subtitle: Text(
-                              '${entry.folder} • '
+                              '${entry.preview}\n${entry.folder} • '
                               '${dateFormat.format(entry.timestamp)}',
                             ),
+                            isThreeLine: true,
                             trailing: IconButton(
                               icon: const Icon(Icons.delete_outline),
                               tooltip: 'Delete saved item',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/library_service.dart';
 import '../services/watchlist_service.dart';
+import '../widgets/library_save_dialog.dart';
 import 'camera_scan_screen.dart';
 
 class WatchlistScreen extends StatefulWidget {
@@ -77,15 +78,42 @@ class _WatchlistScreenState extends State<WatchlistScreen> with SingleTickerProv
     }
     final summary =
         _matches.isEmpty ? 'No watchlist matches found in this text.' : 'Watchlist matches found: ${_matches.join(", ")}';
-    await widget.libraryService.saveEntry(
-      type: 'ingredient',
-      folder: 'Ingredient',
-      sourceText: _checkTextController.text,
-      instruction: 'Check ingredients against watchlist',
-      output: summary,
+    if (!mounted) return;
+    final destination = await showLibrarySaveDialog(
+      context: context,
+      libraryService: widget.libraryService,
+      defaultFolder: 'Ingredient',
+      defaultFilename: generatedLibraryFilename('ingredient-check'),
     );
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved to Library.')));
+    if (destination == null) return;
+    try {
+      final entry = await widget.libraryService.saveEntry(
+        type: 'ingredient',
+        folder: destination.folder,
+        filename: destination.filename,
+        sourceText: _checkTextController.text,
+        instruction: 'Check ingredients against watchlist',
+        output: summary,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Saved ${entry.filename} to Library.')),
+        );
+      }
+    } on LibraryFileExistsException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('A file with that name already exists in this folder.'),
+          ),
+        );
+      }
+    } on ArgumentError {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Choose a valid filename.')),
+        );
+      }
     }
   }
 

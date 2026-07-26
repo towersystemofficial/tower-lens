@@ -3,6 +3,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tower_lens/widgets/library_save_dialog.dart';
 
 void main() {
+  test('uses a safe AI title and falls back when one is unavailable', () {
+    expect(
+      suggestedLibraryFilename(
+        ' Privacy: Data / Sharing ',
+        fallbackType: 'summary',
+      ),
+      'Privacy- Data - Sharing.md',
+    );
+    expect(
+      suggestedLibraryFilename(
+        null,
+        fallbackType: 'summary',
+        now: DateTime(2026, 7, 25, 10, 30, 45),
+      ),
+      'summary-2026-07-25-103045.md',
+    );
+  });
+
   testWidgets('chooses a nested folder and custom filename', (tester) async {
     LibrarySaveDestination? result;
 

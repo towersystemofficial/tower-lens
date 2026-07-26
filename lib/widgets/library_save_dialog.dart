@@ -18,6 +18,28 @@ String generatedLibraryFilename(String type, {DateTime? now}) {
   return '$type-$timestamp.md';
 }
 
+String suggestedLibraryFilename(
+  String? title, {
+  required String fallbackType,
+  DateTime? now,
+}) {
+  final trimmedTitle = title?.trim() ?? '';
+  if (trimmedTitle.isEmpty) {
+    return generatedLibraryFilename(fallbackType, now: now);
+  }
+
+  final safeTitle = trimmedTitle
+      .replaceAll(RegExp(r'[\\/:*?"<>|]'), '-')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+  if (safeTitle.isEmpty) {
+    return generatedLibraryFilename(fallbackType, now: now);
+  }
+  return safeTitle.toLowerCase().endsWith('.md')
+      ? safeTitle
+      : '$safeTitle.md';
+}
+
 Future<LibrarySaveDestination?> showLibrarySaveDialog({
   required BuildContext context,
   required LibraryService libraryService,

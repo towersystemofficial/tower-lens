@@ -30,6 +30,7 @@ class _TosScreenState extends State<TosScreen> {
   final MarkdownEditingController _textController =
       MarkdownEditingController();
   String _output = '';
+  String? _suggestedTitle;
   bool _isRunning = false;
   bool _hasSuccessfulOutput = false;
 
@@ -56,6 +57,7 @@ class _TosScreenState extends State<TosScreen> {
     setState(() {
       _isRunning = true;
       _output = '';
+      _suggestedTitle = null;
       _hasSuccessfulOutput = false;
     });
     try {
@@ -66,7 +68,8 @@ class _TosScreenState extends State<TosScreen> {
       );
       if (!mounted) return;
       setState(() {
-        _output = result;
+        _output = result.output;
+        _suggestedTitle = result.suggestedTitle;
         _hasSuccessfulOutput = true;
       });
     } on TextAiServiceException catch (error) {
@@ -92,7 +95,10 @@ class _TosScreenState extends State<TosScreen> {
       context: context,
       libraryService: widget.libraryService,
       defaultFolder: 'ToS',
-      defaultFilename: generatedLibraryFilename('tos-summary'),
+      defaultFilename: suggestedLibraryFilename(
+        _suggestedTitle,
+        fallbackType: 'tos-summary',
+      ),
     );
     if (destination == null) return;
     try {

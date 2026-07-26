@@ -27,10 +27,11 @@ void main() {
         instruction: 'Summarize',
       );
       expect(
-        result,
+        result.output,
         'Mock response: This is where the app will summarize, explain, '
         'or answer questions about your text.',
       );
+      expect(result.suggestedTitle, 'Mock Text Summary');
     });
 
     test('returns the ToS summary mock response', () async {
@@ -40,7 +41,7 @@ void main() {
         instruction: 'Summarize ToS/privacy policy',
       );
       expect(
-        result,
+        result.output,
         'Mock ToS summary:\n\n'
         '• Key points: this is a placeholder until real AI analysis is wired up.\n'
         '• Concerning clauses: none detected yet (mock).\n'
@@ -48,6 +49,7 @@ void main() {
         '• Cancellation/refund terms: unknown (mock).\n\n'
         'This is an informational summary only, not legal advice.',
       );
+      expect(result.suggestedTitle, 'Mock Terms Summary');
     });
   });
 }

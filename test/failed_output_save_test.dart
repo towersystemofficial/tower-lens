@@ -7,7 +7,7 @@ import 'package:tower_lens/services/text_ai_service.dart';
 
 class _FailingTextAiService implements TextAiService {
   @override
-  Future<String> runTask({
+  Future<TextAiResult> runTask({
     required TextAiTaskType taskType,
     required String sourceText,
     required String instruction,

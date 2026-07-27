@@ -79,7 +79,7 @@ class TextAiTokenEstimator {
       sourceText: sourceText,
       instruction: instruction,
     );
-    return (estimate.outputUpperBound * 2).clamp(4096, 64000) as int;
+    return (estimate.outputUpperBound * 2).clamp(4096, 64000);
   }
 
   static int _approximateTokens(String text) =>

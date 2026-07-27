@@ -1,4 +1,4 @@
-enum TextAiTaskType { general, tosSummary }
+enum TextAiTaskType { general, summary, simplify, tosSummary }
 
 class TextAiResult {
   const TextAiResult({
@@ -42,6 +42,19 @@ class MockTextAiService implements TextAiService {
           output:
               'Mock response: This is where the app will summarize, explain, '
               'or answer questions about your text.',
+        );
+      case TextAiTaskType.summary:
+        return const TextAiResult(
+          suggestedTitle: 'Mock Text Summary',
+          output: 'Mock summary:\n\n'
+              '## Quick summary\nA short overview.\n\n'
+              '## Main points\n- A main point.\n\n'
+              '## Detailed breakdown\nA detailed explanation.',
+        );
+      case TextAiTaskType.simplify:
+        return const TextAiResult(
+          suggestedTitle: 'Mock Simplified Text',
+          output: 'Mock simplified text.',
         );
       case TextAiTaskType.tosSummary:
         return const TextAiResult(

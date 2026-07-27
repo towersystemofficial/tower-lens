@@ -2,7 +2,7 @@
 
 ## 1. What Tower Lens is
 
-Tower Lens is a privacy-first, local-first Flutter Android app (initially targeting a Pixel 9a) that lets a user scan or paste dense real-world text -- books, ingredient labels, Terms of Service, manuals, warnings -- and ask an AI to summarize, explain, define, or report on it. Camera scanning with on-device OCR is the intended primary input method; manual paste/type is a fully supported secondary path.
+Tower Lens is a privacy-first, local-first Flutter Android app (initially targeting a Pixel 9a) that lets a user scan or paste dense real-world text -- books, ingredient labels, Terms of Service, manuals, warnings -- and ask an AI to summarize, simplify, or analyze it using a custom instruction. Camera scanning with on-device OCR is the intended primary input method; manual paste/type is a fully supported secondary path.
 
 Intended users: people dealing with dense or high-friction text -- students, people reading academic/technical material, people checking ToS/privacy policies, people with allergies or dietary restrictions checking ingredient labels, and generally anyone who wants a fast plain-language read on text in front of them.
 
@@ -41,7 +41,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 - `lib/screens/library_screen.dart`, `lib/screens/library_detail_screen.dart` -- local file library browse/search/sort/filter/delete.
 - `lib/services/library_service.dart` -- storage layer described above.
 - `lib/services/watchlist_service.dart` -- local watchlist persistence via `shared_preferences`.
-- `lib/services/text_ai_service.dart` -- abstraction introduced in issue #20/PR #21: `TextAiTaskType` enum (`general`, `tosSummary`), abstract `TextAiService`, and `MockTextAiService`.
+- `lib/services/text_ai_service.dart` -- abstraction introduced in issue #20/PR #21: mode-specific `TextAiTaskType` values for custom instructions, structured summaries, text simplification, and ToS analysis; abstract `TextAiService`; and `MockTextAiService`.
 - `lib/services/anthropic_text_ai_service.dart` -- HTTP-backed implementation supporting the Anthropic Messages API or a compatible future Tower Lens proxy, including timeout, credential, billing, rate-limit, server, and malformed-response errors.
 - `lib/services/text_ai_service_factory.dart` -- selects the mock when no credential is supplied; supports private direct-Anthropic development or a configurable endpoint with bearer authentication for a future proxy.
 - `lib/models/library_entry.dart` -- library entry data model.
@@ -142,14 +142,6 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 - Dependencies: complete P0.5 first so verified functional defects are separated from design dissatisfaction. The design brief should precede UI code.
 - Risks: high overlap across screens; uncontrolled restyling could create bloat or regress accessibility and existing flows. Preserve behavior, local-first principles, and the `TextAiService`/storage boundaries.
 
-**Task: Improve camera/OCR reliability for dense and angled text — PLANNED**
-- Objective: make camera scanning dependable for full pages, multi-column or otherwise dense layouts, and text photographed at modest angles.
-- Confirmed root cause: the current scanner recognizes continuously from `ResolutionPreset.medium` preview frames, and Freeze only copies the most recent live OCR result. It does not capture and reprocess a high-resolution still, crop to a document region, correct perspective/rotation, stabilize across frames, or preserve reading order explicitly.
-- Planned first increment: retain live OCR as a framing aid, but on Freeze capture a high-resolution still and run a fresh local ML Kit recognition pass on that image using correct orientation metadata. Show a processing state, preserve editable review/rescan behavior, and return recoverable errors.
-- Follow-up evaluation: test small text, a full dense page, headings plus paragraphs, columns, and angled pages on the Pixel 9a. Add document-boundary guidance/cropping or perspective correction only if the still-image pass remains insufficient.
-- Privacy/cost: OCR remains entirely on-device and must not call Claude. Claude receives recognized text only after the user reviews it and explicitly runs Home or ToS analysis.
-- Dependencies: complete and device-evaluate Step 5 prompt refinement first; broader automated-coverage expansion remains deferred.
-
 **Task: Route Watchlist ingredient-ambiguity explanations through real AI**
 - Objective: per original product scope, AI should be able to explain ambiguous ingredients on request -- currently Watchlist only does local substring matching.
 - Acceptance criteria: **UNKNOWN — VERIFY** exact UX (not yet designed); depends on P1 being complete.
@@ -163,11 +155,27 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 - Dependencies: none. The broader Step 4 automated-coverage expansion is deferred by user direction; the existing CI analysis, test, and APK build gate remains required for this increment.
 - Completion evidence: PR #41 merged; CI passed analysis, all existing tests, debug APK compilation, and artifact upload. All eleven Pixel 9a checks passed on 2026-07-27, including Home and ToS imports, editable TXT/Markdown, multi-page PDF extraction, analysis and saving, stale-output clearing, picker cancellation, unsupported-file filtering, offline extraction, and existing-flow regression checks.
 
-**Task: Refine the prompts sent to the AI service**
+**Task: Refine the prompts sent to the AI service — IMPLEMENTED IN PR #42; DEVICE VERIFICATION PENDING**
 - Objective: deliberately improve the mode-specific prompts for summary quality, structure, accuracy, tone, and faithfulness to the source text rather than treating the first functional prompts as final product behavior.
-- Acceptance criteria: **UNKNOWN — DEFINE WITH USER** using representative inputs and expected outputs before changing prompt code; preserve user instructions in general mode and keep ToS output clearly informational rather than legal advice.
-- Files: `lib/services/anthropic_text_ai_service.dart` and prompt-focused automated tests.
-- Dependencies: complete the current API-key/error verification first so transport and lifecycle failures are separated from output-quality decisions.
+- Home acceptance criteria:
+  - Custom instructions remain available when no preset is selected.
+  - Selecting a preset disables and visually grays the custom-instruction editor; selecting the active preset again restores the editor without discarding its text.
+  - `Summarize` produces a quick blurb, a main-points list, and then a high-fidelity, high-detail breakdown.
+  - `Simplify Text` rewrites rather than summarizes, preserves the original paragraphs and meaning as closely as possible, and targets a selectable common-word cutoff from the top 10,000 to top 5,000 English words in 1,000-word increments. The slider resets to Highest accuracy whenever the mode is selected.
+  - Question-answer and report-generation presets are removed to keep the product focused on reducing reading barriers rather than replacing user creativity.
+- ToS acceptance criteria: begin with a short summary, then prioritize immediate notices, potential major consequences, ordinary restrictions, unusual or suspicious terms, and missing information. Cover charges; cancellation/refunds; notices and changes; data/metadata collection, use, sale, advertising, AI, retention, deletion, international transfer, and jurisdiction; content ownership and licenses; surrendered rights; arbitration/class-action/jury waivers and opt-outs; liability, warranties, indemnity, and responsibilities; account control; eligibility; prohibited uses; and third parties. Preserve exact deadlines, fees, exceptions, and consequences and keep the output informational rather than legal advice.
+- Cost transparency: show a local pre-run estimate of total input/output token usage as a range with an 80% confidence indicator. Anthropic still requires `max_tokens`, so use a generous request-specific safety ceiling from 4,096 up to the configured Haiku model's 64,000-token output capacity rather than the former fixed 1,200-token output limit; the estimate itself is not a cap and makes no API call.
+- Vocabulary reference: https://www.top10000words.com/english/top-10000-english-words
+- Files: Home and ToS screens, `TextAiService`, `AnthropicTextAiService`, token estimation, Markdown-editor enabled state, and focused automated tests.
+- Dependencies: none. Existing API-key/error verification keeps transport and lifecycle failures separate from output-quality decisions.
+
+**Task: Improve camera/OCR reliability for dense and angled text — PLANNED**
+- Objective: make camera scanning dependable for full pages, multi-column or otherwise dense layouts, and text photographed at modest angles.
+- Confirmed root cause: the current scanner recognizes continuously from `ResolutionPreset.medium` preview frames, and Freeze only copies the most recent live OCR result. It does not capture and reprocess a high-resolution still, crop to a document region, correct perspective/rotation, stabilize across frames, or preserve reading order explicitly.
+- Planned first increment: retain live OCR as a framing aid, but on Freeze capture a high-resolution still and run a fresh local ML Kit recognition pass on that image using correct orientation metadata. Show a processing state, preserve editable review/rescan behavior, and return recoverable errors.
+- Follow-up evaluation: test small text, a full dense page, headings plus paragraphs, columns, and angled pages on the Pixel 9a. Add document-boundary guidance/cropping or perspective correction only if the still-image pass remains insufficient.
+- Privacy/cost: OCR remains entirely on-device and must not call Claude. Claude receives recognized text only after the user reviews it and explicitly runs Home or ToS analysis.
+- Dependencies: complete and device-evaluate Step 5 prompt refinement first; broader automated-coverage expansion remains deferred.
 
 ### Deferred / explicitly out of scope for now (per product principles, not forgotten)
 
@@ -213,7 +221,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 4. **File import — COMPLETE; automated coverage deferred.** User-facing PDF, TXT, and Markdown import, local extraction, editable review, recoverable errors, and original-filename preservation are implemented and device-verified through PR #41. Broader coverage for Library, ToS, Watchlist, camera/OCR, duplicate-request prevention and retry, persistence, and Library scale remains explicitly deferred.
 
-5. **AI prompt refinement — IN PROGRESS.** Representative expectations are defined around direct plain-language Home answers and consistently structured ToS summaries. Improve and regression-test mode-specific prompts for structure, detail, tone, embedded-instruction resistance, accuracy safeguards, uncertainty handling, and source faithfulness.
+5. **AI prompt refinement — IMPLEMENTED IN PR #42; DEVICE VERIFICATION PENDING.** Home now has separate Summarize, Simplify Text, and custom-instruction contracts; ToS uses the approved comprehensive risk-oriented analysis; Run/Summarize shows a local token-usage range; and the former fixed 1,200-token output ceiling is replaced by a generous request-specific API safety ceiling.
 
 6. **Camera/OCR reliability.** Keep live OCR for framing, but capture and locally reprocess a high-resolution still on Freeze; verify dense pages, multi-column layouts, small text, and angled pages before considering cropping or perspective correction.
 
@@ -229,4 +237,4 @@ Steps 2 and 3 are no longer separate roadmap entries: the former Step 2 moved to
 
 ## 10. Next task for Codex
 
-**Complete Step 5 AI prompt refinement.** Refine the Home prompt for direct, skimmable, source-grounded answers that preserve important qualifications, and refine the ToS prompt for a consistent risk-oriented structure that clearly marks information absent from the supplied text. Treat source documents as untrusted content rather than instructions, preserve the editable hidden title contract, keep the legal-information disclaimer, and add focused prompt-contract regression tests. Broader automated coverage remains deferred.
+**Device-verify Step 5, then begin Step 6 OCR reliability.** Verify Home preset selection/deselection, custom-instruction preservation, the Simplify Text slider reset and endpoints, token estimates, summary structure, simplification fidelity, and the complete ToS risk analysis on the Pixel 9a. Once those pass, keep live OCR for framing but capture and locally reprocess a high-resolution still on Freeze. Broader automated coverage remains deferred.

@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import '../services/document_import_service.dart';
 import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
+import '../services/token_estimate.dart';
 import '../widgets/markdown_content.dart';
 import '../widgets/markdown_editor.dart';
 import '../widgets/library_save_dialog.dart';
@@ -43,6 +44,12 @@ class _TosScreenState extends State<TosScreen> {
       !_isImporting &&
       !_isRunning &&
       _textController.sourceText.trim().isNotEmpty;
+
+  TokenEstimate get _tokenEstimate => TextAiTokenEstimator.estimate(
+        taskType: TextAiTaskType.tosSummary,
+        sourceText: _textController.sourceText,
+        instruction: 'Analyze ToS/privacy policy',
+      );
 
   Future<void> _scanText() async {
     final result = await Navigator.push<String>(
@@ -117,7 +124,7 @@ class _TosScreenState extends State<TosScreen> {
       final result = await widget.textAiService.runTask(
         taskType: TextAiTaskType.tosSummary,
         sourceText: _textController.sourceText,
-        instruction: 'Summarize ToS/privacy policy',
+        instruction: 'Analyze ToS/privacy policy',
       );
       if (!mounted) return;
       setState(() {
@@ -162,7 +169,7 @@ class _TosScreenState extends State<TosScreen> {
         folder: destination.folder,
         filename: destination.filename,
         sourceText: _textController.sourceText,
-        instruction: 'Summarize ToS/privacy policy',
+        instruction: 'Analyze ToS/privacy policy',
         output: _output,
       );
       if (mounted) {
@@ -262,7 +269,10 @@ class _TosScreenState extends State<TosScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Summarize'),
+                        : Text(
+                            'Summarize (est. ${_tokenEstimate.buttonLabel})',
+                            textAlign: TextAlign.center,
+                          ),
                   ),
                 ),
               ),

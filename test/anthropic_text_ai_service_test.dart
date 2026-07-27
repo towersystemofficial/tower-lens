@@ -44,6 +44,7 @@ void main() {
       expect(capturedRequest.headers['anthropic-version'], '2023-06-01');
       final requestBody = jsonDecode(capturedRequest.body) as Map<String, dynamic>;
       expect(requestBody['model'], 'test-model');
+      expect(requestBody['max_tokens'], greaterThan(1200));
       expect(requestBody['messages'], isNotEmpty);
       expect(requestBody['system'], contains('<title>'));
       expect(
@@ -87,8 +88,14 @@ void main() {
       expect(capturedRequest.headers.containsKey('x-api-key'), isFalse);
       final requestBody =
           jsonDecode(capturedRequest.body) as Map<String, dynamic>;
-      expect(requestBody['system'], contains('## What you agree to'));
-      expect(requestBody['system'], contains('## Data and privacy'));
+      expect(requestBody['system'], contains('## Immediate notice'));
+      expect(requestBody['system'], contains('## Potential major consequences'));
+      expect(requestBody['system'], contains('## Ordinary restrictions'));
+      expect(requestBody['system'], contains('charges and the conditions'));
+      expect(requestBody['system'], contains('cross-border transfer'));
+      expect(requestBody['system'], contains('class-action waivers'));
+      expect(requestBody['system'], contains('connected third-party services'));
+      expect(requestBody['system'], contains('Unusual or suspicious terms'));
       expect(
         requestBody['system'],
         contains('Not stated in the supplied text.'),
@@ -96,6 +103,53 @@ void main() {
       expect(
         requestBody['system'],
         contains('This is an informational summary only, not legal advice.'),
+      );
+    });
+
+    test('sends distinct summary and simplification prompt contracts', () async {
+      final requests = <http.Request>[];
+      final client = MockClient((request) async {
+        requests.add(request);
+        return http.Response(
+          jsonEncode({
+            'content': [
+              {'type': 'text', 'text': 'Response'},
+            ],
+          }),
+          200,
+        );
+      });
+      final service = AnthropicTextAiService(
+        endpoint: Uri.parse('https://example.test/v1/messages'),
+        model: 'test-model',
+        apiKey: 'test-key',
+        client: client,
+      );
+
+      await service.runTask(
+        taskType: TextAiTaskType.summary,
+        sourceText: 'Dense source text',
+        instruction: 'Summarize the supplied text.',
+      );
+      await service.runTask(
+        taskType: TextAiTaskType.simplify,
+        sourceText: 'Dense source text',
+        instruction: 'Use the top 7000 most common words.',
+      );
+
+      final summaryBody =
+          jsonDecode(requests.first.body) as Map<String, dynamic>;
+      final simplifyBody =
+          jsonDecode(requests.last.body) as Map<String, dynamic>;
+      expect(summaryBody['system'], contains('## Quick summary'));
+      expect(summaryBody['system'], contains('## Main points'));
+      expect(summaryBody['system'], contains('## Detailed breakdown'));
+      expect(summaryBody['system'], contains('high-fidelity'));
+      expect(simplifyBody['system'], contains('Rewrite the supplied text'));
+      expect(simplifyBody['system'], contains('Preserve as much'));
+      expect(
+        (simplifyBody['messages'] as List<dynamic>).single.toString(),
+        contains('top 7000 most common words'),
       );
     });
 

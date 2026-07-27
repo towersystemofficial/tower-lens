@@ -9,6 +9,7 @@ class MarkdownEditor extends StatefulWidget {
   final int? maxLines;
   final bool autofocus;
   final bool expands;
+  final bool enabled;
 
   const MarkdownEditor({
     super.key,
@@ -19,6 +20,7 @@ class MarkdownEditor extends StatefulWidget {
     this.maxLines = 1,
     this.autofocus = false,
     this.expands = false,
+    this.enabled = true,
   });
 
   @override
@@ -124,48 +126,56 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
           IconButton(
             tooltip: 'Bold',
             icon: const Icon(Icons.format_bold),
-            onPressed: () => _replaceSelection(
-              '**',
-              '**',
-              placeholder: 'bold text',
-            ),
+            onPressed: widget.enabled
+                ? () => _replaceSelection(
+                      '**',
+                      '**',
+                      placeholder: 'bold text',
+                    )
+                : null,
           ),
           IconButton(
             tooltip: 'Italic',
             icon: const Icon(Icons.format_italic),
-            onPressed: () => _replaceSelection(
-              '*',
-              '*',
-              placeholder: 'italic text',
-            ),
+            onPressed: widget.enabled
+                ? () => _replaceSelection(
+                      '*',
+                      '*',
+                      placeholder: 'italic text',
+                    )
+                : null,
           ),
           IconButton(
             tooltip: 'Heading',
             icon: const Icon(Icons.title),
-            onPressed: () => _prefixLines('## '),
+            onPressed: widget.enabled ? () => _prefixLines('## ') : null,
           ),
           IconButton(
             tooltip: 'Bulleted list',
             icon: const Icon(Icons.format_list_bulleted),
-            onPressed: () => _prefixLines('- '),
+            onPressed: widget.enabled ? () => _prefixLines('- ') : null,
           ),
           IconButton(
             tooltip: 'Inline code',
             icon: const Icon(Icons.code),
-            onPressed: () => _replaceSelection(
-              '`',
-              '`',
-              placeholder: 'code',
-            ),
+            onPressed: widget.enabled
+                ? () => _replaceSelection(
+                      '`',
+                      '`',
+                      placeholder: 'code',
+                    )
+                : null,
           ),
           IconButton(
             tooltip: 'Link',
             icon: const Icon(Icons.link),
-            onPressed: () => _replaceSelection(
-              '[',
-              '](https://)',
-              placeholder: 'link text',
-            ),
+            onPressed: widget.enabled
+                ? () => _replaceSelection(
+                      '[',
+                      '](https://)',
+                      placeholder: 'link text',
+                    )
+                : null,
           ),
         ],
       ),
@@ -176,6 +186,7 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
     return TextField(
       controller: widget.controller,
       focusNode: _focusNode,
+      enabled: widget.enabled,
       onChanged: (_) => widget.onChanged?.call(widget.controller.sourceText),
       autofocus: widget.autofocus,
       expands: widget.expands,

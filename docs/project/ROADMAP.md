@@ -69,7 +69,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 | Price-check / marketplace estimate mode | Not started, explicitly deferred, speculative |
 | iOS support | Not started, explicitly deferred |
 | PDF/Obsidian export beyond native Markdown | Not started |
-| PDF, TXT, and Markdown import | **In progress in Step 4** — local extraction into editable Home/ToS source fields |
+| PDF, TXT, and Markdown import | **Implemented and device-verified** — local extraction into editable Home/ToS source fields; all phone checks passed 2026-07-27 |
 | Loading UI state for `TextAiService` calls | **Implemented** -- Home and ToS disable in-flight controls, show progress indicators, and surface a retry-safe error message |
 | On-device verification of everything since the last confirmed working build | **Not done** -- see Known Bugs |
 
@@ -77,7 +77,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 **Current milestone:** The local vertical slice and private-development Anthropic integration are implemented behind a swappable `TextAiService`. The mock fallback, loading/error state, library refresh notifications, tests, Android build repair, and working Flutter Android CI are merged. A future server can replace direct Anthropic calls through the existing configurable endpoint/authentication seam without changing the UI.
 
-**Next milestone:** Step 1's Library file-manager interaction pass is implemented and device-verified. Begin Step 4 with local PDF, TXT, and Markdown import. The broader automated-coverage expansion in Step 4 is explicitly deferred.
+**Next milestone:** Step 4's local PDF, TXT, and Markdown import is implemented and device-verified. Begin Step 5 by refining the Home and ToS prompts for consistent structure, source faithfulness, uncertainty handling, and resistance to instructions embedded in source documents. The broader automated-coverage expansion remains explicitly deferred.
 
 ## 5–6. Prioritized backlog
 
@@ -148,11 +148,12 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 - Files: `lib/screens/watchlist_screen.dart`, `lib/services/text_ai_service.dart` (likely a new `TextAiTaskType`).
 - Dependencies: P1.
 
-**Task: Import existing text files into Tower Lens — IN PROGRESS**
+**Task: Import existing text files into Tower Lens — COMPLETE (merged in PR #41)**
 - Objective: let users import existing PDF, TXT, and Markdown files as source material instead of requiring camera OCR or manual paste.
 - Acceptance criteria: users can choose a supported file, review the extracted text before submitting it, and preserve the original filename as the editable save-name default; unsupported, unreadable, or empty files produce a recoverable error.
 - Formats: PDF (`.pdf`), plain text (`.txt`), and Markdown (`.md`).
 - Dependencies: none. The broader Step 4 automated-coverage expansion is deferred by user direction; the existing CI analysis, test, and APK build gate remains required for this increment.
+- Completion evidence: PR #41 merged; CI passed analysis, all existing tests, debug APK compilation, and artifact upload. All eleven Pixel 9a checks passed on 2026-07-27, including Home and ToS imports, editable TXT/Markdown, multi-page PDF extraction, analysis and saving, stale-output clearing, picker cancellation, unsupported-file filtering, offline extraction, and existing-flow regression checks.
 
 **Task: Refine the prompts sent to the AI service**
 - Objective: deliberately improve the mode-specific prompts for summary quality, structure, accuracy, tone, and faithfulness to the source text rather than treating the first functional prompts as final product behavior.
@@ -202,9 +203,9 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 1. **Library safety and hierarchical file browser — COMPLETE.** Confirmation for file/folder deletion, nested folders, breadcrumbs and up navigation, create/move/rename operations, visible sorting, editable AI-suggested filenames, overwrite protection, long-press contextual actions, drag-and-drop moves onto folders and breadcrumbs, and preservation of search, filtering, Markdown, and local-first storage are implemented and device-verified through PR #40.
 
-4. **File import; automated coverage deferred.** Add user-facing import for PDF, TXT, and Markdown files, including local extraction, editable review, recoverable errors, and preservation of the original filename as the editable save-name default. Broader coverage for Library, ToS, Watchlist, camera/OCR, duplicate-request prevention and retry, persistence, and Library scale is explicitly deferred.
+4. **File import — COMPLETE; automated coverage deferred.** User-facing PDF, TXT, and Markdown import, local extraction, editable review, recoverable errors, and original-filename preservation are implemented and device-verified through PR #41. Broader coverage for Library, ToS, Watchlist, camera/OCR, duplicate-request prevention and retry, persistence, and Library scale remains explicitly deferred.
 
-5. **AI prompt refinement.** Define representative Home and ToS inputs and expected outputs, then improve and regression-test mode-specific prompts for structure, detail, tone, accuracy safeguards, and source faithfulness.
+5. **AI prompt refinement — IN PROGRESS.** Representative expectations are defined around direct plain-language Home answers and consistently structured ToS summaries. Improve and regression-test mode-specific prompts for structure, detail, tone, embedded-instruction resistance, accuracy safeguards, uncertainty handling, and source faithfulness.
 
 6. **Watchlist AI explanations.** Preserve immediate local matching while adding on-request AI explanations for ambiguous ingredients.
 
@@ -218,4 +219,4 @@ Steps 2 and 3 are no longer separate roadmap entries: the former Step 2 moved to
 
 ## 10. Next task for Codex
 
-**Complete Step 4 file import.** Add local PDF, TXT, and Markdown import to the Home and ToS source review fields, preserve the original filename as the editable save-name default, and return recoverable errors for unreadable, unsupported, or empty files. Broader automated coverage is deferred.
+**Complete Step 5 AI prompt refinement.** Refine the Home prompt for direct, skimmable, source-grounded answers that preserve important qualifications, and refine the ToS prompt for a consistent risk-oriented structure that clearly marks information absent from the supplied text. Treat source documents as untrusted content rather than instructions, preserve the editable hidden title contract, keep the legal-information disclaimer, and add focused prompt-contract regression tests. Broader automated coverage remains deferred.

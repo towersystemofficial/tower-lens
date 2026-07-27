@@ -8,7 +8,18 @@ import 'library_detail_screen.dart';
 
 enum LibrarySort { newest, oldest, nameAscending, nameDescending, type }
 
-enum _LibraryItemAction { rename, move, delete }
+class _LibraryItem {
+  const _LibraryItem.entry(this.entry) : folder = null;
+  const _LibraryItem.folder(this.folder) : entry = null;
+
+  final LibraryEntry? entry;
+  final String? folder;
+
+  bool get isFolder => folder != null;
+
+  String get name =>
+      entry?.displayName ?? p.basename(folder!);
+}
 
 class LibraryScreen extends StatefulWidget {
   final LibraryService libraryService;
@@ -25,6 +36,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
   String _query = '';
   LibrarySort _sort = LibrarySort.newest;
   bool _loading = false;
+  int _refreshGeneration = 0;
+  _LibraryItem? _selectedItem;
   final _searchController = TextEditingController();
 
   @override
@@ -40,6 +53,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   Future<void> _refresh() async {
     if (!mounted) return;
+    final generation = ++_refreshGeneration;
     if (!widget.libraryService.isConfigured) {
       setState(() {
         _folders = [];
@@ -56,7 +70,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       folder: _currentFolder,
       recursive: true,
     );
-    if (!mounted) return;
+    if (!mounted || generation != _refreshGeneration) return;
     setState(() {
       _folders = folders;
       _entries = entries;
@@ -154,6 +168,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
     if (confirmed == true) {
       await widget.libraryService.deleteEntry(entry);
+      _clearSelection();
     }
   }
 
@@ -181,6 +196,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
     if (confirmed == true) {
       await widget.libraryService.deleteFolder(folder);
+      _clearSelection();
     }
   }
 
@@ -196,6 +212,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     if (filename == null) return;
     try {
       await widget.libraryService.renameEntry(entry, filename);
+      _clearSelection();
     } on LibraryFileExistsException {
       _showError('A file with that name already exists in this folder.');
     } on ArgumentError {
@@ -211,6 +228,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     if (destination == null) return;
     try {
       await widget.libraryService.moveEntry(entry, destination);
+      _clearSelection();
     } on LibraryFileExistsException {
       _showError('A file with that name already exists in that folder.');
     } on ArgumentError {
@@ -230,6 +248,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     if (name == null) return;
     try {
       await widget.libraryService.renameFolder(folder, name);
+      _clearSelection();
     } on LibraryFolderExistsException {
       _showError('A folder with that name already exists here.');
     } on ArgumentError {
@@ -246,6 +265,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     if (destination == null) return;
     try {
       await widget.libraryService.moveFolder(folder, destination);
+      _clearSelection();
     } on LibraryFolderExistsException {
       _showError('A folder with that name already exists there.');
     } on ArgumentError {
@@ -285,37 +305,64 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  void _handleEntryAction(
-    _LibraryItemAction action,
-    LibraryEntry entry,
-  ) {
-    switch (action) {
-      case _LibraryItemAction.rename:
-        _renameEntry(entry);
-        return;
-      case _LibraryItemAction.move:
-        _moveEntry(entry);
-        return;
-      case _LibraryItemAction.delete:
-        _deleteEntry(entry);
-        return;
-    }
+  void _selectItem(_LibraryItem item) {
+    setState(() => _selectedItem = item);
   }
 
-  void _handleFolderAction(
-    _LibraryItemAction action,
-    String folder,
-  ) {
-    switch (action) {
-      case _LibraryItemAction.rename:
-        _renameFolder(folder);
-        return;
-      case _LibraryItemAction.move:
-        _moveFolder(folder);
-        return;
-      case _LibraryItemAction.delete:
-        _deleteFolder(folder);
-        return;
+  void _clearSelection() {
+    if (!mounted || _selectedItem == null) return;
+    setState(() => _selectedItem = null);
+  }
+
+  bool _isSelected(_LibraryItem item) {
+    final selected = _selectedItem;
+    if (selected == null || selected.isFolder != item.isFolder) return false;
+    return item.isFolder
+        ? selected.folder == item.folder
+        : selected.entry?.filePath == item.entry?.filePath;
+  }
+
+  String _parentFolder(String folder) {
+    final parent = p.dirname(folder);
+    return parent == '.' ? '' : parent;
+  }
+
+  bool _canDrop(_LibraryItem item, String destinationFolder) {
+    if (item.isFolder) {
+      final source = item.folder!;
+      return destinationFolder != source &&
+          !p.isWithin(source, destinationFolder) &&
+          _parentFolder(source) != destinationFolder;
+    }
+    return item.entry!.folder != destinationFolder;
+  }
+
+  Future<void> _dropItem(
+    _LibraryItem item,
+    String destinationFolder,
+  ) async {
+    if (!_canDrop(item, destinationFolder)) return;
+    try {
+      if (item.isFolder) {
+        await widget.libraryService.moveFolder(
+          item.folder!,
+          destinationFolder,
+        );
+      } else {
+        await widget.libraryService.moveEntry(
+          item.entry!,
+          destinationFolder,
+        );
+      }
+      if (!mounted) return;
+      _clearSelection();
+      _openFolder(destinationFolder);
+    } on LibraryFileExistsException {
+      _showError('A file with that name already exists in that folder.');
+    } on LibraryFolderExistsException {
+      _showError('A folder with that name already exists there.');
+    } on ArgumentError {
+      _showError('That item cannot be moved to this folder.');
     }
   }
 
@@ -323,6 +370,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     setState(() {
       _currentFolder = folder;
       _query = '';
+      _selectedItem = null;
       _searchController.clear();
     });
     _refresh();
@@ -406,21 +454,167 @@ class _LibraryScreenState extends State<LibraryScreen> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          TextButton.icon(
-            onPressed: () => _openBreadcrumb(0),
-            icon: const Icon(Icons.home_outlined),
-            label: const Text('TowerLens'),
+          _breadcrumbTarget(
+            folder: '',
+            child: TextButton.icon(
+              onPressed: () => _openBreadcrumb(0),
+              icon: const Icon(Icons.home_outlined),
+              label: const Text('TowerLens'),
+            ),
           ),
           for (var index = 0; index < segments.length; index++) ...[
             const Icon(Icons.chevron_right, size: 18),
-            TextButton(
-              onPressed: () => _openBreadcrumb(index + 1),
-              child: Text(segments[index]),
+            _breadcrumbTarget(
+              folder: p.joinAll(segments.take(index + 1).toList()),
+              child: TextButton(
+                onPressed: () => _openBreadcrumb(index + 1),
+                child: Text(segments[index]),
+              ),
             ),
           ],
         ],
       ),
     );
+  }
+
+  Widget _breadcrumbTarget({
+    required String folder,
+    required Widget child,
+  }) {
+    return DragTarget<_LibraryItem>(
+      key: ValueKey('breadcrumb-target:$folder'),
+      onWillAcceptWithDetails: (details) =>
+          _canDrop(details.data, folder),
+      onAcceptWithDetails: (details) => _dropItem(details.data, folder),
+      builder: (context, candidates, rejected) {
+        final highlighted = candidates.isNotEmpty;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          decoration: BoxDecoration(
+            color: highlighted
+                ? Theme.of(context).colorScheme.primaryContainer
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: child,
+        );
+      },
+    );
+  }
+
+  Widget _dragFeedback(_LibraryItem item) {
+    return Material(
+      elevation: 6,
+      borderRadius: BorderRadius.circular(12),
+      color: Theme.of(context).colorScheme.surfaceContainerHigh,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 260),
+        child: ListTile(
+          dense: true,
+          leading: Icon(
+            item.isFolder
+                ? Icons.folder_outlined
+                : Icons.description_outlined,
+          ),
+          title: Text(
+            item.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _draggableItem({
+    required _LibraryItem item,
+    required Widget child,
+  }) {
+    return LongPressDraggable<_LibraryItem>(
+      data: item,
+      maxSimultaneousDrags: 1,
+      onDragStarted: () => _selectItem(item),
+      feedback: _dragFeedback(item),
+      childWhenDragging: Opacity(opacity: 0.35, child: child),
+      child: child,
+    );
+  }
+
+  Widget _folderTile(String folder) {
+    final item = _LibraryItem.folder(folder);
+    final tile = DragTarget<_LibraryItem>(
+      key: ValueKey('folder-target:$folder'),
+      onWillAcceptWithDetails: (details) =>
+          _canDrop(details.data, folder),
+      onAcceptWithDetails: (details) => _dropItem(details.data, folder),
+      builder: (context, candidates, rejected) {
+        final highlighted = candidates.isNotEmpty;
+        return Material(
+          color: highlighted
+              ? Theme.of(context).colorScheme.primaryContainer
+              : _isSelected(item)
+                  ? Theme.of(context).colorScheme.secondaryContainer
+                  : Colors.transparent,
+          child: ListTile(
+            key: ValueKey('folder:$folder'),
+            leading: Icon(
+              _isSelected(item)
+                  ? Icons.check_circle
+                  : Icons.folder_outlined,
+            ),
+            title: Text(p.basename(folder)),
+            onTap: () {
+              if (_selectedItem == null) {
+                _openFolder(folder);
+              } else if (_isSelected(item)) {
+                _clearSelection();
+              } else {
+                _selectItem(item);
+              }
+            },
+          ),
+        );
+      },
+    );
+    return _draggableItem(item: item, child: tile);
+  }
+
+  Widget _entryTile(LibraryEntry entry, DateFormat dateFormat) {
+    final item = _LibraryItem.entry(entry);
+    final tile = Material(
+      color: _isSelected(item)
+          ? Theme.of(context).colorScheme.secondaryContainer
+          : Colors.transparent,
+      child: ListTile(
+        key: ValueKey('entry:${entry.filePath}'),
+        leading: Icon(
+          _isSelected(item)
+              ? Icons.check_circle
+              : Icons.description_outlined,
+        ),
+        title: Text(entry.displayName),
+        subtitle: Text(
+          '${entry.preview}\n${entry.folder} • '
+          '${dateFormat.format(entry.timestamp)}',
+        ),
+        isThreeLine: true,
+        onTap: () {
+          if (_selectedItem == null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => LibraryDetailScreen(entry: entry),
+              ),
+            );
+          } else if (_isSelected(item)) {
+            _clearSelection();
+          } else {
+            _selectItem(item);
+          }
+        },
+      ),
+    );
+    return _draggableItem(item: item, child: tile);
   }
 
   @override
@@ -459,35 +653,83 @@ class _LibraryScreenState extends State<LibraryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _currentFolder.isEmpty ? 'Library' : p.basename(_currentFolder),
+          _selectedItem?.name ??
+              (_currentFolder.isEmpty
+                  ? 'Library'
+                  : p.basename(_currentFolder)),
         ),
-        leading: _currentFolder.isEmpty
-            ? null
-            : IconButton(
-                icon: const Icon(Icons.arrow_upward),
-                tooltip: 'Up one folder',
-                onPressed: _goUp,
-              ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.create_new_folder_outlined),
-            tooltip: 'New folder',
-            onPressed: _newFolder,
-          ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'clear') _clearAll();
-              if (value == 'change') _setupFolder();
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 'change',
-                child: Text('Change folder location'),
-              ),
-              PopupMenuItem(value: 'clear', child: Text('Clear all')),
-            ],
-          ),
-        ],
+        leading: _selectedItem != null
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: 'Clear selection',
+                onPressed: _clearSelection,
+              )
+            : _currentFolder.isEmpty
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.arrow_upward),
+                    tooltip: 'Up one folder',
+                    onPressed: _goUp,
+                  ),
+        actions: _selectedItem != null
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.drive_file_rename_outline),
+                  tooltip: 'Rename selected item',
+                  onPressed: () {
+                    final item = _selectedItem!;
+                    if (item.isFolder) {
+                      _renameFolder(item.folder!);
+                    } else {
+                      _renameEntry(item.entry!);
+                    }
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.drive_file_move_outline),
+                  tooltip: 'Move selected item',
+                  onPressed: () {
+                    final item = _selectedItem!;
+                    if (item.isFolder) {
+                      _moveFolder(item.folder!);
+                    } else {
+                      _moveEntry(item.entry!);
+                    }
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: 'Delete selected item',
+                  onPressed: () {
+                    final item = _selectedItem!;
+                    if (item.isFolder) {
+                      _deleteFolder(item.folder!);
+                    } else {
+                      _deleteEntry(item.entry!);
+                    }
+                  },
+                ),
+              ]
+            : [
+                IconButton(
+                  icon: const Icon(Icons.create_new_folder_outlined),
+                  tooltip: 'New folder',
+                  onPressed: _newFolder,
+                ),
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'clear') _clearAll();
+                    if (value == 'change') _setupFolder();
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: 'change',
+                      child: Text('Change folder location'),
+                    ),
+                    PopupMenuItem(value: 'clear', child: Text('Clear all')),
+                  ],
+                ),
+              ],
       ),
       body: Column(
         children: [
@@ -546,68 +788,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       children: [
                         if (showFolders)
                           for (final folder in _visibleFolders)
-                            ListTile(
-                              key: ValueKey('folder:$folder'),
-                              leading: const Icon(Icons.folder_outlined),
-                              title: Text(p.basename(folder)),
-                              trailing: PopupMenuButton<_LibraryItemAction>(
-                                tooltip: 'Folder actions',
-                                onSelected: (action) =>
-                                    _handleFolderAction(action, folder),
-                                itemBuilder: (context) => const [
-                                  PopupMenuItem(
-                                    value: _LibraryItemAction.rename,
-                                    child: Text('Rename'),
-                                  ),
-                                  PopupMenuItem(
-                                    value: _LibraryItemAction.move,
-                                    child: Text('Move'),
-                                  ),
-                                  PopupMenuItem(
-                                    value: _LibraryItemAction.delete,
-                                    child: Text('Delete'),
-                                  ),
-                                ],
-                              ),
-                              onTap: () => _openFolder(folder),
-                            ),
+                            _folderTile(folder),
                         for (final entry in entries)
-                          ListTile(
-                            key: ValueKey('entry:${entry.filePath}'),
-                            leading: const Icon(Icons.description_outlined),
-                            title: Text(entry.displayName),
-                            subtitle: Text(
-                              '${entry.preview}\n${entry.folder} • '
-                              '${dateFormat.format(entry.timestamp)}',
-                            ),
-                            isThreeLine: true,
-                            trailing: PopupMenuButton<_LibraryItemAction>(
-                              tooltip: 'File actions',
-                              onSelected: (action) =>
-                                  _handleEntryAction(action, entry),
-                              itemBuilder: (context) => const [
-                                PopupMenuItem(
-                                  value: _LibraryItemAction.rename,
-                                  child: Text('Rename'),
-                                ),
-                                PopupMenuItem(
-                                  value: _LibraryItemAction.move,
-                                  child: Text('Move'),
-                                ),
-                                PopupMenuItem(
-                                  value: _LibraryItemAction.delete,
-                                  child: Text('Delete'),
-                                ),
-                              ],
-                            ),
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    LibraryDetailScreen(entry: entry),
-                              ),
-                            ),
-                          ),
+                          _entryTile(entry, dateFormat),
                       ],
                     ),
             ),

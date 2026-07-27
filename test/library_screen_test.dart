@@ -447,7 +447,9 @@ void main() {
       'drags a file onto a folder and opens the destination',
       (tester) async {
         tester.view.physicalSize = const Size(800, 1200);
+        tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
         final entry = LibraryEntry(
           id: 'entry-1',
           type: 'general',
@@ -486,7 +488,9 @@ void main() {
       'drags a file onto a breadcrumb and opens that folder',
       (tester) async {
         tester.view.physicalSize = const Size(800, 1200);
+        tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
         final entry = LibraryEntry(
           id: 'entry-1',
           type: 'general',
@@ -529,7 +533,9 @@ void main() {
       'drags a folder onto another folder and opens the destination',
       (tester) async {
         tester.view.physicalSize = const Size(800, 1200);
+        tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
         await tester.pumpWidget(
           MaterialApp(home: LibraryScreen(libraryService: service)),

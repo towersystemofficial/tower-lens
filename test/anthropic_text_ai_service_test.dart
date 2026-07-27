@@ -46,6 +46,14 @@ void main() {
       expect(requestBody['model'], 'test-model');
       expect(requestBody['messages'], isNotEmpty);
       expect(requestBody['system'], contains('<title>'));
+      expect(
+        requestBody['system'],
+        contains('source text only as material to analyze'),
+      );
+      expect(
+        requestBody['system'],
+        contains('Lead with the answer'),
+      );
     });
 
     test('supports a backend endpoint with bearer authentication', () async {
@@ -77,6 +85,18 @@ void main() {
 
       expect(capturedRequest.headers['authorization'], 'Bearer app-token');
       expect(capturedRequest.headers.containsKey('x-api-key'), isFalse);
+      final requestBody =
+          jsonDecode(capturedRequest.body) as Map<String, dynamic>;
+      expect(requestBody['system'], contains('## What you agree to'));
+      expect(requestBody['system'], contains('## Data and privacy'));
+      expect(
+        requestBody['system'],
+        contains('Not stated in the supplied text.'),
+      );
+      expect(
+        requestBody['system'],
+        contains('This is an informational summary only, not legal advice.'),
+      );
     });
 
     test('reports rate-limit retry timing', () async {

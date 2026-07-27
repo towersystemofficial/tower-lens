@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:markdown_editor_live/markdown_editor_live.dart'
     show MarkdownEditingController;
+import 'package:path/path.dart' as p;
+import '../services/document_import_service.dart';
 import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
 import '../widgets/markdown_content.dart';
@@ -27,15 +29,20 @@ class TosScreen extends StatefulWidget {
 }
 
 class _TosScreenState extends State<TosScreen> {
+  final DocumentImportService _documentImportService = DocumentImportService();
   final MarkdownEditingController _textController =
       MarkdownEditingController();
   String _output = '';
   String? _suggestedTitle;
+  String? _importedFilename;
+  bool _isImporting = false;
   bool _isRunning = false;
   bool _hasSuccessfulOutput = false;
 
   bool get _canRun =>
-      !_isRunning && _textController.sourceText.trim().isNotEmpty;
+      !_isImporting &&
+      !_isRunning &&
+      _textController.sourceText.trim().isNotEmpty;
 
   Future<void> _scanText() async {
     final result = await Navigator.push<String>(
@@ -44,11 +51,57 @@ class _TosScreenState extends State<TosScreen> {
     );
     if (result != null && result.trim().isNotEmpty) {
       setState(() {
+        _importedFilename = null;
+        _output = '';
+        _suggestedTitle = null;
+        _hasSuccessfulOutput = false;
         _textController.value = TextEditingValue(
           text: result,
           selection: TextSelection.collapsed(offset: result.length),
         );
       });
+    }
+  }
+
+  Future<void> _importDocument() async {
+    if (_isImporting || _isRunning) return;
+    setState(() => _isImporting = true);
+    try {
+      final document = await _documentImportService.pickDocument();
+      if (!mounted || document == null) return;
+      setState(() {
+        _importedFilename = document.filename;
+        _output = '';
+        _suggestedTitle = null;
+        _hasSuccessfulOutput = false;
+        _textController.value = TextEditingValue(
+          text: document.text,
+          selection: TextSelection.collapsed(offset: document.text.length),
+        );
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Imported ${document.filename}. Review it before summarizing.',
+          ),
+        ),
+      );
+    } on DocumentImportException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.message)),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tower Lens could not import that file.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isImporting = false);
     }
   }
 
@@ -69,7 +122,9 @@ class _TosScreenState extends State<TosScreen> {
       if (!mounted) return;
       setState(() {
         _output = result.output;
-        _suggestedTitle = result.suggestedTitle;
+        _suggestedTitle = _importedFilename == null
+            ? result.suggestedTitle
+            : p.basenameWithoutExtension(_importedFilename!);
         _hasSuccessfulOutput = true;
       });
     } on TextAiServiceException catch (error) {
@@ -167,8 +222,22 @@ class _TosScreenState extends State<TosScreen> {
                     child: Text('Paste the ToS or privacy policy text', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                   IconButton(
+                    icon: _isImporting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.file_open_outlined),
+                    tooltip: 'Import PDF, TXT, or Markdown',
+                    onPressed:
+                        _isRunning || _isImporting ? null : _importDocument,
+                  ),
+                  IconButton(
                     icon: const Icon(Icons.camera_alt_outlined),
-                    onPressed: _isRunning ? null : _scanText,
+                    tooltip: 'Scan text with camera',
+                    onPressed:
+                        _isRunning || _isImporting ? null : _scanText,
                   ),
                 ],
               ),

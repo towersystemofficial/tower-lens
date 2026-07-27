@@ -24,6 +24,9 @@ Core non-negotiable principles: offline-first/local-by-default storage, user-con
 - `cupertino_icons: ^1.0.8`
 
 The app uses a small native HTTP implementation for the Anthropic Messages API; no Anthropic Dart SDK is used.
+Android PDF text extraction uses the Apache-2.0-licensed
+`com.tom-roush:pdfbox-android:2.0.27.0` dependency through a narrow platform
+channel. TXT and Markdown imports are decoded locally in Dart.
 
 **Storage architecture:** Local library entries are saved as real files (not app-sandboxed) at a user-chosen folder location, using `permission_handler`'s `MANAGE_EXTERNAL_STORAGE` + `file_picker`'s directory chooser, written via plain `dart:io` file operations as Markdown files with YAML-style frontmatter (fields: id, type, folder, timestamp) and Markdown body sections (Source Text / Instruction / Output). Auto-organized into `TowerLens/General`, `TowerLens/ToS`, `TowerLens/Ingredient`, plus user-created custom folders. A local search/sort/filter index is expected to scan the directory live rather than maintain a separate cache (per design decision; not independently re-verified against current `library_service.dart` contents in this pass).
 
@@ -66,6 +69,7 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 | Price-check / marketplace estimate mode | Not started, explicitly deferred, speculative |
 | iOS support | Not started, explicitly deferred |
 | PDF/Obsidian export beyond native Markdown | Not started |
+| PDF, TXT, and Markdown import | **In progress in Step 4** — local extraction into editable Home/ToS source fields |
 | Loading UI state for `TextAiService` calls | **Implemented** -- Home and ToS disable in-flight controls, show progress indicators, and surface a retry-safe error message |
 | On-device verification of everything since the last confirmed working build | **Not done** -- see Known Bugs |
 
@@ -73,7 +77,7 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 
 **Current milestone:** The local vertical slice and private-development Anthropic integration are implemented behind a swappable `TextAiService`. The mock fallback, loading/error state, library refresh notifications, tests, Android build repair, and working Flutter Android CI are merged. A future server can replace direct Anthropic calls through the existing configurable endpoint/authentication seam without changing the UI.
 
-**Next milestone:** Complete the Library's standard file-manager interaction pass. The underlying hierarchy, deletion confirmation, move/rename operations, sorting, and safe filenames are verified; replace per-row action menus with long-press selection and support drag-and-drop moves onto folder rows and breadcrumb destinations. Device verification and focused automated coverage should accompany the increment.
+**Next milestone:** Step 1's Library file-manager interaction pass is implemented and device-verified. Begin Step 4 with local PDF, TXT, and Markdown import. The broader automated-coverage expansion in Step 4 is explicitly deferred.
 
 ## 5–6. Prioritized backlog
 
@@ -99,7 +103,7 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 | Home manual input | Paste/type, run mock explanation, edit, save | **Pass** — Pixel 9a, 2026-07-22; manual text/instruction entry, loading state, mock output, save confirmation, editing the input, and rerunning against the edited text all passed |
 | Camera/OCR | Camera preview opens; capture/freeze produces editable recognized text; cancel/back works | **Pass** — Pixel 9a, 2026-07-22; camera permission, live preview, capture/freeze, OCR output, editing recognized text, and cancel/back behavior passed; returning to Home preserved the existing text |
 | Camera denial/recovery | Deny camera safely, then grant it and retry without reinstalling | **Pass** — Pixel 9a, 2026-07-22; after permission was revoked in Android Settings, reopening the scanner returned to the Android camera-permission prompt without crashing, and granting permission reopened the live preview without reinstalling |
-| Library | Saved item appears; refresh, search, sort, filter, open, and delete all work | **Pass through PR #39; interaction follow-up pending** — Pixel 9a, updated 2026-07-27; existing data and Markdown, nested folders, breadcrumbs/Up navigation, custom-folder saves, AI-suggested editable filenames, all sorting options, scoped/root search, overwrite protection, file/folder rename and move, file/folder deletion confirmation, sanitization, and restart persistence pass. A follow-up replaces per-row action menus with long-press selection and drag-and-drop moves. |
+| Library | Saved item appears; refresh, search, sort, filter, open, and delete all work | **Pass through PR #40** — Pixel 9a, updated 2026-07-27; existing data and Markdown, nested folders, breadcrumbs/Up navigation, custom-folder saves, AI-suggested editable filenames, all sorting options, scoped/root search, overwrite protection, file/folder rename and move, file/folder deletion confirmation, sanitization, restart persistence, long-press actions, drag-and-drop moves, destination highlighting, and post-move destination navigation pass. |
 | ToS | Paste text, run summary, read output, save, and reopen from Library | **Pass** — Pixel 9a, 2026-07-22; paste/input, loading state, structured mock summary, save confirmation, and reopening the saved entry from Library with its original text and structured summary all passed |
 | Watchlist | Add/remove entries; matching and non-matching ingredient checks behave correctly | **Pass** — Pixel 9a, 2026-07-22; adding `peanut` succeeded, a scanned peanut bag triggered the expected warning, and an unrelated scanned item produced no warning. With both `peanut` and `milk` present, removing only `peanut` kept checking enabled through `milk`; rescanning the peanut bag no longer produced the peanut warning |
 | Rendering and state | Dark theme/output contrast are readable; loading disables duplicate requests; an error can be retried | **Pass** — Pixel 9a, updated 2026-07-25; Home and ToS text and Markdown outputs are readable, loading prevents duplicate requests, offline failures show readable errors, controls recover, failed attempts cannot be saved, and both modes retry successfully after reconnecting without an app restart. |
@@ -144,11 +148,11 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 - Files: `lib/screens/watchlist_screen.dart`, `lib/services/text_ai_service.dart` (likely a new `TextAiTaskType`).
 - Dependencies: P1.
 
-**Task: Import existing text files into Tower Lens**
+**Task: Import existing text files into Tower Lens — IN PROGRESS**
 - Objective: let users import existing PDF, TXT, and Markdown files as source material instead of requiring camera OCR or manual paste.
 - Acceptance criteria: users can choose a supported file, review the extracted text before submitting it, and preserve the original filename as the editable save-name default; unsupported, unreadable, or empty files produce a recoverable error.
 - Formats: PDF (`.pdf`), plain text (`.txt`), and Markdown (`.md`).
-- Dependencies: implement alongside the Step 4 coverage work so parsing, error handling, and save/reopen behavior receive automated tests.
+- Dependencies: none. The broader Step 4 automated-coverage expansion is deferred by user direction; the existing CI analysis, test, and APK build gate remains required for this increment.
 
 **Task: Refine the prompts sent to the AI service**
 - Objective: deliberately improve the mode-specific prompts for summary quality, structure, accuracy, tone, and faithfulness to the source text rather than treating the first functional prompts as final product behavior.
@@ -196,9 +200,9 @@ The app uses a small native HTTP implementation for the Anthropic Messages API; 
 
 ## 9. Recommended execution order
 
-1. **Library safety and hierarchical file browser — interaction follow-up pending.** Confirmation for file/folder deletion, nested folders, breadcrumbs and up navigation, create/move/rename operations, visible sorting, editable AI-suggested filenames, overwrite protection, and preservation of search, filtering, Markdown, and local-first storage are implemented and verified through PR #39. Complete and device-test long-press contextual actions plus drag-and-drop moves onto folders and breadcrumbs to close this milestone.
+1. **Library safety and hierarchical file browser — COMPLETE.** Confirmation for file/folder deletion, nested folders, breadcrumbs and up navigation, create/move/rename operations, visible sorting, editable AI-suggested filenames, overwrite protection, long-press contextual actions, drag-and-drop moves onto folders and breadcrumbs, and preservation of search, filtering, Markdown, and local-first storage are implemented and device-verified through PR #40.
 
-4. **Automated coverage and file import.** Complete coverage for Library, ToS, Watchlist, camera/OCR where testable, duplicate-request prevention and retry, save/restart/reopen persistence, and Library scale. Add user-facing import for PDF, TXT, and Markdown files, including extraction/parsing, review, error handling, and save/reopen tests.
+4. **File import; automated coverage deferred.** Add user-facing import for PDF, TXT, and Markdown files, including local extraction, editable review, recoverable errors, and preservation of the original filename as the editable save-name default. Broader coverage for Library, ToS, Watchlist, camera/OCR, duplicate-request prevention and retry, persistence, and Library scale is explicitly deferred.
 
 5. **AI prompt refinement.** Define representative Home and ToS inputs and expected outputs, then improve and regression-test mode-specific prompts for structure, detail, tone, accuracy safeguards, and source faithfulness.
 
@@ -214,4 +218,4 @@ Steps 2 and 3 are no longer separate roadmap entries: the former Step 2 moved to
 
 ## 10. Next task for Codex
 
-**Complete the Library interaction follow-up, then begin Step 4.** Verify long-press rename/move/delete actions and drag-and-drop moves onto folders and breadcrumbs on the Pixel 9a. Once those checks pass, Step 1 is complete and the next implementation block is automated coverage plus PDF, TXT, and Markdown import.
+**Complete Step 4 file import.** Add local PDF, TXT, and Markdown import to the Home and ToS source review fields, preserve the original filename as the editable save-name default, and return recoverable errors for unreadable, unsupported, or empty files. Broader automated coverage is deferred.

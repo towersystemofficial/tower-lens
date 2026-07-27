@@ -56,7 +56,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 | Local library: save/browse/search/sort/filter/delete, real files, survives uninstall | Implemented |
 | ToS/privacy mode: paste, mocked structured summary, save | Implemented (mocked AI) |
 | Ingredient/allergy watchlist: manage list, check text against it | Implemented (real logic, not AI-based) |
-| Camera + on-device OCR: live preview, live recognition, freeze, editable pre-selected text | Implemented |
+| Camera + on-device OCR: live preview, live recognition, freeze, editable pre-selected text | Implemented; reliability upgrade planned for dense or angled text |
 | Cohesive UI/UX redesign beyond the functional MVP shell | Not started — desired direction still needs definition after device testing |
 | Dark theme (forced default) | Implemented |
 | `TextAiService` abstraction with mock fallback | Implemented |
@@ -142,6 +142,14 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 - Dependencies: complete P0.5 first so verified functional defects are separated from design dissatisfaction. The design brief should precede UI code.
 - Risks: high overlap across screens; uncontrolled restyling could create bloat or regress accessibility and existing flows. Preserve behavior, local-first principles, and the `TextAiService`/storage boundaries.
 
+**Task: Improve camera/OCR reliability for dense and angled text — PLANNED**
+- Objective: make camera scanning dependable for full pages, multi-column or otherwise dense layouts, and text photographed at modest angles.
+- Confirmed root cause: the current scanner recognizes continuously from `ResolutionPreset.medium` preview frames, and Freeze only copies the most recent live OCR result. It does not capture and reprocess a high-resolution still, crop to a document region, correct perspective/rotation, stabilize across frames, or preserve reading order explicitly.
+- Planned first increment: retain live OCR as a framing aid, but on Freeze capture a high-resolution still and run a fresh local ML Kit recognition pass on that image using correct orientation metadata. Show a processing state, preserve editable review/rescan behavior, and return recoverable errors.
+- Follow-up evaluation: test small text, a full dense page, headings plus paragraphs, columns, and angled pages on the Pixel 9a. Add document-boundary guidance/cropping or perspective correction only if the still-image pass remains insufficient.
+- Privacy/cost: OCR remains entirely on-device and must not call Claude. Claude receives recognized text only after the user reviews it and explicitly runs Home or ToS analysis.
+- Dependencies: complete and device-evaluate Step 5 prompt refinement first; broader automated-coverage expansion remains deferred.
+
 **Task: Route Watchlist ingredient-ambiguity explanations through real AI**
 - Objective: per original product scope, AI should be able to explain ambiguous ingredients on request -- currently Watchlist only does local substring matching.
 - Acceptance criteria: **UNKNOWN — VERIFY** exact UX (not yet designed); depends on P1 being complete.
@@ -207,13 +215,15 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 5. **AI prompt refinement — IN PROGRESS.** Representative expectations are defined around direct plain-language Home answers and consistently structured ToS summaries. Improve and regression-test mode-specific prompts for structure, detail, tone, embedded-instruction resistance, accuracy safeguards, uncertainty handling, and source faithfulness.
 
-6. **Watchlist AI explanations.** Preserve immediate local matching while adding on-request AI explanations for ambiguous ingredients.
+6. **Camera/OCR reliability.** Keep live OCR for framing, but capture and locally reprocess a high-resolution still on Freeze; verify dense pages, multi-column layouts, small text, and angled pages before considering cropping or perspective correction.
 
-7. **Define and implement the UI/UX redesign.** Produce the concise visual direction and screen inventory here, then apply the approved navigation, typography, spacing, colors, components, and flows in small increments. This is the former Step 2; the old workflow-integrity Step 7 has been removed.
+7. **Watchlist AI explanations.** Preserve immediate local matching while adding on-request AI explanations for ambiguous ingredients.
 
-8. **Price-check mode.** Add the previously deferred price-check/marketplace-estimate mode after the core app, import flow, prompts, Watchlist explanations, and redesign are established.
+8. **Define and implement the UI/UX redesign.** Produce the concise visual direction and screen inventory here, then apply the approved navigation, typography, spacing, colors, components, and flows in small increments. This is the former Step 2; the old workflow-integrity Step 7 has been removed.
 
-9. **Prepare for public distribution.** Add the backend/proxy, production-safe API-key custody, accounts/authentication as needed, credits or subscriptions and Google Play Billing, and resolve broad Android storage permission before store release.
+9. **Price-check mode.** Add the previously deferred price-check/marketplace-estimate mode after the core app, import flow, prompts, Watchlist explanations, and redesign are established.
+
+10. **Prepare for public distribution.** Add the backend/proxy, production-safe API-key custody, accounts/authentication as needed, credits or subscriptions and Google Play Billing, and resolve broad Android storage permission before store release.
 
 Steps 2 and 3 are no longer separate roadmap entries: the former Step 2 moved to Step 7, and the former Step 3 merged into Step 1.
 

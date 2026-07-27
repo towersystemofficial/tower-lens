@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import '../services/document_import_service.dart';
 import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
+import '../services/token_estimate.dart';
 import '../widgets/markdown_content.dart';
 import '../widgets/markdown_editor.dart';
 import '../widgets/library_save_dialog.dart';
@@ -40,26 +41,50 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isImporting = false;
   bool _isRunning = false;
   bool _hasSuccessfulOutput = false;
+  TextAiTaskType? _selectedPreset;
+  double _simplicityLevel = 0;
 
   bool get _canRun =>
       !_isImporting &&
       !_isRunning &&
       _sourceTextController.sourceText.trim().isNotEmpty &&
-      _instructionController.sourceText.trim().isNotEmpty;
+      _effectiveInstruction.trim().isNotEmpty;
 
-  static const List<String> _presetTasks = [
-    'Summarize',
-    'Explain simply',
-    'Define jargon',
-    'Ask question',
-    'Generate report',
-  ];
+  static const Map<TextAiTaskType, String> _presetTasks = {
+    TextAiTaskType.summary: 'Summarize',
+    TextAiTaskType.simplify: 'Simplify Text',
+  };
 
-  void _applyPreset(String task) => setState(() {
-        _instructionController.value = TextEditingValue(
-          text: task,
-          selection: TextSelection.collapsed(offset: task.length),
-        );
+  TextAiTaskType get _activeTaskType =>
+      _selectedPreset ?? TextAiTaskType.general;
+
+  int get _commonWordLimit =>
+      10000 - (_simplicityLevel.round() * 1000);
+
+  String get _effectiveInstruction => switch (_selectedPreset) {
+        TextAiTaskType.summary => 'Summarize the supplied text.',
+        TextAiTaskType.simplify =>
+          'Simplify the supplied text using approximately the top '
+              '$_commonWordLimit most common English words as the vocabulary '
+              'cutoff.',
+        _ => _instructionController.sourceText,
+      };
+
+  TokenEstimate get _tokenEstimate => TextAiTokenEstimator.estimate(
+        taskType: _activeTaskType,
+        sourceText: _sourceTextController.sourceText,
+        instruction: _effectiveInstruction,
+      );
+
+  void _togglePreset(TextAiTaskType taskType) => setState(() {
+        if (_selectedPreset == taskType) {
+          _selectedPreset = null;
+          return;
+        }
+        _selectedPreset = taskType;
+        if (taskType == TextAiTaskType.simplify) {
+          _simplicityLevel = 0;
+        }
       });
 
   Future<void> _runTask() async {
@@ -72,9 +97,9 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     try {
       final result = await widget.textAiService.runTask(
-        taskType: TextAiTaskType.general,
+        taskType: _activeTaskType,
         sourceText: _sourceTextController.sourceText,
-        instruction: _instructionController.sourceText,
+        instruction: _effectiveInstruction,
       );
       if (!mounted) return;
       setState(() {
@@ -186,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
         folder: destination.folder,
         filename: destination.filename,
         sourceText: _sourceTextController.sourceText,
-        instruction: _instructionController.sourceText,
+        instruction: _effectiveInstruction,
         output: _output,
       );
       if (mounted) {
@@ -277,23 +302,54 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 20),
               const Text('What do you want done with it?', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              MarkdownEditor(
-                controller: _instructionController,
-                onChanged: (_) => setState(() {}),
-                maxLines: 2,
-                hintText: 'e.g. Summarize this in plain language',
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 150),
+                opacity: _selectedPreset == null ? 1 : 0.45,
+                child: MarkdownEditor(
+                  controller: _instructionController,
+                  onChanged: (_) => setState(() {}),
+                  enabled: _selectedPreset == null && !_isRunning,
+                  maxLines: 2,
+                  hintText: 'e.g. Explain how these ideas connect',
+                ),
               ),
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: _presetTasks
-                    .map((task) => ActionChip(
-                          label: Text(task),
-                          onPressed: _isRunning ? null : () => _applyPreset(task),
+                children: _presetTasks.entries
+                    .map((preset) => ChoiceChip(
+                          label: Text(preset.value),
+                          selected: _selectedPreset == preset.key,
+                          onSelected: _isRunning
+                              ? null
+                              : (_) => _togglePreset(preset.key),
                         ))
                     .toList(),
               ),
+              if (_selectedPreset == TextAiTaskType.simplify) ...[
+                const SizedBox(height: 16),
+                Slider(
+                  value: _simplicityLevel,
+                  min: 0,
+                  max: 5,
+                  divisions: 5,
+                  onChanged: _isRunning
+                      ? null
+                      : (value) => setState(() => _simplicityLevel = value),
+                ),
+                const Row(
+                  children: [
+                    Expanded(child: Text('Highest accuracy')),
+                    Expanded(
+                      child: Text(
+                        'Highest simplicity',
+                        textAlign: TextAlign.end,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
@@ -307,7 +363,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Run'),
+                        : Text(
+                            'Run (est. ${_tokenEstimate.buttonLabel})',
+                            textAlign: TextAlign.center,
+                          ),
                   ),
                 ),
               ),

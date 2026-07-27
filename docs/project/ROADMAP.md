@@ -2,7 +2,7 @@
 
 ## 1. What Tower Lens is
 
-Tower Lens is a privacy-first, local-first Flutter Android app (initially targeting a Pixel 9a) that lets a user scan or paste dense real-world text -- books, ingredient labels, Terms of Service, manuals, warnings -- and ask an AI to summarize, explain, define, or report on it. Camera scanning with on-device OCR is the intended primary input method; manual paste/type is a fully supported secondary path.
+Tower Lens is a privacy-first, local-first Flutter Android app (initially targeting a Pixel 9a) that lets a user scan or paste dense real-world text -- books, ingredient labels, Terms of Service, manuals, warnings -- and ask an AI to summarize, simplify, or analyze it using a custom instruction. Camera scanning with on-device OCR is the intended primary input method; manual paste/type is a fully supported secondary path.
 
 Intended users: people dealing with dense or high-friction text -- students, people reading academic/technical material, people checking ToS/privacy policies, people with allergies or dietary restrictions checking ingredient labels, and generally anyone who wants a fast plain-language read on text in front of them.
 
@@ -41,7 +41,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 - `lib/screens/library_screen.dart`, `lib/screens/library_detail_screen.dart` -- local file library browse/search/sort/filter/delete.
 - `lib/services/library_service.dart` -- storage layer described above.
 - `lib/services/watchlist_service.dart` -- local watchlist persistence via `shared_preferences`.
-- `lib/services/text_ai_service.dart` -- abstraction introduced in issue #20/PR #21: `TextAiTaskType` enum (`general`, `tosSummary`), abstract `TextAiService`, and `MockTextAiService`.
+- `lib/services/text_ai_service.dart` -- abstraction introduced in issue #20/PR #21: mode-specific `TextAiTaskType` values for custom instructions, structured summaries, text simplification, and ToS analysis; abstract `TextAiService`; and `MockTextAiService`.
 - `lib/services/anthropic_text_ai_service.dart` -- HTTP-backed implementation supporting the Anthropic Messages API or a compatible future Tower Lens proxy, including timeout, credential, billing, rate-limit, server, and malformed-response errors.
 - `lib/services/text_ai_service_factory.dart` -- selects the mock when no credential is supplied; supports private direct-Anthropic development or a configurable endpoint with bearer authentication for a future proxy.
 - `lib/models/library_entry.dart` -- library entry data model.
@@ -56,7 +56,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 | Local library: save/browse/search/sort/filter/delete, real files, survives uninstall | Implemented |
 | ToS/privacy mode: paste, mocked structured summary, save | Implemented (mocked AI) |
 | Ingredient/allergy watchlist: manage list, check text against it | Implemented (real logic, not AI-based) |
-| Camera + on-device OCR: live preview, live recognition, freeze, editable pre-selected text | Implemented |
+| Camera + on-device OCR: live preview, live recognition, freeze, editable pre-selected text | Implemented; reliability upgrade planned for dense or angled text |
 | Cohesive UI/UX redesign beyond the functional MVP shell | Not started — desired direction still needs definition after device testing |
 | Dark theme (forced default) | Implemented |
 | `TextAiService` abstraction with mock fallback | Implemented |
@@ -69,7 +69,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 | Price-check / marketplace estimate mode | Not started, explicitly deferred, speculative |
 | iOS support | Not started, explicitly deferred |
 | PDF/Obsidian export beyond native Markdown | Not started |
-| PDF, TXT, and Markdown import | **In progress in Step 4** — local extraction into editable Home/ToS source fields |
+| PDF, TXT, and Markdown import | **Implemented and device-verified** — local extraction into editable Home/ToS source fields; all phone checks passed 2026-07-27 |
 | Loading UI state for `TextAiService` calls | **Implemented** -- Home and ToS disable in-flight controls, show progress indicators, and surface a retry-safe error message |
 | On-device verification of everything since the last confirmed working build | **Not done** -- see Known Bugs |
 
@@ -77,7 +77,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 **Current milestone:** The local vertical slice and private-development Anthropic integration are implemented behind a swappable `TextAiService`. The mock fallback, loading/error state, library refresh notifications, tests, Android build repair, and working Flutter Android CI are merged. A future server can replace direct Anthropic calls through the existing configurable endpoint/authentication seam without changing the UI.
 
-**Next milestone:** Step 1's Library file-manager interaction pass is implemented and device-verified. Begin Step 4 with local PDF, TXT, and Markdown import. The broader automated-coverage expansion in Step 4 is explicitly deferred.
+**Next milestone:** Step 4's local PDF, TXT, and Markdown import is implemented and device-verified. Begin Step 5 by refining the Home and ToS prompts for consistent structure, source faithfulness, uncertainty handling, and resistance to instructions embedded in source documents. The broader automated-coverage expansion remains explicitly deferred.
 
 ## 5–6. Prioritized backlog
 
@@ -148,17 +148,34 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 - Files: `lib/screens/watchlist_screen.dart`, `lib/services/text_ai_service.dart` (likely a new `TextAiTaskType`).
 - Dependencies: P1.
 
-**Task: Import existing text files into Tower Lens — IN PROGRESS**
+**Task: Import existing text files into Tower Lens — COMPLETE (merged in PR #41)**
 - Objective: let users import existing PDF, TXT, and Markdown files as source material instead of requiring camera OCR or manual paste.
 - Acceptance criteria: users can choose a supported file, review the extracted text before submitting it, and preserve the original filename as the editable save-name default; unsupported, unreadable, or empty files produce a recoverable error.
 - Formats: PDF (`.pdf`), plain text (`.txt`), and Markdown (`.md`).
 - Dependencies: none. The broader Step 4 automated-coverage expansion is deferred by user direction; the existing CI analysis, test, and APK build gate remains required for this increment.
+- Completion evidence: PR #41 merged; CI passed analysis, all existing tests, debug APK compilation, and artifact upload. All eleven Pixel 9a checks passed on 2026-07-27, including Home and ToS imports, editable TXT/Markdown, multi-page PDF extraction, analysis and saving, stale-output clearing, picker cancellation, unsupported-file filtering, offline extraction, and existing-flow regression checks.
 
-**Task: Refine the prompts sent to the AI service**
+**Task: Refine the prompts sent to the AI service — IMPLEMENTED IN PR #42; DEVICE VERIFICATION PENDING**
 - Objective: deliberately improve the mode-specific prompts for summary quality, structure, accuracy, tone, and faithfulness to the source text rather than treating the first functional prompts as final product behavior.
-- Acceptance criteria: **UNKNOWN — DEFINE WITH USER** using representative inputs and expected outputs before changing prompt code; preserve user instructions in general mode and keep ToS output clearly informational rather than legal advice.
-- Files: `lib/services/anthropic_text_ai_service.dart` and prompt-focused automated tests.
-- Dependencies: complete the current API-key/error verification first so transport and lifecycle failures are separated from output-quality decisions.
+- Home acceptance criteria:
+  - Custom instructions remain available when no preset is selected.
+  - Selecting a preset disables and visually grays the custom-instruction editor; selecting the active preset again restores the editor without discarding its text.
+  - `Summarize` produces a quick blurb, a main-points list, and then a high-fidelity, high-detail breakdown.
+  - `Simplify Text` rewrites rather than summarizes, preserves the original paragraphs and meaning as closely as possible, and targets a selectable common-word cutoff from the top 10,000 to top 5,000 English words in 1,000-word increments. The slider resets to Highest accuracy whenever the mode is selected.
+  - Question-answer and report-generation presets are removed to keep the product focused on reducing reading barriers rather than replacing user creativity.
+- ToS acceptance criteria: begin with a short summary, then prioritize immediate notices, potential major consequences, ordinary restrictions, unusual or suspicious terms, and missing information. Cover charges; cancellation/refunds; notices and changes; data/metadata collection, use, sale, advertising, AI, retention, deletion, international transfer, and jurisdiction; content ownership and licenses; surrendered rights; arbitration/class-action/jury waivers and opt-outs; liability, warranties, indemnity, and responsibilities; account control; eligibility; prohibited uses; and third parties. Preserve exact deadlines, fees, exceptions, and consequences and keep the output informational rather than legal advice.
+- Cost transparency: show a local pre-run estimate of total input/output token usage as a range with an 80% confidence indicator. Anthropic still requires `max_tokens`, so use a generous request-specific safety ceiling from 4,096 up to the configured Haiku model's 64,000-token output capacity rather than the former fixed 1,200-token output limit; the estimate itself is not a cap and makes no API call.
+- Vocabulary reference: https://www.top10000words.com/english/top-10000-english-words
+- Files: Home and ToS screens, `TextAiService`, `AnthropicTextAiService`, token estimation, Markdown-editor enabled state, and focused automated tests.
+- Dependencies: none. Existing API-key/error verification keeps transport and lifecycle failures separate from output-quality decisions.
+
+**Task: Improve camera/OCR reliability for dense and angled text — PLANNED**
+- Objective: make camera scanning dependable for full pages, multi-column or otherwise dense layouts, and text photographed at modest angles.
+- Confirmed root cause: the current scanner recognizes continuously from `ResolutionPreset.medium` preview frames, and Freeze only copies the most recent live OCR result. It does not capture and reprocess a high-resolution still, crop to a document region, correct perspective/rotation, stabilize across frames, or preserve reading order explicitly.
+- Planned first increment: retain live OCR as a framing aid, but on Freeze capture a high-resolution still and run a fresh local ML Kit recognition pass on that image using correct orientation metadata. Show a processing state, preserve editable review/rescan behavior, and return recoverable errors.
+- Follow-up evaluation: test small text, a full dense page, headings plus paragraphs, columns, and angled pages on the Pixel 9a. Add document-boundary guidance/cropping or perspective correction only if the still-image pass remains insufficient.
+- Privacy/cost: OCR remains entirely on-device and must not call Claude. Claude receives recognized text only after the user reviews it and explicitly runs Home or ToS analysis.
+- Dependencies: complete and device-evaluate Step 5 prompt refinement first; broader automated-coverage expansion remains deferred.
 
 ### Deferred / explicitly out of scope for now (per product principles, not forgotten)
 
@@ -202,20 +219,22 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 1. **Library safety and hierarchical file browser — COMPLETE.** Confirmation for file/folder deletion, nested folders, breadcrumbs and up navigation, create/move/rename operations, visible sorting, editable AI-suggested filenames, overwrite protection, long-press contextual actions, drag-and-drop moves onto folders and breadcrumbs, and preservation of search, filtering, Markdown, and local-first storage are implemented and device-verified through PR #40.
 
-4. **File import; automated coverage deferred.** Add user-facing import for PDF, TXT, and Markdown files, including local extraction, editable review, recoverable errors, and preservation of the original filename as the editable save-name default. Broader coverage for Library, ToS, Watchlist, camera/OCR, duplicate-request prevention and retry, persistence, and Library scale is explicitly deferred.
+4. **File import — COMPLETE; automated coverage deferred.** User-facing PDF, TXT, and Markdown import, local extraction, editable review, recoverable errors, and original-filename preservation are implemented and device-verified through PR #41. Broader coverage for Library, ToS, Watchlist, camera/OCR, duplicate-request prevention and retry, persistence, and Library scale remains explicitly deferred.
 
-5. **AI prompt refinement.** Define representative Home and ToS inputs and expected outputs, then improve and regression-test mode-specific prompts for structure, detail, tone, accuracy safeguards, and source faithfulness.
+5. **AI prompt refinement — IMPLEMENTED IN PR #42; DEVICE VERIFICATION PENDING.** Home now has separate Summarize, Simplify Text, and custom-instruction contracts; ToS uses the approved comprehensive risk-oriented analysis; Run/Summarize shows a local token-usage range; and the former fixed 1,200-token output ceiling is replaced by a generous request-specific API safety ceiling.
 
-6. **Watchlist AI explanations.** Preserve immediate local matching while adding on-request AI explanations for ambiguous ingredients.
+6. **Camera/OCR reliability.** Keep live OCR for framing, but capture and locally reprocess a high-resolution still on Freeze; verify dense pages, multi-column layouts, small text, and angled pages before considering cropping or perspective correction.
 
-7. **Define and implement the UI/UX redesign.** Produce the concise visual direction and screen inventory here, then apply the approved navigation, typography, spacing, colors, components, and flows in small increments. This is the former Step 2; the old workflow-integrity Step 7 has been removed.
+7. **Watchlist AI explanations.** Preserve immediate local matching while adding on-request AI explanations for ambiguous ingredients.
 
-8. **Price-check mode.** Add the previously deferred price-check/marketplace-estimate mode after the core app, import flow, prompts, Watchlist explanations, and redesign are established.
+8. **Define and implement the UI/UX redesign.** Produce the concise visual direction and screen inventory here, then apply the approved navigation, typography, spacing, colors, components, and flows in small increments. This is the former Step 2; the old workflow-integrity Step 7 has been removed.
 
-9. **Prepare for public distribution.** Add the backend/proxy, production-safe API-key custody, accounts/authentication as needed, credits or subscriptions and Google Play Billing, and resolve broad Android storage permission before store release.
+9. **Price-check mode.** Add the previously deferred price-check/marketplace-estimate mode after the core app, import flow, prompts, Watchlist explanations, and redesign are established.
+
+10. **Prepare for public distribution.** Add the backend/proxy, production-safe API-key custody, accounts/authentication as needed, credits or subscriptions and Google Play Billing, and resolve broad Android storage permission before store release.
 
 Steps 2 and 3 are no longer separate roadmap entries: the former Step 2 moved to Step 7, and the former Step 3 merged into Step 1.
 
 ## 10. Next task for Codex
 
-**Complete Step 4 file import.** Add local PDF, TXT, and Markdown import to the Home and ToS source review fields, preserve the original filename as the editable save-name default, and return recoverable errors for unreadable, unsupported, or empty files. Broader automated coverage is deferred.
+**Device-verify Step 5, then begin Step 6 OCR reliability.** Verify Home preset selection/deselection, custom-instruction preservation, the Simplify Text slider reset and endpoints, token estimates, summary structure, simplification fidelity, and the complete ToS risk analysis on the Pixel 9a. Once those pass, keep live OCR for framing but capture and locally reprocess a high-resolution still on Freeze. Broader automated coverage remains deferred.

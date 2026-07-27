@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -233,9 +234,10 @@ void main() {
         await tester.tap(find.text('General'));
         await pumpFrames(tester);
 
-        await tester.tap(find.byTooltip('File actions'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Delete').last);
+        await tester.longPress(find.byKey(ValueKey('entry:${entry.filePath}')));
+        await pumpFrames(tester);
+        expect(find.byTooltip('Delete selected item'), findsOneWidget);
+        await tester.tap(find.byTooltip('Delete selected item'));
         await pumpFrames(tester);
         expect(find.text('Delete saved item?'), findsOneWidget);
         expect(service.deletedEntry, isNull);
@@ -244,9 +246,9 @@ void main() {
         await pumpFrames(tester);
         expect(service.deletedEntry, isNull);
 
-        await tester.tap(find.byTooltip('File actions'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Delete').last);
+        await tester.longPress(find.byKey(ValueKey('entry:${entry.filePath}')));
+        await pumpFrames(tester);
+        await tester.tap(find.byTooltip('Delete selected item'));
         await pumpFrames(tester);
         await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
         await pumpFrames(tester);
@@ -266,14 +268,9 @@ void main() {
         final researchFolder = find.byKey(
           const ValueKey('folder:Research'),
         );
-        await tester.tap(
-          find.descendant(
-            of: researchFolder,
-            matching: find.byTooltip('Folder actions'),
-          ),
-        );
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Delete').last);
+        await tester.longPress(researchFolder);
+        await pumpFrames(tester);
+        await tester.tap(find.byTooltip('Delete selected item'));
         await pumpFrames(tester);
         expect(find.text('Delete Research?'), findsOneWidget);
         expect(service.deletedFolder, isNull);
@@ -336,7 +333,8 @@ void main() {
       expect(zebraDescending, lessThan(appleDescending));
     });
 
-    testWidgets('renames a file from its action menu', (tester) async {
+    testWidgets('renames a file after selecting it with a long press',
+        (tester) async {
       service.entries.add(
         LibraryEntry(
           id: 'entry-1',
@@ -357,9 +355,11 @@ void main() {
       await tester.tap(find.text('General'));
       await pumpFrames(tester);
 
-      await tester.tap(find.byTooltip('File actions'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Rename').last);
+      await tester.longPress(find.text('Old name'));
+      await pumpFrames(tester);
+      expect(find.byTooltip('Rename selected item'), findsOneWidget);
+      expect(find.byTooltip('File actions'), findsNothing);
+      await tester.tap(find.byTooltip('Rename selected item'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).last, 'New name');
       await tester.tap(find.widgetWithText(FilledButton, 'Rename'));
@@ -390,9 +390,9 @@ void main() {
       await tester.tap(find.text('General'));
       await pumpFrames(tester);
 
-      await tester.tap(find.byTooltip('File actions'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Move').last);
+      await tester.longPress(find.text('Move me'));
+      await pumpFrames(tester);
+      await tester.tap(find.byTooltip('Move selected item'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('General').last);
       await tester.pumpAndSettle();
@@ -407,7 +407,7 @@ void main() {
       expect(find.text('Move me'), findsNothing);
     });
 
-    testWidgets('renames and moves folders from their action menus',
+    testWidgets('renames and moves folders after long-press selection',
         (tester) async {
       await tester.pumpWidget(
         MaterialApp(home: LibraryScreen(libraryService: service)),
@@ -415,14 +415,10 @@ void main() {
       await pumpFrames(tester);
 
       var researchFolder = find.byKey(const ValueKey('folder:Research'));
-      await tester.tap(
-        find.descendant(
-          of: researchFolder,
-          matching: find.byTooltip('Folder actions'),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Rename').last);
+      await tester.longPress(researchFolder);
+      await pumpFrames(tester);
+      expect(find.byTooltip('Folder actions'), findsNothing);
+      await tester.tap(find.byTooltip('Rename selected item'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).last, 'Sources');
       await tester.tap(find.widgetWithText(FilledButton, 'Rename'));
@@ -431,14 +427,9 @@ void main() {
       expect(find.text('Sources'), findsOneWidget);
 
       researchFolder = find.byKey(const ValueKey('folder:Sources'));
-      await tester.tap(
-        find.descendant(
-          of: researchFolder,
-          matching: find.byTooltip('Folder actions'),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Move').last);
+      await tester.longPress(researchFolder);
+      await pumpFrames(tester);
+      await tester.tap(find.byTooltip('Move selected item'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('TowerLens').last);
       await tester.pumpAndSettle();
@@ -451,5 +442,114 @@ void main() {
       expect(service.movedFolder, 'ToS/Sources');
       expect(find.text('Sources'), findsNothing);
     });
+
+    testWidgets(
+      'drags a file onto a folder and opens the destination',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1200);
+        addTearDown(tester.view.resetPhysicalSize);
+        final entry = LibraryEntry(
+          id: 'entry-1',
+          type: 'general',
+          folder: '',
+          sourceText: 'source',
+          instruction: 'summarize',
+          output: 'output',
+          timestamp: DateTime(2026, 7, 25),
+          filePath: '/library/TowerLens/Drag me.md',
+        );
+        service.entries.add(entry);
+
+        await tester.pumpWidget(
+          MaterialApp(home: LibraryScreen(libraryService: service)),
+        );
+        await pumpFrames(tester);
+
+        final source = find.byKey(ValueKey('entry:${entry.filePath}'));
+        final target = find.byKey(const ValueKey('folder-target:Research'));
+        final gesture = await tester.startGesture(tester.getCenter(source));
+        await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+        await gesture.moveTo(tester.getCenter(target));
+        await tester.pump(const Duration(milliseconds: 200));
+        await gesture.up();
+        await pumpFrames(tester);
+
+        expect(service.movedEntry?.folder, 'Research');
+        expect(find.text('Research'), findsWidgets);
+        expect(find.text('Drag me'), findsOneWidget);
+        expect(find.byTooltip('Delete selected item'), findsNothing);
+      },
+      timeout: const Timeout(Duration(seconds: 20)),
+    );
+
+    testWidgets(
+      'drags a file onto a breadcrumb and opens that folder',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1200);
+        addTearDown(tester.view.resetPhysicalSize);
+        final entry = LibraryEntry(
+          id: 'entry-1',
+          type: 'general',
+          folder: 'Research/Papers',
+          sourceText: 'source',
+          instruction: 'summarize',
+          output: 'output',
+          timestamp: DateTime(2026, 7, 25),
+          filePath: '/library/TowerLens/Research/Papers/Breadcrumb me.md',
+        );
+        service.entries.add(entry);
+
+        await tester.pumpWidget(
+          MaterialApp(home: LibraryScreen(libraryService: service)),
+        );
+        await pumpFrames(tester);
+        await tester.tap(find.text('Research'));
+        await pumpFrames(tester);
+        await tester.tap(find.text('Papers'));
+        await pumpFrames(tester);
+
+        final source = find.byKey(ValueKey('entry:${entry.filePath}'));
+        final target =
+            find.byKey(const ValueKey('breadcrumb-target:Research'));
+        final gesture = await tester.startGesture(tester.getCenter(source));
+        await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+        await gesture.moveTo(tester.getCenter(target));
+        await tester.pump(const Duration(milliseconds: 200));
+        await gesture.up();
+        await pumpFrames(tester);
+
+        expect(service.movedEntry?.folder, 'Research');
+        expect(find.text('Breadcrumb me'), findsOneWidget);
+        expect(find.text('Papers'), findsOneWidget);
+      },
+      timeout: const Timeout(Duration(seconds: 20)),
+    );
+
+    testWidgets(
+      'drags a folder onto another folder and opens the destination',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1200);
+        addTearDown(tester.view.resetPhysicalSize);
+
+        await tester.pumpWidget(
+          MaterialApp(home: LibraryScreen(libraryService: service)),
+        );
+        await pumpFrames(tester);
+
+        final source = find.byKey(const ValueKey('folder:Research'));
+        final target = find.byKey(const ValueKey('folder-target:ToS'));
+        final gesture = await tester.startGesture(tester.getCenter(source));
+        await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+        await gesture.moveTo(tester.getCenter(target));
+        await tester.pump(const Duration(milliseconds: 200));
+        await gesture.up();
+        await pumpFrames(tester);
+
+        expect(service.movedFolder, 'ToS/Research');
+        expect(find.text('ToS'), findsWidgets);
+        expect(find.text('Research'), findsOneWidget);
+      },
+      timeout: const Timeout(Duration(seconds: 20)),
+    );
   });
 }

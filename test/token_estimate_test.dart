@@ -25,4 +25,38 @@ void main() {
 
     expect(maxTokens, 4096);
   });
+
+  test('keeps short requests at the 45 second minimum', () {
+    final estimate = TextAiTokenEstimator.estimate(
+      taskType: TextAiTaskType.simplify,
+      sourceText: 'A short paragraph to simplify.',
+      instruction: 'Simplify the supplied text.',
+    );
+
+    expect(estimate.requestTimeout, const Duration(seconds: 45));
+    expect(estimate.durationWarning, isNull);
+  });
+
+  test('gives long simplification requests several minutes', () {
+    final estimate = TextAiTokenEstimator.estimate(
+      taskType: TextAiTaskType.simplify,
+      sourceText: List.filled(5000, 'denseword').join(' '),
+      instruction: 'Simplify the supplied text.',
+    );
+
+    expect(estimate.requestTimeout, greaterThanOrEqualTo(const Duration(minutes: 5)));
+    expect(estimate.requestTimeout, lessThanOrEqualTo(const Duration(minutes: 10)));
+    expect(estimate.durationWarning, contains('may take up to about'));
+  });
+
+  test('scales detailed ToS analysis beyond the fixed timeout', () {
+    final estimate = TextAiTokenEstimator.estimate(
+      taskType: TextAiTaskType.tosSummary,
+      sourceText: List.filled(3000, 'policyword').join(' '),
+      instruction: 'Analyze ToS/privacy policy',
+    );
+
+    expect(estimate.requestTimeout, greaterThan(const Duration(seconds: 45)));
+    expect(estimate.durationWarning, isNotNull);
+  });
 }

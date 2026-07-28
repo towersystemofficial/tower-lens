@@ -5,17 +5,27 @@ class TokenEstimate {
     required this.lowerBound,
     required this.upperBound,
     required this.outputUpperBound,
+    required this.requestTimeout,
     this.confidencePercent = 80,
   });
 
   final int lowerBound;
   final int upperBound;
   final int outputUpperBound;
+  final Duration requestTimeout;
   final int confidencePercent;
 
   String get buttonLabel =>
       '${_format(lowerBound)}–${_format(upperBound)} tokens, '
       '$confidencePercent% confidence';
+
+  String? get durationWarning {
+    if (requestTimeout <= const Duration(seconds: 45)) return null;
+    final minutes = (requestTimeout.inSeconds / 60).ceil();
+    final unit = minutes == 1 ? 'minute' : 'minutes';
+    return 'Large or complex request: this may take up to about '
+        '$minutes $unit.';
+  }
 
   static String _format(int value) {
     if (value < 1000) return value.toString();
@@ -66,6 +76,7 @@ class TextAiTokenEstimator {
       lowerBound: _roundDown(inputTokens + outputLower),
       upperBound: _roundUp(inputTokens + outputUpper),
       outputUpperBound: outputUpper,
+      requestTimeout: _requestTimeout(taskType, outputUpper),
     );
   }
 
@@ -80,6 +91,46 @@ class TextAiTokenEstimator {
       instruction: instruction,
     );
     return (estimate.outputUpperBound * 2).clamp(4096, 64000);
+  }
+
+  static Duration requiredTimeout({
+    required TextAiTaskType taskType,
+    required String sourceText,
+    required String instruction,
+  }) =>
+      estimate(
+        taskType: taskType,
+        sourceText: sourceText,
+        instruction: instruction,
+      ).requestTimeout;
+
+  static Duration _requestTimeout(
+    TextAiTaskType taskType,
+    int outputUpperBound,
+  ) {
+    const minimumSeconds = 45;
+    const scalingThreshold = 1500;
+    const maximumSeconds = 600;
+    if (outputUpperBound <= scalingThreshold) {
+      return const Duration(seconds: minimumSeconds);
+    }
+
+    final tokensPerAdditionalSecond = switch (taskType) {
+      TextAiTaskType.general => 30,
+      TextAiTaskType.summary => 24,
+      TextAiTaskType.simplify => 15,
+      TextAiTaskType.tosSummary => 15,
+    };
+    final additionalTokens = outputUpperBound - scalingThreshold;
+    final additionalSeconds =
+        (additionalTokens + tokensPerAdditionalSecond - 1) ~/
+            tokensPerAdditionalSecond;
+    return Duration(
+      seconds: (minimumSeconds + additionalSeconds).clamp(
+        minimumSeconds,
+        maximumSeconds,
+      ),
+    );
   }
 
   static int _approximateTokens(String text) =>

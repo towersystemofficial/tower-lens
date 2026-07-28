@@ -153,6 +153,42 @@ void main() {
       );
     });
 
+    test('honors an explicit timeout override', () async {
+      final client = MockClient((_) async {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        return http.Response(
+          jsonEncode({
+            'content': [
+              {'type': 'text', 'text': 'Late response'},
+            ],
+          }),
+          200,
+        );
+      });
+      final service = AnthropicTextAiService(
+        endpoint: Uri.parse('https://example.test/v1/messages'),
+        model: 'test-model',
+        apiKey: 'test-key',
+        timeout: const Duration(milliseconds: 1),
+        client: client,
+      );
+
+      await expectLater(
+        service.runTask(
+          taskType: TextAiTaskType.general,
+          sourceText: 'Text',
+          instruction: 'Summarize',
+        ),
+        throwsA(
+          isA<TextAiServiceException>().having(
+            (error) => error.message,
+            'message',
+            contains('timed out'),
+          ),
+        ),
+      );
+    });
+
     test('reports rate-limit retry timing', () async {
       final client = MockClient(
         (_) async => http.Response('', 429, headers: {'retry-after': '12'}),

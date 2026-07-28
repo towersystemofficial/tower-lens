@@ -124,7 +124,11 @@ class _RootShellState extends State<RootShell> {
         usesRealAi: _usesRealAi,
         onConfigureAi: _configureApiKey,
       ),
-      WatchlistScreen(libraryService: _libraryService),
+      WatchlistScreen(
+        libraryService: _libraryService,
+        textAiService: _textAiService,
+        usesRealAi: _usesRealAi,
+      ),
     ];
 
     return Scaffold(

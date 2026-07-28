@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -150,6 +151,69 @@ void main() {
       expect(
         (simplifyBody['messages'] as List<dynamic>).single.toString(),
         contains('top 7000 most common words'),
+      );
+    });
+
+    test('sends high-fidelity OCR evidence in one multimodal request', () async {
+      late http.Request capturedRequest;
+      final client = MockClient((request) async {
+        capturedRequest = request;
+        return http.Response(
+          jsonEncode({
+            'content': [
+              {
+                'type': 'text',
+                'text': 'First paragraph.\n\nSecond [unclear] paragraph.',
+              },
+            ],
+          }),
+          200,
+        );
+      });
+      final service = AnthropicTextAiService(
+        endpoint: Uri.parse('https://example.test/v1/messages'),
+        model: 'test-model',
+        apiKey: 'test-key',
+        client: client,
+      );
+
+      final result = await service.reconstructScannedText(
+        frozenOcrText: 'First paragraph. Second paragraph.',
+        previousOcrCaptures: const [
+          'F1rst paragraph',
+          'First paragraph',
+          'First paragraph. Second',
+          'First paragraph. Second paragraph',
+          'First paragraph. Second paragraph.',
+        ],
+        imageBytes: Uint8List.fromList([1, 2, 3]),
+        imageMediaType: 'image/jpeg',
+      );
+
+      expect(result, 'First paragraph.\n\nSecond [unclear] paragraph.');
+      final requestBody =
+          jsonDecode(capturedRequest.body) as Map<String, dynamic>;
+      expect(requestBody['max_tokens'], 16000);
+      expect(requestBody['system'], contains('[unclear]'));
+      expect(requestBody['system'], contains('oldest to newest'));
+      expect(
+        requestBody['system'],
+        contains('Do not return source-by-source transcriptions'),
+      );
+      final messages = requestBody['messages'] as List<dynamic>;
+      final content =
+          (messages.single as Map<String, dynamic>)['content'] as List<dynamic>;
+      final textBlock = content.first as Map<String, dynamic>;
+      final imageBlock = content.last as Map<String, dynamic>;
+      expect(textBlock['text'], contains('Capture 1:\nF1rst paragraph'));
+      expect(
+        textBlock['text'],
+        contains('Capture 5:\nFirst paragraph. Second paragraph.'),
+      );
+      expect(imageBlock['type'], 'image');
+      expect(
+        (imageBlock['source'] as Map<String, dynamic>)['data'],
+        base64Encode([1, 2, 3]),
       );
     });
 

@@ -55,7 +55,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 | Home screen: text/instruction input, mocked run, save to library | Implemented (mocked AI) |
 | Local library: save/browse/search/sort/filter/delete, real files, survives uninstall | Implemented |
 | ToS/privacy mode: paste, mocked structured summary, save | Implemented (mocked AI) |
-| Ingredient/allergy watchlist: manage list, check text against it | Implemented (real logic, not AI-based) |
+| Ingredient/allergy watchlist: manage list, high-fidelity scan, multi-pass AI risk analysis | **Implemented in Step 5 PR; pending device verification** |
 | Camera + OCR: live local recognition plus optional Claude-assisted High-Fidelity Mode | **Implemented and device-verified through PR #44** — High-Fidelity Mode is substantially more accurate; hostile real-world OCR stress testing is moved to beta testing |
 | Cohesive UI/UX redesign beyond the functional MVP shell | Not started — desired direction still needs definition after device testing |
 | Dark theme (forced default) | Implemented |
@@ -142,11 +142,13 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 - Dependencies: complete P0.5 first so verified functional defects are separated from design dissatisfaction. The design brief should precede UI code.
 - Risks: high overlap across screens; uncontrolled restyling could create bloat or regress accessibility and existing flows. Preserve behavior, local-first principles, and the `TextAiService`/storage boundaries.
 
-**Task: Route Watchlist ingredient-ambiguity explanations through real AI**
-- Objective: per original product scope, AI should be able to explain ambiguous ingredients on request -- currently Watchlist only does local substring matching.
-- Acceptance criteria: **UNKNOWN — VERIFY** exact UX (not yet designed); depends on P1 being complete.
-- Files: `lib/screens/watchlist_screen.dart`, `lib/services/text_ai_service.dart` (likely a new `TextAiTaskType`).
-- Dependencies: P1.
+**Task: Route Watchlist ingredient-risk evaluation through real AI — IMPLEMENTED; DEVICE VERIFICATION PENDING**
+- Objective: preserve fast local exact matching while using Claude to evaluate exact, categorical, and contextual ingredient risks against the user's watchlist.
+- Implemented behavior: Watchlist camera scans always use locked High-Fidelity OCR with no toggle. After text review, local exact matches appear immediately. With real AI configured, Tower Lens runs three independent label reviews and sends all three reports, the high-fidelity OCR text, and the watchlist to a fourth synthesis request.
+- Output contract: every result begins with the safety disclaimer; separates exact matches, categorical matches, contextual warnings, and uncertainty/label claims; identifies supporting label wording; treats negated or "free-from" claims as warnings to verify rather than confirmed red flags; accounts for may-contain/shared-equipment wording and OCR uncertainty; never declares a product safe.
+- Offline/degraded behavior: local exact matching remains usable without AI, and remains visible if AI analysis fails.
+- Files: `lib/screens/watchlist_screen.dart`, `lib/screens/camera_scan_screen.dart`, `lib/services/text_ai_service.dart`, `lib/services/anthropic_text_ai_service.dart`, and focused tests.
+- Dependencies: P1 and High-Fidelity OCR.
 
 **Task: Import existing text files into Tower Lens — COMPLETE (merged in PR #41)**
 - Objective: let users import existing PDF, TXT, and Markdown files as source material instead of requiring camera OCR or manual paste.
@@ -228,7 +230,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 4. **Camera/OCR reliability — COMPLETE FOR MVP.** PR #44 added optional Claude-assisted High-Fidelity Mode using a maximum-resolution still plus recent local OCR readings; the Pixel 9a device check shows a substantial reliability improvement. Hostile real-world OCR stress testing belongs to Step 9 beta testing.
 
-5. **Watchlist AI explanations.** Preserve immediate local matching while adding on-request AI explanations for ambiguous ingredients. Scope the exact interaction, prompt behavior, safety boundaries, and save behavior with the user before implementation.
+5. **Watchlist AI explanations — IMPLEMENTED; DEVICE VERIFICATION PENDING.** Watchlist scans require High-Fidelity OCR; immediate local matching is preserved; three independent Claude risk reviews feed a fourth synthesis pass that distinguishes exact, categorical, contextual, and uncertain/free-from evidence and always leads with the safety disclaimer.
 
 6. **Define and implement the UI/UX redesign.** Produce the concise visual direction and screen inventory, then apply the approved navigation, typography, spacing, colors, components, and flows in small increments.
 
@@ -242,4 +244,4 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 ## 10. Next task for Codex
 
-**Scope Step 5: Watchlist AI explanations.** Define the user interaction, what information Claude receives and returns, safety language and uncertainty handling, when an API call occurs, and whether explanations can be saved. Preserve immediate offline local matching; broader automated-coverage expansion remains deferred.
+**Device-verify Step 5: Watchlist AI explanations.** Confirm locked High-Fidelity scanning, privacy acknowledgement, local exact-match fallback, the three-pass-plus-synthesis output structure, free-from handling, failure recovery, and saving the synthesized result. Broader automated-coverage expansion remains deferred.

@@ -6,6 +6,7 @@ import 'package:markdown_editor_live/markdown_editor_live.dart'
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tower_lens/screens/watchlist_screen.dart';
 import 'package:tower_lens/services/library_service.dart';
+import 'package:tower_lens/services/text_ai_service.dart';
 import 'package:tower_lens/widgets/markdown_content.dart';
 import 'package:tower_lens/widgets/markdown_editor.dart';
 
@@ -84,7 +85,11 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: WatchlistScreen(libraryService: LibraryService()),
+        home: WatchlistScreen(
+          libraryService: LibraryService(),
+          textAiService: MockTextAiService(),
+          usesRealAi: false,
+        ),
       ),
     );
     await tester.pumpAndSettle();

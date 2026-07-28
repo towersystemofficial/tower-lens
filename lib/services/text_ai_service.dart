@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 enum TextAiTaskType { general, summary, simplify, tosSummary }
 
 class TextAiResult {
@@ -18,6 +20,15 @@ abstract class TextAiService {
   });
 }
 
+abstract class HighFidelityOcrService {
+  Future<String> reconstructScannedText({
+    required String frozenOcrText,
+    required List<String> previousOcrCaptures,
+    required Uint8List imageBytes,
+    required String imageMediaType,
+  });
+}
+
 class TextAiServiceException implements Exception {
   const TextAiServiceException(this.message);
 
@@ -27,7 +38,7 @@ class TextAiServiceException implements Exception {
   String toString() => message;
 }
 
-class MockTextAiService implements TextAiService {
+class MockTextAiService implements TextAiService, HighFidelityOcrService {
   @override
   Future<TextAiResult> runTask({
     required TextAiTaskType taskType,
@@ -67,5 +78,16 @@ class MockTextAiService implements TextAiService {
               'This is an informational summary only, not legal advice.',
         );
     }
+  }
+
+  @override
+  Future<String> reconstructScannedText({
+    required String frozenOcrText,
+    required List<String> previousOcrCaptures,
+    required Uint8List imageBytes,
+    required String imageMediaType,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return frozenOcrText;
   }
 }

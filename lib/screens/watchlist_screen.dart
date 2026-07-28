@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
 import '../services/library_service.dart';
+import '../services/text_ai_service.dart';
 import '../services/watchlist_service.dart';
 import '../widgets/library_save_dialog.dart';
 import 'camera_scan_screen.dart';
 
 class WatchlistScreen extends StatefulWidget {
   final LibraryService libraryService;
-  const WatchlistScreen({super.key, required this.libraryService});
+  final TextAiService textAiService;
+  final bool usesRealAi;
+
+  const WatchlistScreen({
+    super.key,
+    required this.libraryService,
+    required this.textAiService,
+    required this.usesRealAi,
+  });
 
   @override
   State<WatchlistScreen> createState() => _WatchlistScreenState();
@@ -55,7 +64,12 @@ class _WatchlistScreenState extends State<WatchlistScreen> with SingleTickerProv
   Future<void> _scanText() async {
     final result = await Navigator.push<String>(
       context,
-      MaterialPageRoute(builder: (_) => const CameraScanScreen()),
+      MaterialPageRoute(
+        builder: (_) => CameraScanScreen(
+          textAiService: widget.textAiService,
+          usesRealAi: widget.usesRealAi,
+        ),
+      ),
     );
     if (result != null && result.trim().isNotEmpty) {
       setState(() => _checkTextController.text = result);

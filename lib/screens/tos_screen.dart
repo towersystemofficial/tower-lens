@@ -54,7 +54,12 @@ class _TosScreenState extends State<TosScreen> {
   Future<void> _scanText() async {
     final result = await Navigator.push<String>(
       context,
-      MaterialPageRoute(builder: (_) => const CameraScanScreen()),
+      MaterialPageRoute(
+        builder: (_) => CameraScanScreen(
+          textAiService: widget.textAiService,
+          usesRealAi: widget.usesRealAi,
+        ),
+      ),
     );
     if (result != null && result.trim().isNotEmpty) {
       setState(() {

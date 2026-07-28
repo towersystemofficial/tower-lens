@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tower_lens/screens/home_screen.dart';
+import 'package:tower_lens/screens/tos_screen.dart';
 import 'package:tower_lens/services/library_service.dart';
 import 'package:tower_lens/services/text_ai_service.dart';
 
@@ -111,4 +112,43 @@ void main() {
 
     expect(find.textContaining('tokens, 80% confidence'), findsOneWidget);
   });
+
+  testWidgets('warns before long Home and ToS requests', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final longText = List.filled(3000, 'policyword').join(' ');
+    final service = _RecordingTextAiService();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          libraryService: LibraryService(),
+          textAiService: service,
+          usesRealAi: true,
+          onConfigureAi: () {},
+        ),
+      ),
+    );
+    await tester.enterText(find.byType(TextField).first, longText);
+    await tester.tap(find.text('Simplify Text'));
+    await tester.pump();
+
+    expect(find.textContaining('may take up to about'), findsOneWidget);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: TosScreen(
+          libraryService: LibraryService(),
+          textAiService: service,
+          usesRealAi: true,
+          onConfigureAi: () {},
+        ),
+      ),
+    );
+    await tester.enterText(find.byType(TextField).first, longText);
+    await tester.pump();
+
+    expect(find.textContaining('may take up to about'), findsOneWidget);
+  });
+
 }

@@ -217,6 +217,65 @@ void main() {
       );
     });
 
+    test('runs three independent Watchlist passes and a final synthesis',
+        () async {
+      final requests = <http.Request>[];
+      final client = MockClient((request) async {
+        requests.add(request);
+        final responseNumber = requests.length;
+        return http.Response(
+          jsonEncode({
+            'content': [
+              {
+                'type': 'text',
+                'text': responseNumber < 4
+                    ? 'Pass $responseNumber findings'
+                    : '**Important:** This tool can make allergens easier to find, '
+                        'but it does not replace personally checking the original label.\n\n'
+                        '## Exact matches\nMilk',
+              },
+            ],
+          }),
+          200,
+        );
+      });
+      final service = AnthropicTextAiService(
+        endpoint: Uri.parse('https://example.test/v1/messages'),
+        model: 'test-model',
+        apiKey: 'test-key',
+        client: client,
+      );
+
+      final result = await service.analyzeWatchlist(
+        sourceText: 'Ingredients: dairy-free cheese, pasta.',
+        watchlist: const ['dairy', 'gluten'],
+      );
+
+      expect(requests, hasLength(4));
+      for (final request in requests.take(3)) {
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['system'], contains('exact word or ingredient matches'));
+        expect(body['system'], contains('categorical'));
+        expect(body['system'], contains('contextual clues'));
+        expect(body['system'], contains('dairy-free cheese'));
+      }
+      final synthesisBody =
+          jsonDecode(requests.last.body) as Map<String, dynamic>;
+      expect(synthesisBody['system'], contains('## Exact matches'));
+      expect(synthesisBody['system'], contains('## Categorical matches'));
+      expect(synthesisBody['system'], contains('## Contextual warnings'));
+      expect(synthesisBody['system'], contains('free-from'));
+      expect(synthesisBody.toString(), contains('Pass 1 findings'));
+      expect(synthesisBody.toString(), contains('Pass 2 findings'));
+      expect(synthesisBody.toString(), contains('Pass 3 findings'));
+      expect(
+        result,
+        startsWith(
+          '**Important:** This tool can make allergens easier to find',
+        ),
+      );
+    });
+
     test('honors an explicit timeout override', () async {
       final client = MockClient((_) async {
         await Future<void>.delayed(const Duration(milliseconds: 20));

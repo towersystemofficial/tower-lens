@@ -116,7 +116,7 @@ class AnthropicTextAiService
     required List<String> watchlist,
   }) async {
     final watchlistText = watchlist.map((term) => '- $term').join('\n');
-    final passPrompt =
+    const passPrompt =
         'You are one of three independent food-label safety reviewers. '
         'Analyze the supplied OCR text against the user watchlist. Check every '
         'item for: (1) exact word or ingredient matches; (2) categorical '

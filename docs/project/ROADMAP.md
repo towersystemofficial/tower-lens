@@ -240,3 +240,5 @@ Steps 2 and 3 are no longer separate roadmap entries: the former Step 2 moved to
 ## 10. Next task for Codex
 
 **Finish Step 5 device verification, then begin Step 6 OCR reliability.** Re-test a multi-page Simplify Text request and the mock ToS on the Pixel 9a, confirming the duration warning appears and each request completes without the former 45-second cutoff. Once those pass, keep live OCR for framing but capture and locally reprocess a high-resolution still on Freeze. Broader automated coverage remains deferred.
+
+- Write a blurb.

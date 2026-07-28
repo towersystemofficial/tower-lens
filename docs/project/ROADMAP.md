@@ -155,7 +155,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 - Dependencies: none. The broader Step 4 automated-coverage expansion is deferred by user direction; the existing CI analysis, test, and APK build gate remains required for this increment.
 - Completion evidence: PR #41 merged; CI passed analysis, all existing tests, debug APK compilation, and artifact upload. All eleven Pixel 9a checks passed on 2026-07-27, including Home and ToS imports, editable TXT/Markdown, multi-page PDF extraction, analysis and saving, stale-output clearing, picker cancellation, unsupported-file filtering, offline extraction, and existing-flow regression checks.
 
-**Task: Refine the prompts sent to the AI service — DEVICE VERIFICATION PARTIAL; LONG-REQUEST FIX IMPLEMENTED**
+**Task: Refine the prompts sent to the AI service — COMPLETE; DEVICE-VERIFIED**
 - Objective: deliberately improve the mode-specific prompts for summary quality, structure, accuracy, tone, and faithfulness to the source text rather than treating the first functional prompts as final product behavior.
 - Home acceptance criteria:
   - Custom instructions remain available when no preset is selected.
@@ -170,8 +170,9 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 - Dependencies: none. Existing API-key/error verification keeps transport and lifecycle failures separate from output-quality decisions.
 - Device evidence from 2026-07-27: preset selection/deselection, custom-instruction preservation and disabled appearance, the Simplify Text slider/reset, token estimates, summary structure, and short-text simplification all passed on the Pixel 9a. Multi-page Simplify Text and the mock ToS timed out because every request still used the original fixed 45-second limit.
 - Timeout follow-up: ordinary requests retain the 45-second minimum. Predicted output beyond 1,500 tokens adds request time, with more aggressive scaling for full-text simplification and ToS analysis and a 10-minute hard ceiling. Home and ToS show the estimated maximum duration before a long or complicated request is submitted; focused calculation and widget tests cover the behavior.
+- Final device evidence from 2026-07-28: the user approved the prompt modes, token and duration estimates, short and long simplification behavior, and ToS analysis after the dynamic-timeout follow-up.
 
-**Task: Improve camera/OCR reliability for dense and angled text — FIRST INCREMENT COMPLETE (merged in PR #44; device-verified)**
+**Task: Improve camera/OCR reliability for dense and angled text — COMPLETE FOR MVP (merged in PR #44; device-verified)**
 - Objective: make camera scanning dependable for full pages, dense layouts, and imperfect real-world captures.
 - Implemented behavior: normal mode retains fast, entirely on-device live ML Kit OCR. Optional High-Fidelity Mode switches to maximum camera resolution, captures a still on Freeze, and asks Claude to reconstruct the text from the image plus the frozen and five preceding local OCR readings. It preserves editable review/rescan behavior, shows processing and privacy/cost notices, deletes the temporary still, and falls back to local OCR on failure.
 - Device evidence from 2026-07-27: High-Fidelity Mode works on the Pixel 9a and produces substantially better OCR than the prior scanner.
@@ -221,26 +222,24 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 1. **Library safety and hierarchical file browser — COMPLETE.** Confirmation for file/folder deletion, nested folders, breadcrumbs and up navigation, create/move/rename operations, visible sorting, editable AI-suggested filenames, overwrite protection, long-press contextual actions, drag-and-drop moves onto folders and breadcrumbs, and preservation of search, filtering, Markdown, and local-first storage are implemented and device-verified through PR #40.
 
-4. **File import — COMPLETE; automated coverage deferred.** User-facing PDF, TXT, and Markdown import, local extraction, editable review, recoverable errors, and original-filename preservation are implemented and device-verified through PR #41. Broader coverage for Library, ToS, Watchlist, camera/OCR, duplicate-request prevention and retry, persistence, and Library scale remains explicitly deferred.
+2. **File import — COMPLETE.** User-facing PDF, TXT, and Markdown import, local extraction, editable review, recoverable errors, and original-filename preservation are implemented and device-verified through PR #41. Broader automated coverage remains explicitly deferred.
 
-5. **AI prompt refinement — DEVICE VERIFICATION PARTIAL; LONG-REQUEST FIX IMPLEMENTED.** The UI, token estimates, summary structure, and short simplification passed on the Pixel 9a. Long Simplify Text and ToS requests exposed the fixed 45-second timeout; request-specific scaling and pre-run duration warnings are now implemented and await device verification.
+3. **AI prompt refinement — COMPLETE.** Presets, token estimates, duration warnings, structured summaries, Simplify Text, and detailed ToS analysis are implemented and approved on the Pixel 9a. Dynamic timeouts resolved the long-request cutoff without changing prompts or token ceilings.
 
-6. **Camera/OCR reliability — FIRST INCREMENT COMPLETE.** PR #44 added optional Claude-assisted High-Fidelity Mode using a maximum-resolution still plus recent local OCR readings; the Pixel 9a device check shows a substantial reliability improvement. Hostile real-world OCR stress testing now belongs to Step 11 beta testing.
+4. **Camera/OCR reliability — COMPLETE FOR MVP.** PR #44 added optional Claude-assisted High-Fidelity Mode using a maximum-resolution still plus recent local OCR readings; the Pixel 9a device check shows a substantial reliability improvement. Hostile real-world OCR stress testing belongs to Step 9 beta testing.
 
-7. **Watchlist AI explanations.** Preserve immediate local matching while adding on-request AI explanations for ambiguous ingredients.
+5. **Watchlist AI explanations.** Preserve immediate local matching while adding on-request AI explanations for ambiguous ingredients. Scope the exact interaction, prompt behavior, safety boundaries, and save behavior with the user before implementation.
 
-8. **Define and implement the UI/UX redesign.** Produce the concise visual direction and screen inventory here, then apply the approved navigation, typography, spacing, colors, components, and flows in small increments. This is the former Step 2; the old workflow-integrity Step 7 has been removed.
+6. **Define and implement the UI/UX redesign.** Produce the concise visual direction and screen inventory, then apply the approved navigation, typography, spacing, colors, components, and flows in small increments.
 
-9. **Price-check mode.** Add the previously deferred price-check/marketplace-estimate mode after the core app, import flow, prompts, Watchlist explanations, and redesign are established.
+7. **Price-check mode.** Add the previously deferred price-check/marketplace-estimate mode after the core app, import flow, prompts, Watchlist explanations, and redesign are established.
 
-10. **Prepare for public distribution.** Add the backend/proxy, production-safe API-key custody, accounts/authentication as needed, credits or subscriptions and Google Play Billing, and resolve broad Android storage permission before store release.
+8. **Prepare for public distribution.** Add the backend/proxy, production-safe API-key custody, accounts/authentication as needed, credits or subscriptions and Google Play Billing, and resolve broad Android storage permission before store release.
 
-11. **Beta testing.** Run the app with the invited beta group and record functional bugs, confusing flows, output-quality failures, cost/latency problems, and real-world OCR limits. Include hostile OCR cases such as small print, dense and multi-column pages, uneven lighting, and angled documents; add further camera processing only when repeated beta evidence justifies it.
+9. **Beta testing.** Run the app with the invited beta group and record functional bugs, confusing flows, output-quality failures, cost/latency problems, and real-world OCR limits. Include hostile OCR cases such as small print, dense and multi-column pages, uneven lighting, and angled documents; add further camera processing only when repeated beta evidence justifies it.
 
-12. **Write a blurb.** Produce the concise public-facing description after beta feedback has settled what the app reliably does and which benefits are worth emphasizing.
-
-Steps 2 and 3 are no longer separate roadmap entries: the former Step 2 moved to Step 7, and the former Step 3 merged into Step 1.
+10. **Write a blurb.** Produce the concise public-facing description after beta feedback has settled what the app reliably does and which benefits are worth emphasizing.
 
 ## 10. Next task for Codex
 
-**Finish Step 5 device verification, then begin Step 7 Watchlist AI explanations.** Re-test a multi-page Simplify Text request and the mock ToS on the Pixel 9a, confirming the duration warning appears and each request completes without the former 45-second cutoff. Step 6's first High-Fidelity OCR increment is already merged and device-verified; its hostile-document stress pass is deferred to Step 11 beta testing. Broader automated coverage remains deferred.
+**Scope Step 5: Watchlist AI explanations.** Define the user interaction, what information Claude receives and returns, safety language and uncertainty handling, when an API call occurs, and whether explanations can be saved. Preserve immediate offline local matching; broader automated-coverage expansion remains deferred.

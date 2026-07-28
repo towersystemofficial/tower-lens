@@ -28,7 +28,10 @@ class _WatchlistScreenState extends State<WatchlistScreen> with SingleTickerProv
   final TextEditingController _newTermController = TextEditingController();
   final TextEditingController _checkTextController = TextEditingController();
   List<String> _matches = [];
+  String? _analysis;
+  String? _checkError;
   bool _checked = false;
+  bool _isChecking = false;
 
   static const _suggestions = ['gluten', 'wheat', 'barley', 'rye', 'soy', 'peanuts', 'dairy', 'shellfish'];
 
@@ -68,6 +71,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> with SingleTickerProv
         builder: (_) => CameraScanScreen(
           textAiService: widget.textAiService,
           usesRealAi: widget.usesRealAi,
+          requireHighFidelity: true,
         ),
       ),
     );
@@ -76,13 +80,47 @@ class _WatchlistScreenState extends State<WatchlistScreen> with SingleTickerProv
     }
   }
 
-  void _runCheck() {
-    final lower = _checkTextController.text.toLowerCase();
-    final matches = _watchlist.where((term) => lower.contains(term.toLowerCase())).toList();
+  Future<void> _runCheck() async {
+    final sourceText = _checkTextController.text.trim();
+    if (sourceText.isEmpty || _isChecking) return;
+    final lower = sourceText.toLowerCase();
+    final matches = _watchlist
+        .where((term) => lower.contains(term.toLowerCase()))
+        .toList();
     setState(() {
       _matches = matches;
+      _analysis = null;
+      _checkError = null;
       _checked = true;
+      _isChecking = true;
     });
+
+    if (!widget.usesRealAi || widget.textAiService is! WatchlistAiService) {
+      setState(() => _isChecking = false);
+      return;
+    }
+
+    try {
+      final analysis =
+          await (widget.textAiService as WatchlistAiService).analyzeWatchlist(
+        sourceText: sourceText,
+        watchlist: List<String>.unmodifiable(_watchlist),
+      );
+      if (!mounted) return;
+      setState(() => _analysis = analysis);
+    } on TextAiServiceException catch (error) {
+      if (!mounted) return;
+      setState(() => _checkError = error.message);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _checkError =
+            'The AI analysis could not be completed. The local exact-match '
+            'result is still shown below.';
+      });
+    } finally {
+      if (mounted) setState(() => _isChecking = false);
+    }
   }
 
   Future<void> _save() async {
@@ -90,8 +128,14 @@ class _WatchlistScreenState extends State<WatchlistScreen> with SingleTickerProv
       final ok = await widget.libraryService.requestPermissionAndPickFolder();
       if (!ok) return;
     }
-    final summary =
-        _matches.isEmpty ? 'No watchlist matches found in this text.' : 'Watchlist matches found: ${_matches.join(", ")}';
+    final localSummary = _matches.isEmpty
+        ? 'No local exact watchlist matches found in this text.'
+        : 'Local exact watchlist matches: ${_matches.join(", ")}';
+    final summary = _analysis == null
+        ? '**Important:** This tool can make allergens easier to find, but it '
+            'does not replace personally checking the original label.\n\n'
+            '$localSummary'
+        : _analysis!;
     if (!mounted) return;
     final destination = await showLibrarySaveDialog(
       context: context,
@@ -233,8 +277,17 @@ class _WatchlistScreenState extends State<WatchlistScreen> with SingleTickerProv
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: _watchlist.isEmpty ? null : _runCheck,
-              child: const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Text('Check against watchlist')),
+              onPressed: _watchlist.isEmpty || _isChecking
+                  ? null
+                  : _runCheck,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text(
+                  _isChecking
+                      ? 'Running three safety checks…'
+                      : 'Check against watchlist',
+                ),
+              ),
             ),
           ),
           if (_watchlist.isEmpty)
@@ -242,12 +295,29 @@ class _WatchlistScreenState extends State<WatchlistScreen> with SingleTickerProv
               padding: const EdgeInsets.only(top: 8),
               child: Text('Add items to your watchlist first (My List tab).', style: TextStyle(color: Colors.grey.shade600)),
             ),
+          if (_isChecking) ...[
+            const SizedBox(height: 16),
+            const LinearProgressIndicator(),
+            const SizedBox(height: 8),
+            const Text(
+              'Claude is running three independent checks, then synthesizing them.',
+            ),
+          ],
           if (_checked) ...[
             const SizedBox(height: 20),
             Row(
               children: [
-                const Expanded(child: Text('Result', style: TextStyle(fontWeight: FontWeight.bold))),
-                TextButton.icon(onPressed: _save, icon: const Icon(Icons.save_outlined), label: const Text('Save')),
+                const Expanded(
+                  child: Text(
+                    'Result',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: _isChecking ? null : _save,
+                  icon: const Icon(Icons.save_outlined),
+                  label: const Text('Save'),
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -255,17 +325,25 @@ class _WatchlistScreenState extends State<WatchlistScreen> with SingleTickerProv
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                border: Border.all(color: _matches.isEmpty ? Colors.green : Colors.red),
+                border: Border.all(color: Colors.orange),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                _matches.isEmpty ? 'No watchlist matches found.' : 'Matches found: ${_matches.join(", ")}',
-                style: TextStyle(
-                  color: _matches.isEmpty ? Colors.green.shade800 : Colors.red.shade800,
-                  fontWeight: FontWeight.bold,
-                ),
+                _analysis ??
+                    '**Important:** This tool can make allergens easier to find, '
+                        'but it does not replace personally checking the original '
+                        'label.\n\n'
+                        '${_matches.isEmpty ? "No local exact watchlist matches found." : "Local exact matches: ${_matches.join(", ")}"}'
+                        '${widget.usesRealAi ? "" : "\n\nConfigure an Anthropic API key for categorical and contextual analysis."}',
               ),
             ),
+            if (_checkError != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _checkError!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
           ],
         ],
       ),

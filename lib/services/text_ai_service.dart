@@ -20,6 +20,13 @@ abstract class TextAiService {
   });
 }
 
+abstract class WatchlistAiService {
+  Future<String> analyzeWatchlist({
+    required String sourceText,
+    required List<String> watchlist,
+  });
+}
+
 abstract class HighFidelityOcrService {
   Future<String> reconstructScannedText({
     required String frozenOcrText,
@@ -38,7 +45,8 @@ class TextAiServiceException implements Exception {
   String toString() => message;
 }
 
-class MockTextAiService implements TextAiService, HighFidelityOcrService {
+class MockTextAiService
+    implements TextAiService, HighFidelityOcrService, WatchlistAiService {
   @override
   Future<TextAiResult> runTask({
     required TextAiTaskType taskType,
@@ -78,6 +86,21 @@ class MockTextAiService implements TextAiService, HighFidelityOcrService {
               'This is an informational summary only, not legal advice.',
         );
     }
+  }
+
+  @override
+  Future<String> analyzeWatchlist({
+    required String sourceText,
+    required List<String> watchlist,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final lower = sourceText.toLowerCase();
+    final matches = watchlist
+        .where((term) => lower.contains(term.toLowerCase()))
+        .toList();
+    return '**Important:** This tool can make allergens easier to find, but it '
+        'does not replace personally checking the original label.\n\n'
+        'Mock analysis: ${matches.isEmpty ? "No exact watchlist matches found." : "Exact matches: ${matches.join(", ")}."}';
   }
 
   @override

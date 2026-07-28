@@ -16,10 +16,12 @@ class CameraScanScreen extends StatefulWidget {
     super.key,
     required this.textAiService,
     required this.usesRealAi,
+    this.requireHighFidelity = false,
   });
 
   final TextAiService textAiService;
   final bool usesRealAi;
+  final bool requireHighFidelity;
 
   @override
   State<CameraScanScreen> createState() => _CameraScanScreenState();
@@ -34,6 +36,7 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
       TextRecognizer(script: TextRecognitionScript.latin);
   bool _isDetecting = false;
   bool _permissionDenied = false;
+  String? _setupError;
   bool _frozen = false;
   bool _highFidelity = false;
   bool _isChangingMode = false;
@@ -54,6 +57,29 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
     final status = await Permission.camera.request();
     if (!status.isGranted) {
       setState(() => _permissionDenied = true);
+      return;
+    }
+    if (widget.requireHighFidelity) {
+      if (!widget.usesRealAi ||
+          widget.textAiService is! HighFidelityOcrService) {
+        setState(() {
+          _setupError =
+              'Watchlist scanning requires a configured Anthropic API key '
+              'because High-Fidelity OCR is always enabled.';
+        });
+        return;
+      }
+      if (!await _acknowledgeHighFidelityPrivacy()) {
+        if (mounted) {
+          setState(() {
+            _setupError =
+                'Accept the High-Fidelity privacy notice to scan a Watchlist label.';
+          });
+        }
+        return;
+      }
+      _highFidelity = true;
+      await _initializeCamera(ResolutionPreset.max);
       return;
     }
     await _initializeCamera(ResolutionPreset.medium);
@@ -310,6 +336,17 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_setupError != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Scan text')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(_setupError!, textAlign: TextAlign.center),
+          ),
+        ),
+      );
+    }
     if (_permissionDenied) {
       return Scaffold(
         appBar: AppBar(title: const Text('Scan text')),
@@ -363,20 +400,33 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
             top: 12,
             child: Card(
               color: Colors.black87,
-              child: SwitchListTile(
-                value: _highFidelity,
-                onChanged: _isChangingMode || _isProcessingFreeze
-                    ? null
-                    : _setHighFidelity,
-                title: const Text(
-                  'High-Fidelity Mode',
-                  style: TextStyle(color: Colors.white),
-                ),
-                subtitle: const Text(
-                  'Uses API tokens',
-                  style: TextStyle(color: Colors.white70),
-                ),
-              ),
+              child: widget.requireHighFidelity
+                  ? const ListTile(
+                      leading: Icon(Icons.verified_user_outlined,
+                          color: Colors.white),
+                      title: Text(
+                        'High-Fidelity Mode required',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      subtitle: Text(
+                        'Watchlist scans always use the most accurate OCR path',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    )
+                  : SwitchListTile(
+                      value: _highFidelity,
+                      onChanged: _isChangingMode || _isProcessingFreeze
+                          ? null
+                          : _setHighFidelity,
+                      title: const Text(
+                        'High-Fidelity Mode',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      subtitle: const Text(
+                        'Uses API tokens',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ),
             ),
           ),
           Positioned(

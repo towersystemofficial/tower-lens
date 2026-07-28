@@ -56,7 +56,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 | Local library: save/browse/search/sort/filter/delete, real files, survives uninstall | Implemented |
 | ToS/privacy mode: paste, mocked structured summary, save | Implemented (mocked AI) |
 | Ingredient/allergy watchlist: manage list, check text against it | Implemented (real logic, not AI-based) |
-| Camera + on-device OCR: live preview, live recognition, freeze, editable pre-selected text | Implemented; reliability upgrade planned for dense or angled text |
+| Camera + OCR: live local recognition plus optional Claude-assisted High-Fidelity Mode | **Implemented and device-verified through PR #44** — High-Fidelity Mode is substantially more accurate; hostile real-world OCR stress testing is moved to beta testing |
 | Cohesive UI/UX redesign beyond the functional MVP shell | Not started — desired direction still needs definition after device testing |
 | Dark theme (forced default) | Implemented |
 | `TextAiService` abstraction with mock fallback | Implemented |
@@ -171,13 +171,13 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 - Device evidence from 2026-07-27: preset selection/deselection, custom-instruction preservation and disabled appearance, the Simplify Text slider/reset, token estimates, summary structure, and short-text simplification all passed on the Pixel 9a. Multi-page Simplify Text and the mock ToS timed out because every request still used the original fixed 45-second limit.
 - Timeout follow-up: ordinary requests retain the 45-second minimum. Predicted output beyond 1,500 tokens adds request time, with more aggressive scaling for full-text simplification and ToS analysis and a 10-minute hard ceiling. Home and ToS show the estimated maximum duration before a long or complicated request is submitted; focused calculation and widget tests cover the behavior.
 
-**Task: Improve camera/OCR reliability for dense and angled text — PLANNED**
-- Objective: make camera scanning dependable for full pages, multi-column or otherwise dense layouts, and text photographed at modest angles.
-- Confirmed root cause: the current scanner recognizes continuously from `ResolutionPreset.medium` preview frames, and Freeze only copies the most recent live OCR result. It does not capture and reprocess a high-resolution still, crop to a document region, correct perspective/rotation, stabilize across frames, or preserve reading order explicitly.
-- Planned first increment: retain live OCR as a framing aid, but on Freeze capture a high-resolution still and run a fresh local ML Kit recognition pass on that image using correct orientation metadata. Show a processing state, preserve editable review/rescan behavior, and return recoverable errors.
-- Follow-up evaluation: test small text, a full dense page, headings plus paragraphs, columns, and angled pages on the Pixel 9a. Add document-boundary guidance/cropping or perspective correction only if the still-image pass remains insufficient.
-- Privacy/cost: OCR remains entirely on-device and must not call Claude. Claude receives recognized text only after the user reviews it and explicitly runs Home or ToS analysis.
-- Dependencies: complete and device-evaluate Step 5 prompt refinement first; broader automated-coverage expansion remains deferred.
+**Task: Improve camera/OCR reliability for dense and angled text — FIRST INCREMENT COMPLETE (merged in PR #44; device-verified)**
+- Objective: make camera scanning dependable for full pages, dense layouts, and imperfect real-world captures.
+- Implemented behavior: normal mode retains fast, entirely on-device live ML Kit OCR. Optional High-Fidelity Mode switches to maximum camera resolution, captures a still on Freeze, and asks Claude to reconstruct the text from the image plus the frozen and five preceding local OCR readings. It preserves editable review/rescan behavior, shows processing and privacy/cost notices, deletes the temporary still, and falls back to local OCR on failure.
+- Device evidence from 2026-07-27: High-Fidelity Mode works on the Pixel 9a and produces substantially better OCR than the prior scanner.
+- Follow-up evaluation: moved to beta testing. Test small print, dense full pages, headings plus paragraphs, columns, uneven lighting, and angled pages across real users and documents; only add cropping, boundary guidance, or perspective correction if beta evidence shows they are needed.
+- Privacy/cost: normal mode remains entirely on-device. High-Fidelity Mode explicitly warns that it sends the scanned image and recent OCR readings to Claude and uses API tokens.
+- Dependencies: broader automated-coverage expansion remains deferred.
 
 ### Deferred / explicitly out of scope for now (per product principles, not forgotten)
 
@@ -225,7 +225,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 5. **AI prompt refinement — DEVICE VERIFICATION PARTIAL; LONG-REQUEST FIX IMPLEMENTED.** The UI, token estimates, summary structure, and short simplification passed on the Pixel 9a. Long Simplify Text and ToS requests exposed the fixed 45-second timeout; request-specific scaling and pre-run duration warnings are now implemented and await device verification.
 
-6. **Camera/OCR reliability.** Keep live OCR for framing, but capture and locally reprocess a high-resolution still on Freeze; verify dense pages, multi-column layouts, small text, and angled pages before considering cropping or perspective correction.
+6. **Camera/OCR reliability — FIRST INCREMENT COMPLETE.** PR #44 added optional Claude-assisted High-Fidelity Mode using a maximum-resolution still plus recent local OCR readings; the Pixel 9a device check shows a substantial reliability improvement. Hostile real-world OCR stress testing now belongs to Step 11 beta testing.
 
 7. **Watchlist AI explanations.** Preserve immediate local matching while adding on-request AI explanations for ambiguous ingredients.
 
@@ -235,10 +235,12 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 10. **Prepare for public distribution.** Add the backend/proxy, production-safe API-key custody, accounts/authentication as needed, credits or subscriptions and Google Play Billing, and resolve broad Android storage permission before store release.
 
+11. **Beta testing.** Run the app with the invited beta group and record functional bugs, confusing flows, output-quality failures, cost/latency problems, and real-world OCR limits. Include hostile OCR cases such as small print, dense and multi-column pages, uneven lighting, and angled documents; add further camera processing only when repeated beta evidence justifies it.
+
+12. **Write a blurb.** Produce the concise public-facing description after beta feedback has settled what the app reliably does and which benefits are worth emphasizing.
+
 Steps 2 and 3 are no longer separate roadmap entries: the former Step 2 moved to Step 7, and the former Step 3 merged into Step 1.
 
 ## 10. Next task for Codex
 
-**Finish Step 5 device verification, then begin Step 6 OCR reliability.** Re-test a multi-page Simplify Text request and the mock ToS on the Pixel 9a, confirming the duration warning appears and each request completes without the former 45-second cutoff. Once those pass, keep live OCR for framing but capture and locally reprocess a high-resolution still on Freeze. Broader automated coverage remains deferred.
-
-- Write a blurb.
+**Finish Step 5 device verification, then begin Step 7 Watchlist AI explanations.** Re-test a multi-page Simplify Text request and the mock ToS on the Pixel 9a, confirming the duration warning appears and each request completes without the former 45-second cutoff. Step 6's first High-Fidelity OCR increment is already merged and device-verified; its hostile-document stress pass is deferred to Step 11 beta testing. Broader automated coverage remains deferred.

@@ -155,7 +155,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 - Dependencies: none. The broader Step 4 automated-coverage expansion is deferred by user direction; the existing CI analysis, test, and APK build gate remains required for this increment.
 - Completion evidence: PR #41 merged; CI passed analysis, all existing tests, debug APK compilation, and artifact upload. All eleven Pixel 9a checks passed on 2026-07-27, including Home and ToS imports, editable TXT/Markdown, multi-page PDF extraction, analysis and saving, stale-output clearing, picker cancellation, unsupported-file filtering, offline extraction, and existing-flow regression checks.
 
-**Task: Refine the prompts sent to the AI service — IMPLEMENTED IN PR #42; DEVICE VERIFICATION PENDING**
+**Task: Refine the prompts sent to the AI service — DEVICE VERIFICATION PARTIAL; LONG-REQUEST FIX IMPLEMENTED**
 - Objective: deliberately improve the mode-specific prompts for summary quality, structure, accuracy, tone, and faithfulness to the source text rather than treating the first functional prompts as final product behavior.
 - Home acceptance criteria:
   - Custom instructions remain available when no preset is selected.
@@ -168,6 +168,8 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 - Vocabulary reference: https://www.top10000words.com/english/top-10000-english-words
 - Files: Home and ToS screens, `TextAiService`, `AnthropicTextAiService`, token estimation, Markdown-editor enabled state, and focused automated tests.
 - Dependencies: none. Existing API-key/error verification keeps transport and lifecycle failures separate from output-quality decisions.
+- Device evidence from 2026-07-27: preset selection/deselection, custom-instruction preservation and disabled appearance, the Simplify Text slider/reset, token estimates, summary structure, and short-text simplification all passed on the Pixel 9a. Multi-page Simplify Text and the mock ToS timed out because every request still used the original fixed 45-second limit.
+- Timeout follow-up: ordinary requests retain the 45-second minimum. Predicted output beyond 1,500 tokens adds request time, with more aggressive scaling for full-text simplification and ToS analysis and a 10-minute hard ceiling. Home and ToS show the estimated maximum duration before a long or complicated request is submitted; focused calculation and widget tests cover the behavior.
 
 **Task: Improve camera/OCR reliability for dense and angled text — PLANNED**
 - Objective: make camera scanning dependable for full pages, multi-column or otherwise dense layouts, and text photographed at modest angles.
@@ -221,7 +223,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 4. **File import — COMPLETE; automated coverage deferred.** User-facing PDF, TXT, and Markdown import, local extraction, editable review, recoverable errors, and original-filename preservation are implemented and device-verified through PR #41. Broader coverage for Library, ToS, Watchlist, camera/OCR, duplicate-request prevention and retry, persistence, and Library scale remains explicitly deferred.
 
-5. **AI prompt refinement — IMPLEMENTED IN PR #42; DEVICE VERIFICATION PENDING.** Home now has separate Summarize, Simplify Text, and custom-instruction contracts; ToS uses the approved comprehensive risk-oriented analysis; Run/Summarize shows a local token-usage range; and the former fixed 1,200-token output ceiling is replaced by a generous request-specific API safety ceiling.
+5. **AI prompt refinement — DEVICE VERIFICATION PARTIAL; LONG-REQUEST FIX IMPLEMENTED.** The UI, token estimates, summary structure, and short simplification passed on the Pixel 9a. Long Simplify Text and ToS requests exposed the fixed 45-second timeout; request-specific scaling and pre-run duration warnings are now implemented and await device verification.
 
 6. **Camera/OCR reliability.** Keep live OCR for framing, but capture and locally reprocess a high-resolution still on Freeze; verify dense pages, multi-column layouts, small text, and angled pages before considering cropping or perspective correction.
 
@@ -237,4 +239,4 @@ Steps 2 and 3 are no longer separate roadmap entries: the former Step 2 moved to
 
 ## 10. Next task for Codex
 
-**Device-verify Step 5, then begin Step 6 OCR reliability.** Verify Home preset selection/deselection, custom-instruction preservation, the Simplify Text slider reset and endpoints, token estimates, summary structure, simplification fidelity, and the complete ToS risk analysis on the Pixel 9a. Once those pass, keep live OCR for framing but capture and locally reprocess a high-resolution still on Freeze. Broader automated coverage remains deferred.
+**Finish Step 5 device verification, then begin Step 6 OCR reliability.** Re-test a multi-page Simplify Text request and the mock ToS on the Pixel 9a, confirming the duration warning appears and each request completes without the former 45-second cutoff. Once those pass, keep live OCR for framing but capture and locally reprocess a high-resolution still on Freeze. Broader automated coverage remains deferred.

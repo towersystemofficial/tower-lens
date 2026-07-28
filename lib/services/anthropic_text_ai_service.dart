@@ -12,7 +12,7 @@ class AnthropicTextAiService implements TextAiService {
     required this.model,
     required this.apiKey,
     this.bearerToken = '',
-    this.timeout = const Duration(seconds: 45),
+    this.timeout,
     http.Client? client,
   }) : _client = client ?? http.Client();
 
@@ -20,7 +20,7 @@ class AnthropicTextAiService implements TextAiService {
   final String model;
   final String apiKey;
   final String bearerToken;
-  final Duration timeout;
+  final Duration? timeout;
   final http.Client _client;
 
   @override
@@ -37,6 +37,13 @@ class AnthropicTextAiService implements TextAiService {
     if (bearerToken.isNotEmpty) {
       headers['authorization'] = 'Bearer $bearerToken';
     }
+
+    final requestTimeout = timeout ??
+        TextAiTokenEstimator.requiredTimeout(
+          taskType: taskType,
+          sourceText: sourceText,
+          instruction: instruction,
+        );
 
     late final http.Response response;
     try {
@@ -61,7 +68,7 @@ class AnthropicTextAiService implements TextAiService {
               ],
             }),
           )
-          .timeout(timeout);
+          .timeout(requestTimeout);
     } on TimeoutException {
       throw const TextAiServiceException(
         'The AI request timed out. Check your connection and try again.',

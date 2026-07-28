@@ -277,9 +277,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> with SingleTickerProv
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: _watchlist.isEmpty ||
-                      _checkTextController.text.trim().isEmpty ||
-                      _isChecking
+              onPressed: _watchlist.isEmpty || _isChecking
                   ? null
                   : _runCheck,
               child: Padding(

@@ -16,6 +16,10 @@ class HomeScreen extends StatefulWidget {
   final TextAiService textAiService;
   final bool usesRealAi;
   final VoidCallback onConfigureAi;
+  final String title;
+  final TextAiTaskType? initialPreset;
+  final bool allowCustomInstructions;
+  final bool showPresets;
 
   const HomeScreen({
     super.key,
@@ -23,6 +27,10 @@ class HomeScreen extends StatefulWidget {
     required this.textAiService,
     required this.usesRealAi,
     required this.onConfigureAi,
+    this.title = 'Tower Lens',
+    this.initialPreset,
+    this.allowCustomInstructions = true,
+    this.showPresets = true,
   });
 
   @override
@@ -43,6 +51,12 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _hasSuccessfulOutput = false;
   TextAiTaskType? _selectedPreset;
   double _simplicityLevel = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedPreset = widget.initialPreset;
+  }
 
   bool get _canRun =>
       !_isImporting &&
@@ -78,6 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _togglePreset(TextAiTaskType taskType) => setState(() {
         if (_selectedPreset == taskType) {
+          if (!widget.allowCustomInstructions) return;
           _selectedPreset = null;
           return;
         }
@@ -252,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tower Lens'),
+        title: Text(widget.title),
         actions: [
           IconButton(
             tooltip: widget.usesRealAi
@@ -305,33 +320,36 @@ class _HomeScreenState extends State<HomeScreen> {
                 hintText: 'Paste or type the text you want help with...',
               ),
               const SizedBox(height: 20),
-              const Text('What do you want done with it?', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              AnimatedOpacity(
-                duration: const Duration(milliseconds: 150),
-                opacity: _selectedPreset == null ? 1 : 0.45,
-                child: MarkdownEditor(
-                  controller: _instructionController,
-                  onChanged: (_) => setState(() {}),
-                  enabled: _selectedPreset == null && !_isRunning,
-                  maxLines: 2,
-                  hintText: 'e.g. Explain how these ideas connect',
+              if (widget.allowCustomInstructions) ...[
+                const Text('What do you want done with it?', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 150),
+                  opacity: _selectedPreset == null ? 1 : 0.45,
+                  child: MarkdownEditor(
+                    controller: _instructionController,
+                    onChanged: (_) => setState(() {}),
+                    enabled: _selectedPreset == null && !_isRunning,
+                    maxLines: 2,
+                    hintText: 'e.g. Explain how these ideas connect',
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _presetTasks.entries
-                    .map((preset) => ChoiceChip(
-                          label: Text(preset.value),
-                          selected: _selectedPreset == preset.key,
-                          onSelected: _isRunning
-                              ? null
-                              : (_) => _togglePreset(preset.key),
-                        ))
-                    .toList(),
-              ),
+                const SizedBox(height: 12),
+              ],
+              if (widget.showPresets)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _presetTasks.entries
+                      .map((preset) => ChoiceChip(
+                            label: Text(preset.value),
+                            selected: _selectedPreset == preset.key,
+                            onSelected: _isRunning
+                                ? null
+                                : (_) => _togglePreset(preset.key),
+                          ))
+                      .toList(),
+                ),
               if (_selectedPreset == TextAiTaskType.simplify) ...[
                 const SizedBox(height: 16),
                 Slider(

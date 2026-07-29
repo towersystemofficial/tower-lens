@@ -4,10 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'services/library_service.dart';
 import 'services/text_ai_service.dart';
 import 'services/text_ai_service_factory.dart';
-import 'screens/home_screen.dart';
 import 'screens/library_screen.dart';
-import 'screens/tos_screen.dart';
-import 'screens/watchlist_screen.dart';
+import 'screens/settings_screen.dart';
+import 'screens/tools_screen.dart';
 
 void main() {
   runApp(const TowerLensApp());
@@ -111,23 +110,16 @@ class _RootShellState extends State<RootShell> {
     }
 
     final screens = [
-      HomeScreen(
+      ToolsScreen(
         libraryService: _libraryService,
         textAiService: _textAiService,
         usesRealAi: _usesRealAi,
         onConfigureAi: _configureApiKey,
       ),
       LibraryScreen(libraryService: _libraryService),
-      TosScreen(
-        libraryService: _libraryService,
-        textAiService: _textAiService,
+      SettingsScreen(
         usesRealAi: _usesRealAi,
         onConfigureAi: _configureApiKey,
-      ),
-      WatchlistScreen(
-        libraryService: _libraryService,
-        textAiService: _textAiService,
-        usesRealAi: _usesRealAi,
       ),
     ];
 
@@ -137,10 +129,9 @@ class _RootShellState extends State<RootShell> {
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.grid_view_outlined), selectedIcon: Icon(Icons.grid_view), label: 'Tools'),
           NavigationDestination(icon: Icon(Icons.folder_outlined), selectedIcon: Icon(Icons.folder), label: 'Library'),
-          NavigationDestination(icon: Icon(Icons.gavel_outlined), selectedIcon: Icon(Icons.gavel), label: 'ToS'),
-          NavigationDestination(icon: Icon(Icons.warning_amber_outlined), selectedIcon: Icon(Icons.warning_amber), label: 'Watchlist'),
+          NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
         ],
       ),
     );

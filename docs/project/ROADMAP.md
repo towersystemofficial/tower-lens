@@ -233,7 +233,27 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 5. **Watchlist AI explanations — COMPLETE.** PR #45 is merged and device-verified. Watchlist scans require High-Fidelity OCR; immediate local matching is preserved; three independent Claude risk reviews feed a fourth synthesis pass that distinguishes exact, categorical, contextual, and uncertain/free-from evidence and always leads with the safety disclaimer.
 
-6. **Define and implement the UI/UX redesign.** Produce the concise visual direction and screen inventory, then apply the approved navigation, typography, spacing, colors, components, and flows in small increments.
+6. **Define and implement the UI/UX redesign — IN PROGRESS.** Preserve the
+   approved information density and individual tool workflows while making the
+   app feel friendlier and less clinical. The first increment replaces the
+   four-destination functional shell with three persistent destinations:
+   Tools, Library, and Settings.
+   - Tools is the default launcher. The most-used implemented tool spans the
+     full width, and all remaining tools flow through a responsive two-column
+     grid. Usage counts are stored in local app preferences under stable tool
+     IDs and disappear with the app. Tool cards use gradients as temporary
+     image-ready backgrounds.
+   - The initially available cards are Text Analysis (Summarize/Simplify), ToS
+     Analysis, Allergy Watchlist, and Custom Instructions. Appraiser remains
+     hidden until implemented. The registry/grid must accept future tools
+     without another launcher redesign.
+   - Every card opens its existing workspace directly, where camera, import,
+     and paste/text inputs remain available.
+   - Library retains its approved layout and behavior unchanged.
+   - Settings provides General Settings, Tutorials, Accessibility, Shop,
+     Contact Developer, About App, and ToS destinations. Content for unfinished
+     settings destinations and the broader visual-language pass will follow in
+     later redesign increments.
 
 7. **Price-check mode.** Add the previously deferred price-check/marketplace-estimate mode after the core app, import flow, prompts, Watchlist explanations, and redesign are established.
 

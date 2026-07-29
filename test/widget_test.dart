@@ -26,18 +26,17 @@ void main() {
     // library service finishes its async load. pumpAndSettle() never
     // settles against an indeterminate spinner's animation, so pump a
     // bounded number of frames instead to let the load complete.
-    for (var i = 0; i < 10 && find.text('Home').evaluate().isEmpty; i++) {
+    for (var i = 0; i < 10 && find.text('Tools').evaluate().isEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
     // Verify the main navigation destinations are present.
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Tools'), findsWidgets);
     expect(find.text('Library'), findsOneWidget);
-    expect(find.text('ToS'), findsOneWidget);
-    expect(find.text('Watchlist'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
 
     // The app must always launch in dark theme, regardless of system setting.
-    final BuildContext context = tester.element(find.text('Home'));
+    final BuildContext context = tester.element(find.text('Tools').first);
     expect(Theme.of(context).brightness, Brightness.dark);
   });
 
@@ -48,19 +47,21 @@ void main() {
     await tester.pumpWidget(const TowerLensApp());
     for (var i = 0;
         i < 10 &&
-            find.byTooltip('Configure Anthropic API key').evaluate().isEmpty;
+            find.text('Settings').evaluate().isEmpty;
         i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    await tester.tap(find.byTooltip('Configure Anthropic API key').first);
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('General Settings'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField), 'sk-ant-test-key');
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.byTooltip('Real Anthropic AI configured'), findsOneWidget);
+    expect(find.text('Anthropic AI configured'), findsOneWidget);
     expect(
       find.text('API key saved. Tower Lens will use real Anthropic responses.'),
       findsOneWidget,

@@ -61,7 +61,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.byTooltip('Real Anthropic AI configured'), findsOneWidget);
+    expect(find.text('Anthropic AI configured'), findsOneWidget);
     expect(
       find.text('API key saved. Tower Lens will use real Anthropic responses.'),
       findsOneWidget,

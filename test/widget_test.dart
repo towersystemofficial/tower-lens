@@ -57,7 +57,7 @@ void main() {
 
     expect(find.text('Your experience'), findsOneWidget);
     expect(find.text('Help and information'), findsOneWidget);
-    expect(find.byType(Card), findsNWidgets(7));
+    expect(find.byType(Card), findsNWidgets(4));
 
     await tester.tap(find.text('General Settings'));
     await tester.pumpAndSettle();
@@ -90,6 +90,14 @@ void main() {
     expect(find.text('Color theme'), findsOneWidget);
     expect(find.text('Glass effect'), findsOneWidget);
     expect(find.text('Text size'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Motion'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+
     expect(find.text('Motion'), findsOneWidget);
     expect(find.byType(Slider), findsNWidgets(3));
     expect(find.byType(Card), findsNWidgets(5));

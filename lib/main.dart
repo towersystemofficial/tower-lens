@@ -9,6 +9,7 @@ import 'screens/library_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/tools_screen.dart';
 import 'theme/appearance_settings.dart';
+import 'widgets/prismatic_surface.dart';
 
 void main() {
   runApp(const TowerLensApp());
@@ -108,9 +109,14 @@ class _TowerLensAppState extends State<TowerLensApp> {
       titleLarge: base.textTheme.titleLarge?.copyWith(fontFamily: 'serif'),
     );
     return base.copyWith(
-      scaffoldBackgroundColor: colorScheme.brightness == Brightness.dark
+      scaffoldBackgroundColor: Colors.transparent,
+      canvasColor: colorScheme.brightness == Brightness.dark
           ? const Color(0xFF091224)
           : const Color(0xFFF4F6FC),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+      ),
       textTheme: textTheme,
       extensions: [
         GlassStyle.fromLevel(_appearanceSettings.glassLevel),
@@ -209,16 +215,30 @@ class _RootShellState extends State<RootShell> {
       ),
     ];
 
-    return Scaffold(
-      body: IndexedStack(index: _index, children: screens),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.grid_view_outlined), selectedIcon: Icon(Icons.grid_view), label: 'Tools'),
-          NavigationDestination(icon: Icon(Icons.folder_outlined), selectedIcon: Icon(Icons.folder), label: 'Library'),
-          NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
-        ],
+    return PrismaticBackground(
+      child: Scaffold(
+        body: IndexedStack(index: _index, children: screens),
+        bottomNavigationBar: GlassNavigationBar(
+          selectedIndex: _index,
+          onDestinationSelected: (i) => setState(() => _index = i),
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.grid_view_outlined),
+              selectedIcon: Icon(Icons.grid_view),
+              label: 'Tools',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.folder_outlined),
+              selectedIcon: Icon(Icons.folder),
+              label: 'Library',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.settings_outlined),
+              selectedIcon: Icon(Icons.settings),
+              label: 'Settings',
+            ),
+          ],
+        ),
       ),
     );
   }

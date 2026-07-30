@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tower_lens/screens/tools_screen.dart';
 import 'package:tower_lens/services/library_service.dart';
 import 'package:tower_lens/services/text_ai_service.dart';
+import 'package:tower_lens/widgets/prismatic_surface.dart';
 
 void main() {
   testWidgets('launcher shows implemented tools and hides Appraiser',
@@ -43,18 +44,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final featuredCard = tester.widget<Card>(
-      find.ancestor(
-        of: find.text('ToS Analysis'),
-        matching: find.byType(Card),
+    final featuredCard = find.ancestor(
+      of: find.text('ToS Analysis'),
+      matching: find.byType(GlassCard),
+    );
+    final featuredSize = find.descendant(
+      of: featuredCard,
+      matching: find.byWidgetPredicate(
+        (widget) => widget is SizedBox && widget.height == 148,
       ),
     );
-    final ink = tester.widget<Ink>(
-      find.descendant(
-        of: find.byWidget(featuredCard),
-        matching: find.byType(Ink),
-      ),
-    );
-    expect(ink.height, 148);
+    expect(featuredSize, findsOneWidget);
+    final box = tester.widget<SizedBox>(featuredSize);
+    expect(box.height, 148);
   });
 }

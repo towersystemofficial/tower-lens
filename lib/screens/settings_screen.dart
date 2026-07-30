@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/appearance_settings.dart';
+import '../widgets/prismatic_surface.dart';
 
 class SettingsScreen extends StatelessWidget {
   final bool usesRealAi;
@@ -213,57 +214,41 @@ class _SettingsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final glass = Theme.of(context).extension<GlassStyle>();
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      color: colors.surfaceContainerHighest.withValues(
-        alpha: glass?.surfaceOpacity ?? 1,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.7)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: colors.primaryContainer,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Icon(icon, color: colors.onPrimaryContainer),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    DefaultTextStyle.merge(
-                      style: Theme.of(context).textTheme.titleMedium,
-                      child: title,
-                    ),
-                    const SizedBox(height: 3),
-                    DefaultTextStyle.merge(
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
-                      child: subtitle,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
-            ],
+    return GlassCard(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: colors.primaryContainer,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(icon, color: colors.onPrimaryContainer),
           ),
-        ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DefaultTextStyle.merge(
+                  style: Theme.of(context).textTheme.titleMedium,
+                  child: title,
+                ),
+                const SizedBox(height: 3),
+                DefaultTextStyle.merge(
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                  child: subtitle,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
+        ],
       ),
     );
   }
@@ -277,20 +262,9 @@ class _ControlCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final glass = Theme.of(context).extension<GlassStyle>();
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      color: colors.surfaceContainerHighest.withValues(
-        alpha: glass?.surfaceOpacity ?? 1,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.7)),
-      ),
+    return GlassCard(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

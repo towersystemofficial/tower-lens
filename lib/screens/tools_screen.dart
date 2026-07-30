@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
 import '../services/tool_usage_service.dart';
+import '../widgets/prismatic_surface.dart';
 import 'home_screen.dart';
 import 'tos_screen.dart';
 import 'watchlist_screen.dart';
@@ -209,23 +210,28 @@ class _ToolCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      margin: EdgeInsets.zero,
-      child: InkWell(
-        onTap: onTap,
-        child: Ink(
-          height: featured ? 148 : null,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: tool.colors,
-            ),
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
+    return GlassCard(
+      onTap: onTap,
+      padding: EdgeInsets.zero,
+      tint: tool.colors.first,
+      child: SizedBox(
+        height: featured ? 148 : null,
+        child: Stack(
+          children: [
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        tool.colors.first.withValues(alpha: 0.72),
+                        tool.colors.last.withValues(alpha: 0.45),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
               Positioned(
                 right: featured ? 20 : -6,
                 top: featured ? 16 : 8,
@@ -265,8 +271,7 @@ class _ToolCard extends StatelessWidget {
                   ],
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );

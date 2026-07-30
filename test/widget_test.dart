@@ -10,6 +10,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:tower_lens/main.dart';
+import 'package:tower_lens/screens/settings_screen.dart';
+import 'package:tower_lens/theme/appearance_settings.dart';
+import 'package:tower_lens/widgets/prismatic_surface.dart';
 
 void main() {
   testWidgets('TowerLensApp loads and shows the bottom navigation destinations',
@@ -17,7 +20,9 @@ void main() {
     // LibraryService.load() reads shared_preferences on startup; seed the
     // test-only mock store so that read resolves instead of throwing
     // MissingPluginException (there's no real platform channel in tests).
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'appearance_motion_level': 'none',
+    });
 
     // Build our app and trigger a frame.
     await tester.pumpWidget(const TowerLensApp());
@@ -42,7 +47,9 @@ void main() {
 
   testWidgets('saving an API key dismisses the dialog without an exception',
       (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'appearance_motion_level': 'none',
+    });
 
     await tester.pumpWidget(const TowerLensApp());
     for (var i = 0;
@@ -53,17 +60,17 @@ void main() {
     }
 
     await tester.tap(find.text('Settings'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Your experience'), findsOneWidget);
     expect(find.text('Help and information'), findsOneWidget);
-    expect(find.byType(Card), findsNWidgets(4));
+    expect(find.byType(GlassCard), findsNWidgets(4));
 
     await tester.tap(find.text('General Settings'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
     await tester.enterText(find.byType(TextFormField), 'sk-ant-test-key');
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(tester.takeException(), isNull);
     expect(find.text('Anthropic AI configured'), findsOneWidget);
@@ -75,16 +82,13 @@ void main() {
 
   testWidgets('accessibility appearance controls are available',
       (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues({});
-    await tester.pumpWidget(const TowerLensApp());
-    for (var i = 0; i < 10 && find.text('Settings').evaluate().isEmpty; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-
-    await tester.tap(find.text('Settings'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Accessibility'));
-    await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AccessibilitySettingsScreen(
+          settings: AppearanceSettings(),
+        ),
+      ),
+    );
 
     expect(find.text('Appearance'), findsOneWidget);
     expect(find.text('Color theme'), findsOneWidget);

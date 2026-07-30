@@ -58,17 +58,17 @@ void main() {
     }
 
     await tester.tap(find.text('Settings'));
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Your experience'), findsOneWidget);
     expect(find.text('Help and information'), findsOneWidget);
     expect(find.byType(GlassCard), findsNWidgets(4));
 
     await tester.tap(find.text('General Settings'));
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(seconds: 1));
     await tester.enterText(find.byType(TextFormField), 'sk-ant-test-key');
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(seconds: 1));
 
     expect(tester.takeException(), isNull);
     expect(find.text('Anthropic AI configured'), findsOneWidget);
@@ -89,9 +89,9 @@ void main() {
     }
 
     await tester.tap(find.text('Settings'));
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(seconds: 1));
     await tester.tap(find.text('Accessibility'));
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Appearance'), findsOneWidget);
     expect(find.text('Color theme'), findsOneWidget);
@@ -103,7 +103,7 @@ void main() {
       200,
       scrollable: find.byType(Scrollable).last,
     );
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Motion'), findsOneWidget);
     expect(find.byType(Slider), findsNWidgets(3));

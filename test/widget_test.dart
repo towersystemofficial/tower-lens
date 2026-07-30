@@ -54,6 +54,11 @@ void main() {
 
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
+
+    expect(find.text('Your experience'), findsOneWidget);
+    expect(find.text('Help and information'), findsOneWidget);
+    expect(find.byType(Card), findsNWidgets(7));
+
     await tester.tap(find.text('General Settings'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField), 'sk-ant-test-key');
@@ -87,5 +92,6 @@ void main() {
     expect(find.text('Text size'), findsOneWidget);
     expect(find.text('Motion'), findsOneWidget);
     expect(find.byType(Slider), findsNWidgets(3));
+    expect(find.byType(Card), findsNWidgets(5));
   });
 }

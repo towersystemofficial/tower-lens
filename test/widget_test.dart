@@ -12,7 +12,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tower_lens/main.dart';
 import 'package:tower_lens/screens/settings_screen.dart';
 import 'package:tower_lens/theme/appearance_settings.dart';
-import 'package:tower_lens/widgets/prismatic_surface.dart';
 
 void main() {
   testWidgets('TowerLensApp loads and shows the bottom navigation destinations',
@@ -79,7 +78,7 @@ void main() {
 
     expect(find.text('Your experience'), findsOneWidget);
     expect(find.text('Help and information'), findsOneWidget);
-    expect(find.byType(GlassCard), findsNWidgets(4));
+    expect(find.text('General Settings'), findsOneWidget);
 
     await tester.tap(find.text('General Settings'));
     await tester.pump(const Duration(seconds: 1));

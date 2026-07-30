@@ -48,12 +48,14 @@ void main() {
       of: find.text('ToS Analysis'),
       matching: find.byType(GlassCard),
     );
-    final box = tester.widget<SizedBox>(
-      find.descendant(
-        of: featuredCard,
-        matching: find.byType(SizedBox),
+    final featuredSize = find.descendant(
+      of: featuredCard,
+      matching: find.byWidgetPredicate(
+        (widget) => widget is SizedBox && widget.height == 148,
       ),
     );
+    expect(featuredSize, findsOneWidget);
+    final box = tester.widget<SizedBox>(featuredSize);
     expect(box.height, 148);
   });
 }

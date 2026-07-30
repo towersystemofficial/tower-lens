@@ -283,7 +283,7 @@ class _RootShellState extends State<RootShell> {
 
     return PrismaticBackground(
       child: Scaffold(
-        body: _DestinationStack(index: _index, children: screens),
+        body: IndexedStack(index: _index, children: screens),
         bottomNavigationBar: GlassNavigationBar(
           selectedIndex: _index,
           onDestinationSelected: (i) => setState(() => _index = i),
@@ -310,36 +310,6 @@ class _RootShellState extends State<RootShell> {
   }
 }
 
-class _DestinationStack extends StatelessWidget {
-  const _DestinationStack({required this.index, required this.children});
-
-  final int index;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final motion =
-        Theme.of(context).extension<MotionStyle>()?.intensity ?? 0;
-    final duration = Duration(milliseconds: (220 * motion).round());
-
-    return Stack(
-      children: [
-        for (var i = 0; i < children.length; i++)
-          Positioned.fill(
-            child: IgnorePointer(
-              ignoring: i != index,
-              child: AnimatedOpacity(
-                opacity: i == index ? 1 : 0,
-                duration: duration,
-                curve: Curves.easeOutCubic,
-                child: TickerMode(enabled: i == index, child: children[i]),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
 
 class _ApiKeyDialog extends StatefulWidget {
   final String initialApiKey;

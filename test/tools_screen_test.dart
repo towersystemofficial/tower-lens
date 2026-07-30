@@ -59,5 +59,6 @@ void main() {
     expect(featuredSize, findsOneWidget);
     final box = tester.widget<SizedBox>(featuredSize);
     expect(box.height, 148);
+    expect(tester.getSize(featuredCard).width, 768);
   });
 }

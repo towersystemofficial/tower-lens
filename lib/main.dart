@@ -98,6 +98,9 @@ class _TowerLensAppState extends State<TowerLensApp> {
 
   ThemeData _buildTheme(ColorScheme colorScheme) {
     final base = ThemeData(colorScheme: colorScheme, useMaterial3: true);
+    final roundedShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+    );
     final textTheme = base.textTheme.copyWith(
       displayLarge: base.textTheme.displayLarge?.copyWith(fontFamily: 'serif'),
       displayMedium: base.textTheme.displayMedium?.copyWith(fontFamily: 'serif'),
@@ -116,6 +119,69 @@ class _TowerLensAppState extends State<TowerLensApp> {
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
+        centerTitle: false,
+        scrolledUnderElevation: 0,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.58),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: colorScheme.outlineVariant),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: colorScheme.outlineVariant),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          shape: roundedShape,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          shape: roundedShape,
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(shape: roundedShape),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: colorScheme.surfaceContainerHigh,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(shape: WidgetStatePropertyAll(roundedShape)),
+      ),
+      dropdownMenuTheme: DropdownMenuThemeData(
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor:
+              colorScheme.surfaceContainerHighest.withValues(alpha: 0.58),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        elevation: 0,
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          return base.textTheme.labelMedium?.copyWith(
+            fontWeight:
+                states.contains(WidgetState.selected) ? FontWeight.w700 : null,
+          );
+        }),
       ),
       textTheme: textTheme,
       extensions: [
@@ -217,7 +283,7 @@ class _RootShellState extends State<RootShell> {
 
     return PrismaticBackground(
       child: Scaffold(
-        body: IndexedStack(index: _index, children: screens),
+        body: _DestinationStack(index: _index, children: screens),
         bottomNavigationBar: GlassNavigationBar(
           selectedIndex: _index,
           onDestinationSelected: (i) => setState(() => _index = i),
@@ -240,6 +306,37 @@ class _RootShellState extends State<RootShell> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DestinationStack extends StatelessWidget {
+  const _DestinationStack({required this.index, required this.children});
+
+  final int index;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final motion =
+        Theme.of(context).extension<MotionStyle>()?.intensity ?? 0;
+    final duration = Duration(milliseconds: (220 * motion).round());
+
+    return Stack(
+      children: [
+        for (var i = 0; i < children.length; i++)
+          Positioned.fill(
+            child: IgnorePointer(
+              ignoring: i != index,
+              child: AnimatedOpacity(
+                opacity: i == index ? 1 : 0,
+                duration: duration,
+                curve: Curves.easeOutCubic,
+                child: TickerMode(enabled: i == index, child: children[i]),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

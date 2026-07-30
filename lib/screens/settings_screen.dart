@@ -15,11 +15,31 @@ class SettingsScreen extends StatelessWidget {
   });
 
   static const _sections = [
-    (title: 'Tutorials', icon: Icons.school_outlined),
-    (title: 'Shop', icon: Icons.storefront_outlined),
-    (title: 'Contact Developer', icon: Icons.mail_outline),
-    (title: 'About App', icon: Icons.info_outline),
-    (title: 'ToS', icon: Icons.description_outlined),
+    (
+      title: 'Tutorials',
+      subtitle: 'Learn how to use Switchboard',
+      icon: Icons.school_outlined,
+    ),
+    (
+      title: 'Shop',
+      subtitle: 'Plans and future upgrades',
+      icon: Icons.storefront_outlined,
+    ),
+    (
+      title: 'Contact Developer',
+      subtitle: 'Send feedback or ask for help',
+      icon: Icons.mail_outline,
+    ),
+    (
+      title: 'About App',
+      subtitle: 'Version and project information',
+      icon: Icons.info_outline,
+    ),
+    (
+      title: 'ToS',
+      subtitle: 'Read the app terms',
+      icon: Icons.description_outlined,
+    ),
   ];
 
   void _openPlaceholder(BuildContext context, String title) {
@@ -47,12 +67,13 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
-          ListTile(
-            leading: const Icon(Icons.accessibility_new_outlined),
+          const _SectionTitle(title: 'Your experience'),
+          _SettingsCard(
+            icon: Icons.accessibility_new_outlined,
             title: const Text('Accessibility'),
-            trailing: const Icon(Icons.chevron_right),
+            subtitle: const Text('Appearance, text size, and motion'),
             onTap: () => Navigator.push<void>(
               context,
               MaterialPageRoute(
@@ -62,21 +83,26 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.settings_outlined),
+          const SizedBox(height: 10),
+          _SettingsCard(
+            icon: Icons.settings_outlined,
             title: const Text('General Settings'),
             subtitle: Text(
               usesRealAi ? 'Anthropic AI configured' : 'Configure AI access',
             ),
-            trailing: const Icon(Icons.chevron_right),
             onTap: onConfigureAi,
           ),
+          const SizedBox(height: 28),
+          const _SectionTitle(title: 'Help and information'),
           for (final section in _sections)
-            ListTile(
-              leading: Icon(section.icon),
-              title: Text(section.title),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _openPlaceholder(context, section.title),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _SettingsCard(
+                icon: section.icon,
+                title: Text(section.title),
+                subtitle: Text(section.subtitle),
+                onTap: () => _openPlaceholder(context, section.title),
+              ),
             ),
         ],
       ),
@@ -97,56 +123,67 @@ class AccessibilitySettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
           const _SectionTitle(title: 'Appearance'),
-          SegmentedButton<AppDisplayMode>(
-            segments: [
-              for (final mode in AppDisplayMode.values)
-                ButtonSegment(value: mode, label: Text(mode.label)),
-            ],
-            selected: {settings.displayMode},
-            onSelectionChanged: (selection) =>
-                settings.setDisplayMode(selection.first),
-          ),
-          const SizedBox(height: 24),
-          DropdownButtonFormField<AppPalette>(
-            initialValue: settings.palette,
-            decoration: const InputDecoration(
-              labelText: 'Color theme',
-              border: OutlineInputBorder(),
+          _ControlCard(
+            title: 'Display mode',
+            child: SegmentedButton<AppDisplayMode>(
+              segments: [
+                for (final mode in AppDisplayMode.values)
+                  ButtonSegment(value: mode, label: Text(mode.label)),
+              ],
+              selected: {settings.displayMode},
+              onSelectionChanged: (selection) =>
+                  settings.setDisplayMode(selection.first),
             ),
-            items: [
-              for (final palette in AppPalette.values)
-                DropdownMenuItem(
-                  value: palette,
-                  child: Text(palette.label),
-                ),
-            ],
-            onChanged: (value) {
-              if (value != null) settings.setPalette(value);
-            },
           ),
-          const SizedBox(height: 24),
-          _SnappingSlider<GlassLevel>(
-            title: 'Glass effect',
-            values: GlassLevel.values,
-            selected: settings.glassLevel,
-            label: (value) => value.label,
-            onChanged: settings.setGlassLevel,
+          const SizedBox(height: 12),
+          _ControlCard(
+            title: 'Color theme',
+            child: DropdownButtonFormField<AppPalette>(
+              initialValue: settings.palette,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                for (final palette in AppPalette.values)
+                  DropdownMenuItem(
+                    value: palette,
+                    child: Text(palette.label),
+                  ),
+              ],
+              onChanged: (value) {
+                if (value != null) settings.setPalette(value);
+              },
+            ),
           ),
-          const SizedBox(height: 24),
-          _SnappingSlider<AppTextSize>(
-            title: 'Text size',
-            values: AppTextSize.values,
-            selected: settings.textSize,
-            label: (value) => value.label,
-            onChanged: settings.setTextSize,
+          const SizedBox(height: 12),
+          _ControlCard(
+            child: _SnappingSlider<GlassLevel>(
+              title: 'Glass effect',
+              values: GlassLevel.values,
+              selected: settings.glassLevel,
+              label: (value) => value.label,
+              onChanged: settings.setGlassLevel,
+            ),
           ),
-          const SizedBox(height: 24),
-          _SnappingSlider<MotionLevel>(
-            title: 'Motion',
-            values: MotionLevel.values,
-            selected: settings.motionLevel,
-            label: (value) => value.label,
-            onChanged: settings.setMotionLevel,
+          const SizedBox(height: 12),
+          _ControlCard(
+            child: _SnappingSlider<AppTextSize>(
+              title: 'Text size',
+              values: AppTextSize.values,
+              selected: settings.textSize,
+              label: (value) => value.label,
+              onChanged: settings.setTextSize,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _ControlCard(
+            child: _SnappingSlider<MotionLevel>(
+              title: 'Motion',
+              values: MotionLevel.values,
+              selected: settings.motionLevel,
+              label: (value) => value.label,
+              onChanged: settings.setMotionLevel,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
@@ -155,6 +192,115 @@ class AccessibilitySettingsScreen extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SettingsCard extends StatelessWidget {
+  const _SettingsCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Widget title;
+  final Widget subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final glass = Theme.of(context).extension<GlassStyle>();
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      color: colors.surfaceContainerHighest.withValues(
+        alpha: glass?.surfaceOpacity ?? 1,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.7)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: colors.primaryContainer,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Icon(icon, color: colors.onPrimaryContainer),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DefaultTextStyle.merge(
+                      style: Theme.of(context).textTheme.titleMedium,
+                      child: title,
+                    ),
+                    const SizedBox(height: 3),
+                    DefaultTextStyle.merge(
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
+                      child: subtitle,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ControlCard extends StatelessWidget {
+  const _ControlCard({this.title, required this.child});
+
+  final String? title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final glass = Theme.of(context).extension<GlassStyle>();
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      color: colors.surfaceContainerHighest.withValues(
+        alpha: glass?.surfaceOpacity ?? 1,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.7)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (title != null) ...[
+              Text(title!, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 12),
+            ],
+            child,
+          ],
+        ),
       ),
     );
   }

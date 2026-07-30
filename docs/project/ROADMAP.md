@@ -57,7 +57,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 | ToS/privacy mode: paste, mocked structured summary, save | Implemented (mocked AI) |
 | Ingredient/allergy watchlist: manage list, high-fidelity scan, multi-pass AI risk analysis | **Implemented and device-verified through PR #45** |
 | Camera + OCR: live local recognition plus optional Claude-assisted High-Fidelity Mode | **Implemented and device-verified through PR #44** — High-Fidelity Mode is substantially more accurate; hostile real-world OCR stress testing is moved to beta testing |
-| Cohesive UI/UX redesign beyond the functional MVP shell | Not started — desired direction still needs definition after device testing |
+| Cohesive UI/UX redesign beyond the functional MVP shell | **In progress** — launcher/navigation and appearance/accessibility foundation are merged; Settings card redesign is the active batch |
 | Dark theme (forced default) | Implemented |
 | `TextAiService` abstraction with mock fallback | Implemented |
 | Real Anthropic API integration | **Implemented for private development** -- merged in PR #28; production still requires a backend |
@@ -265,4 +265,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 ## 10. Next task for Codex
 
-**Scope Step 6: UI/UX redesign.** Define the visual direction, navigation and screen hierarchy, typography, spacing, colors, reusable components, and the desired flow for each major screen before implementing changes in small, device-testable increments. Preserve the completed functional behavior and local-first architecture.
+**Continue Step 6: UI/UX redesign.** Complete the Settings card batch, then
+build the shared prismatic background and glass components. Continue using
+small CI-gated pull requests, with one combined Pixel 9a device pass after all
+visual redesign batches are assembled.

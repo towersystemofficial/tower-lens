@@ -168,9 +168,10 @@ class GlassStyle extends ThemeExtension<GlassStyle> {
     final intensity = level.intensity;
     return GlassStyle(
       intensity: intensity,
-      blurSigma: 18 * intensity,
-      surfaceOpacity: level == GlassLevel.none ? 1 : 0.9 - (0.28 * intensity),
-      glowOpacity: 0.22 * intensity,
+      // "Glass" is a crisp holographic coating, never frosted backdrop blur.
+      blurSigma: 0,
+      surfaceOpacity: level == GlassLevel.none ? 1 : 0.92 - (0.12 * intensity),
+      glowOpacity: 0.32 * intensity,
     );
   }
 

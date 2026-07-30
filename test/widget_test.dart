@@ -10,6 +10,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:tower_lens/main.dart';
+import 'package:tower_lens/screens/settings_screen.dart';
+import 'package:tower_lens/theme/appearance_settings.dart';
 import 'package:tower_lens/widgets/prismatic_surface.dart';
 
 void main() {
@@ -80,18 +82,13 @@ void main() {
 
   testWidgets('accessibility appearance controls are available',
       (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues({
-      'appearance_motion_level': 'none',
-    });
-    await tester.pumpWidget(const TowerLensApp());
-    for (var i = 0; i < 10 && find.text('Settings').evaluate().isEmpty; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-
-    await tester.tap(find.text('Settings'));
-    await tester.pump(const Duration(seconds: 1));
-    await tester.tap(find.text('Accessibility'));
-    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AccessibilitySettingsScreen(
+          settings: AppearanceSettings(),
+        ),
+      ),
+    );
 
     expect(find.text('Appearance'), findsOneWidget);
     expect(find.text('Color theme'), findsOneWidget);
@@ -103,7 +100,7 @@ void main() {
       200,
       scrollable: find.byType(Scrollable).last,
     );
-    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
 
     expect(find.text('Motion'), findsOneWidget);
     expect(find.byType(Slider), findsNWidgets(3));

@@ -79,6 +79,14 @@ void main() {
     expect(find.text('Your experience'), findsOneWidget);
     expect(find.text('Help and information'), findsOneWidget);
     expect(find.text('General Settings'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('General Settings')).dy,
+      lessThan(tester.getTopLeft(find.text('Accessibility')).dy),
+    );
+    expect(
+      tester.getTopLeft(find.text('Accessibility')).dy,
+      lessThan(tester.getTopLeft(find.text('Shop')).dy),
+    );
 
     await tester.tap(find.text('General Settings'));
     await tester.pump(const Duration(seconds: 1));

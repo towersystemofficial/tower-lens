@@ -57,7 +57,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 | ToS/privacy mode: paste, mocked structured summary, save | Implemented (mocked AI) |
 | Ingredient/allergy watchlist: manage list, high-fidelity scan, multi-pass AI risk analysis | **Implemented and device-verified through PR #45** |
 | Camera + OCR: live local recognition plus optional Claude-assisted High-Fidelity Mode | **Implemented and device-verified through PR #44** — High-Fidelity Mode is substantially more accurate; hostile real-world OCR stress testing is moved to beta testing |
-| Cohesive UI/UX redesign beyond the functional MVP shell | **In progress** — launcher/navigation and appearance/accessibility foundation are merged; Settings card redesign is the active batch |
+| Cohesive UI/UX redesign beyond the functional MVP shell | **In progress** — launcher/navigation, appearance/accessibility, and Settings cards are merged; shared prismatic surfaces are the active batch |
 | Dark theme (forced default) | Implemented |
 | `TextAiService` abstraction with mock fallback | Implemented |
 | Real Anthropic API integration | **Implemented for private development** -- merged in PR #28; production still requires a backend |
@@ -254,6 +254,11 @@ channel. TXT and Markdown imports are decoded locally in Dart.
      Contact Developer, About App, and ToS destinations. Content for unfinished
      settings destinations and the broader visual-language pass will follow in
      later redesign increments.
+   - The shared visual layer uses a midnight-navy or pale-glass background,
+     motion-scaled prismatic light, real backdrop blur, translucent rounded
+     surfaces, restrained edge glow, and a glass bottom navigation bar. The
+     existing glass and motion accessibility settings scale these effects,
+     including fully opaque/static modes.
 
 7. **Price-check mode.** Add the previously deferred price-check/marketplace-estimate mode after the core app, import flow, prompts, Watchlist explanations, and redesign are established.
 
@@ -265,7 +270,8 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 ## 10. Next task for Codex
 
-**Continue Step 6: UI/UX redesign.** Complete the Settings card batch, then
-build the shared prismatic background and glass components. Continue using
-small CI-gated pull requests, with one combined Pixel 9a device pass after all
-visual redesign batches are assembled.
+**Continue Step 6: UI/UX redesign.** Complete the shared prismatic background
+and glass-component batch, then create the four recognizable prismatic tool
+visuals with motion-scaled internal animation. Continue using small CI-gated
+pull requests, with one combined Pixel 9a device pass after all visual redesign
+batches are assembled.

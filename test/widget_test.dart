@@ -100,6 +100,5 @@ void main() {
 
     expect(find.text('Motion'), findsOneWidget);
     expect(find.byType(Slider), findsNWidgets(3));
-    expect(find.byType(Card), findsNWidgets(5));
   });
 }

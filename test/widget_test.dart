@@ -35,9 +35,9 @@ void main() {
     expect(find.text('Library'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
 
-    // The app must always launch in dark theme, regardless of system setting.
+    // The app follows the system display mode by default.
     final BuildContext context = tester.element(find.text('Tools').first);
-    expect(Theme.of(context).brightness, Brightness.dark);
+    expect(Theme.of(context).brightness, tester.platformDispatcher.platformBrightness);
   });
 
   testWidgets('saving an API key dismisses the dialog without an exception',
@@ -66,5 +66,26 @@ void main() {
       find.text('API key saved. Tower Lens will use real Anthropic responses.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('accessibility appearance controls are available',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const TowerLensApp());
+    for (var i = 0; i < 10 && find.text('Settings').evaluate().isEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Accessibility'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Appearance'), findsOneWidget);
+    expect(find.text('Color theme'), findsOneWidget);
+    expect(find.text('Glass effect'), findsOneWidget);
+    expect(find.text('Text size'), findsOneWidget);
+    expect(find.text('Motion'), findsOneWidget);
+    expect(find.byType(Slider), findsNWidgets(3));
   });
 }

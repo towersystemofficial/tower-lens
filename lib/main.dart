@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'services/library_service.dart';
@@ -7,38 +8,122 @@ import 'services/text_ai_service_factory.dart';
 import 'screens/library_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/tools_screen.dart';
+import 'theme/appearance_settings.dart';
 
 void main() {
   runApp(const TowerLensApp());
 }
 
-class TowerLensApp extends StatelessWidget {
+class TowerLensApp extends StatefulWidget {
   const TowerLensApp({super.key});
 
   @override
+  State<TowerLensApp> createState() => _TowerLensAppState();
+}
+
+class _TowerLensAppState extends State<TowerLensApp> {
+  static const _appearanceChannel =
+      MethodChannel('com.example.tower_lens/appearance');
+
+  final AppearanceSettings _appearanceSettings = AppearanceSettings();
+  Color? _deviceAccentColor;
+
+  @override
+  void initState() {
+    super.initState();
+    _appearanceSettings.addListener(_refresh);
+    _appearanceSettings.load();
+    _loadDeviceAccentColor();
+  }
+
+  @override
+  void dispose() {
+    _appearanceSettings
+      ..removeListener(_refresh)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _refresh() => setState(() {});
+
+  Future<void> _loadDeviceAccentColor() async {
+    try {
+      final colorValue =
+          await _appearanceChannel.invokeMethod<int>('getSystemAccentColor');
+      if (colorValue != null && mounted) {
+        setState(() => _deviceAccentColor = Color(colorValue));
+      }
+    } on PlatformException {
+      // Android versions without wallpaper colors use the default palette.
+    } on MissingPluginException {
+      // Widget tests and non-Android platforms use the default palette.
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final selectedPalette = _appearanceSettings.palette;
+    final seed = selectedPalette == AppPalette.device
+        ? _deviceAccentColor ?? AppPalette.prismatic.seedColor
+        : selectedPalette.seedColor;
+    final lightScheme = ColorScheme.fromSeed(seedColor: seed);
+    final darkScheme = ColorScheme.fromSeed(
+      seedColor: seed,
+      brightness: Brightness.dark,
+      surface: const Color(0xFF091224),
+    );
+
     return MaterialApp(
-      title: 'Tower Lens',
+      title: 'Switchboard',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.indigo,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
-      themeMode: ThemeMode.dark,
-      home: const RootShell(),
+      theme: _buildTheme(lightScheme),
+      darkTheme: _buildTheme(darkScheme),
+      themeMode: _appearanceSettings.themeMode,
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        final systemScale = mediaQuery.textScaler.scale(16) / 16;
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: TextScaler.linear(
+              systemScale * _appearanceSettings.textSize.multiplier,
+            ),
+          ),
+          child: child!,
+        );
+      },
+      home: RootShell(appearanceSettings: _appearanceSettings),
+    );
+  }
+
+  ThemeData _buildTheme(ColorScheme colorScheme) {
+    final base = ThemeData(colorScheme: colorScheme, useMaterial3: true);
+    final textTheme = base.textTheme.copyWith(
+      displayLarge: base.textTheme.displayLarge?.copyWith(fontFamily: 'serif'),
+      displayMedium: base.textTheme.displayMedium?.copyWith(fontFamily: 'serif'),
+      displaySmall: base.textTheme.displaySmall?.copyWith(fontFamily: 'serif'),
+      headlineLarge: base.textTheme.headlineLarge?.copyWith(fontFamily: 'serif'),
+      headlineMedium:
+          base.textTheme.headlineMedium?.copyWith(fontFamily: 'serif'),
+      headlineSmall: base.textTheme.headlineSmall?.copyWith(fontFamily: 'serif'),
+      titleLarge: base.textTheme.titleLarge?.copyWith(fontFamily: 'serif'),
+    );
+    return base.copyWith(
+      scaffoldBackgroundColor: colorScheme.brightness == Brightness.dark
+          ? const Color(0xFF091224)
+          : const Color(0xFFF4F6FC),
+      textTheme: textTheme,
+      extensions: [
+        GlassStyle.fromLevel(_appearanceSettings.glassLevel),
+        MotionStyle.fromLevel(_appearanceSettings.motionLevel),
+      ],
     );
   }
 }
 
 class RootShell extends StatefulWidget {
-  const RootShell({super.key});
+  final AppearanceSettings appearanceSettings;
+
+  const RootShell({super.key, required this.appearanceSettings});
 
   @override
   State<RootShell> createState() => _RootShellState();
@@ -120,6 +205,7 @@ class _RootShellState extends State<RootShell> {
       SettingsScreen(
         usesRealAi: _usesRealAi,
         onConfigureAi: _configureApiKey,
+        appearanceSettings: widget.appearanceSettings,
       ),
     ];
 

@@ -1,5 +1,6 @@
 package com.example.tower_lens
 
+import android.os.Build
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.text.PDFTextStripper
@@ -10,10 +11,27 @@ import java.io.ByteArrayInputStream
 
 class MainActivity : FlutterActivity() {
     private val documentImportChannel = "com.example.tower_lens/document_import"
+    private val appearanceChannel = "com.example.tower_lens/appearance"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         PDFBoxResourceLoader.init(applicationContext)
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            appearanceChannel,
+        ).setMethodCallHandler { call, result ->
+            if (call.method != "getSystemAccentColor") {
+                result.notImplemented()
+                return@setMethodCallHandler
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                result.success(getColor(android.R.color.system_accent1_500))
+            } else {
+                result.success(null)
+            }
+        }
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,

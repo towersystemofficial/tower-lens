@@ -18,7 +18,9 @@ void main() {
     // LibraryService.load() reads shared_preferences on startup; seed the
     // test-only mock store so that read resolves instead of throwing
     // MissingPluginException (there's no real platform channel in tests).
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'appearance_motion_level': 'none',
+    });
 
     // Build our app and trigger a frame.
     await tester.pumpWidget(const TowerLensApp());
@@ -43,7 +45,9 @@ void main() {
 
   testWidgets('saving an API key dismisses the dialog without an exception',
       (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'appearance_motion_level': 'none',
+    });
 
     await tester.pumpWidget(const TowerLensApp());
     for (var i = 0;
@@ -76,7 +80,9 @@ void main() {
 
   testWidgets('accessibility appearance controls are available',
       (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'appearance_motion_level': 'none',
+    });
     await tester.pumpWidget(const TowerLensApp());
     for (var i = 0; i < 10 && find.text('Settings').evaluate().isEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 100));

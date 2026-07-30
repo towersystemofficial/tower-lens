@@ -4,6 +4,7 @@ import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
 import '../services/tool_usage_service.dart';
 import '../widgets/prismatic_surface.dart';
+import '../widgets/tool_visual.dart';
 import 'home_screen.dart';
 import 'tos_screen.dart';
 import 'watchlist_screen.dart';
@@ -40,7 +41,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
         id: 'text_analysis',
         title: 'Text Analysis',
         description: 'Summarize or simplify dense text.',
-        icon: Icons.auto_awesome_outlined,
+        visual: ToolVisualKind.textAnalysis,
         colors: const [Color(0xff3949ab), Color(0xff1a237e)],
         screenBuilder: () => HomeScreen(
           libraryService: widget.libraryService,
@@ -56,7 +57,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
         id: 'tos_analysis',
         title: 'ToS Analysis',
         description: 'Find important terms, risks, and obligations.',
-        icon: Icons.policy_outlined,
+        visual: ToolVisualKind.termsAnalysis,
         colors: const [Color(0xff6a1b9a), Color(0xff311b92)],
         screenBuilder: () => TosScreen(
           libraryService: widget.libraryService,
@@ -69,7 +70,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
         id: 'allergy_watchlist',
         title: 'Allergy Watchlist',
         description: 'Check labels against ingredients you avoid.',
-        icon: Icons.health_and_safety_outlined,
+        visual: ToolVisualKind.allergyWatchlist,
         colors: const [Color(0xff00897b), Color(0xff004d40)],
         screenBuilder: () => WatchlistScreen(
           libraryService: widget.libraryService,
@@ -81,7 +82,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
         id: 'custom_instructions',
         title: 'Custom Instructions',
         description: 'Tell the AI exactly how to help with your text.',
-        icon: Icons.tune_outlined,
+        visual: ToolVisualKind.customInstructions,
         colors: const [Color(0xffef6c00), Color(0xffbf360c)],
         screenBuilder: () => HomeScreen(
           libraryService: widget.libraryService,
@@ -183,7 +184,7 @@ class _ToolDefinition {
   final String id;
   final String title;
   final String description;
-  final IconData icon;
+  final ToolVisualKind visual;
   final List<Color> colors;
   final Widget Function() screenBuilder;
 
@@ -191,7 +192,7 @@ class _ToolDefinition {
     required this.id,
     required this.title,
     required this.description,
-    required this.icon,
+    required this.visual,
     required this.colors,
     required this.screenBuilder,
   });
@@ -233,12 +234,12 @@ class _ToolCard extends StatelessWidget {
                 ),
               ),
               Positioned(
-                right: featured ? 20 : -6,
-                top: featured ? 16 : 8,
-                child: Icon(
-                  tool.icon,
-                  size: featured ? 88 : 64,
-                  color: Colors.white.withValues(alpha: 0.16),
+                right: featured ? 16 : 4,
+                top: featured ? 12 : 10,
+                child: ToolVisual(
+                  kind: tool.visual,
+                  colors: tool.colors,
+                  compact: !featured,
                 ),
               ),
               Padding(
@@ -247,7 +248,8 @@ class _ToolCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Icon(tool.icon, color: Colors.white),
+                    if (featured)
+                      const Icon(Icons.auto_awesome, color: Colors.white),
                     const Spacer(),
                     Text(
                       tool.title,

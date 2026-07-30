@@ -270,8 +270,8 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 ## 10. Next task for Codex
 
-**Continue Step 6: UI/UX redesign.** Complete the shared prismatic background
-and glass-component batch, then create the four recognizable prismatic tool
-visuals with motion-scaled internal animation. Continue using small CI-gated
-pull requests, with one combined Pixel 9a device pass after all visual redesign
-batches are assembled.
+**Continue Step 6: UI/UX redesign.** The shared glass foundation and four
+recognizable prismatic tool visuals are implemented. Next, polish navigation
+and visual consistency across the existing screens. Continue using small
+CI-gated pull requests, with one combined Pixel 9a device pass after all visual
+redesign batches are assembled.

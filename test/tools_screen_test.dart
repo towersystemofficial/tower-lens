@@ -5,6 +5,7 @@ import 'package:tower_lens/screens/tools_screen.dart';
 import 'package:tower_lens/services/library_service.dart';
 import 'package:tower_lens/services/text_ai_service.dart';
 import 'package:tower_lens/widgets/prismatic_surface.dart';
+import 'package:tower_lens/widgets/tool_visual.dart';
 
 void main() {
   testWidgets('launcher shows implemented tools and hides Appraiser',
@@ -26,6 +27,7 @@ void main() {
     expect(find.text('ToS Analysis'), findsOneWidget);
     expect(find.text('Allergy Watchlist'), findsOneWidget);
     expect(find.text('Custom Instructions'), findsOneWidget);
+    expect(find.byType(ToolVisual), findsNWidgets(4));
     expect(find.text('Appraiser'), findsNothing);
   });
 

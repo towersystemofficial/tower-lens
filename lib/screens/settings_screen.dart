@@ -96,7 +96,7 @@ class AccessibilitySettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
-          _SectionTitle(title: 'Appearance'),
+          const _SectionTitle(title: 'Appearance'),
           SegmentedButton<AppDisplayMode>(
             segments: [
               for (final mode in AppDisplayMode.values)

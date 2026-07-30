@@ -214,14 +214,16 @@ class _ToolCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
-      onTap: onTap,
-      padding: EdgeInsets.zero,
-      tint: tool.colors.first,
-      child: SizedBox(
-        height: featured ? 148 : null,
-        child: Stack(
-          children: [
+    return SizedBox(
+      width: double.infinity,
+      child: GlassCard(
+        onTap: onTap,
+        padding: EdgeInsets.zero,
+        tint: tool.colors.first,
+        child: SizedBox(
+          height: featured ? 148 : null,
+          child: Stack(
+            children: [
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -276,7 +278,8 @@ class _ToolCard extends StatelessWidget {
                   ],
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );

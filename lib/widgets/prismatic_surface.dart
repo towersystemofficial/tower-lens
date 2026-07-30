@@ -89,21 +89,38 @@ class _PrismaticBackgroundState extends State<PrismaticBackground>
           final phase = motion == 0 ? 0.0 : _controller.value;
           return DecoratedBox(
             decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment(
-                  -0.8 + (0.32 * phase * motion),
-                  -0.95 + (0.22 * phase * motion),
-                ),
-                radius: 1.45,
+              gradient: LinearGradient(
+                begin: Alignment(-1 + (0.18 * phase * motion), -1),
+                end: Alignment(1, 1 - (0.12 * phase * motion)),
                 colors: [
-                  colors.primary.withValues(alpha: 0.18 * glass),
-                  colors.secondary.withValues(alpha: 0.08 * glass),
+                  colors.primary.withValues(alpha: 0.16 * glass),
                   Colors.transparent,
+                  colors.tertiary.withValues(alpha: 0.12 * glass),
                 ],
-                stops: const [0, 0.43, 1],
+                stops: const [0, 0.48, 1],
               ),
             ),
-            child: child,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment(
+                        0.75 - (0.28 * phase * motion),
+                        -0.8 + (0.2 * phase * motion),
+                      ),
+                      radius: 1.15,
+                      colors: [
+                        colors.secondary.withValues(alpha: 0.13 * glass),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+                child!,
+              ],
+            ),
           );
         },
       ),
@@ -141,11 +158,30 @@ class GlassCard extends StatelessWidget {
 
     Widget result = Container(
       decoration: BoxDecoration(
-        color: surface,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.alphaBlend(
+              Colors.white.withValues(alpha: 0.07 * glass.intensity),
+              surface,
+            ),
+            surface,
+            Color.alphaBlend(
+              colors.secondary.withValues(alpha: 0.07 * glass.intensity),
+              surface,
+            ),
+          ],
+          stops: const [0, 0.46, 1],
+        ),
         borderRadius: radius,
         border: Border.all(
-          color: colors.outlineVariant.withValues(
-            alpha: 0.58 + (0.2 * glass.intensity),
+          color: Color.lerp(
+            colors.outlineVariant,
+            tint ?? colors.primary,
+            0.42 * glass.intensity,
+          )!.withValues(
+            alpha: 0.62 + (0.24 * glass.intensity),
           ),
         ),
         boxShadow: glass.glowOpacity == 0
@@ -204,14 +240,14 @@ class GlassNavigationBar extends StatelessWidget {
         Theme.of(context).extension<GlassStyle>() ??
         GlassStyle.fromLevel(GlassLevel.none);
     final colors = Theme.of(context).colorScheme;
-    final radius = BorderRadius.circular(24);
     Widget bar = Container(
       decoration: BoxDecoration(
         color: colors.surface.withValues(alpha: glass.surfaceOpacity),
-        borderRadius: radius,
-        border: Border.all(
-          color: colors.outlineVariant.withValues(
-            alpha: 0.58 + (0.2 * glass.intensity),
+        border: Border(
+          top: BorderSide(
+            color: colors.outlineVariant.withValues(
+              alpha: 0.58 + (0.2 * glass.intensity),
+            ),
           ),
         ),
         boxShadow: glass.glowOpacity == 0
@@ -226,35 +262,26 @@ class GlassNavigationBar extends StatelessWidget {
                 ),
               ],
       ),
-      child: ClipRRect(
-        borderRadius: radius,
-        child: NavigationBar(
-          height: 68,
-          backgroundColor: Colors.transparent,
-          indicatorColor: colors.primaryContainer.withValues(
-            alpha: 0.72 + (0.18 * glass.intensity),
-          ),
-          selectedIndex: selectedIndex,
-          onDestinationSelected: onDestinationSelected,
-          destinations: destinations,
+      child: NavigationBar(
+        height: 68,
+        backgroundColor: Colors.transparent,
+        indicatorColor: colors.primaryContainer.withValues(
+          alpha: 0.72 + (0.18 * glass.intensity),
         ),
+        selectedIndex: selectedIndex,
+        onDestinationSelected: onDestinationSelected,
+        destinations: destinations,
       ),
     );
     if (glass.blurSigma > 0) {
-      bar = ClipRRect(
-        borderRadius: radius,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: glass.blurSigma,
-            sigmaY: glass.blurSigma,
-          ),
-          child: bar,
+      bar = BackdropFilter(
+        filter: ImageFilter.blur(
+          sigmaX: glass.blurSigma,
+          sigmaY: glass.blurSigma,
         ),
+        child: bar,
       );
     }
-    return SafeArea(
-      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-      child: bar,
-    );
+    return SafeArea(top: false, child: bar);
   }
 }

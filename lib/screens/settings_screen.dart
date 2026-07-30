@@ -15,21 +15,11 @@ class SettingsScreen extends StatelessWidget {
     required this.appearanceSettings,
   });
 
-  static const _sections = [
+  static const _helpSections = [
     (
       title: 'Tutorials',
       subtitle: 'Learn how to use Switchboard',
       icon: Icons.school_outlined,
-    ),
-    (
-      title: 'Shop',
-      subtitle: 'Plans and future upgrades',
-      icon: Icons.storefront_outlined,
-    ),
-    (
-      title: 'Contact Developer',
-      subtitle: 'Send feedback or ask for help',
-      icon: Icons.mail_outline,
     ),
     (
       title: 'About App',
@@ -40,6 +30,11 @@ class SettingsScreen extends StatelessWidget {
       title: 'ToS',
       subtitle: 'Read the app terms',
       icon: Icons.description_outlined,
+    ),
+    (
+      title: 'Contact Developer',
+      subtitle: 'Send feedback or ask for help',
+      icon: Icons.mail_outline,
     ),
   ];
 
@@ -73,6 +68,15 @@ class SettingsScreen extends StatelessWidget {
         children: [
           const _SectionTitle(title: 'Your experience'),
           _SettingsCard(
+            icon: Icons.settings_outlined,
+            title: const Text('General Settings'),
+            subtitle: Text(
+              usesRealAi ? 'Anthropic AI configured' : 'Configure AI access',
+            ),
+            onTap: onConfigureAi,
+          ),
+          const SizedBox(height: 10),
+          _SettingsCard(
             icon: Icons.accessibility_new_outlined,
             title: const Text('Accessibility'),
             subtitle: const Text('Appearance, text size, and motion'),
@@ -88,16 +92,14 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _SettingsCard(
-            icon: Icons.settings_outlined,
-            title: const Text('General Settings'),
-            subtitle: Text(
-              usesRealAi ? 'Anthropic AI configured' : 'Configure AI access',
-            ),
-            onTap: onConfigureAi,
+            icon: Icons.storefront_outlined,
+            title: const Text('Shop'),
+            subtitle: const Text('Plans and future upgrades'),
+            onTap: () => _openPlaceholder(context, 'Shop'),
           ),
           const SizedBox(height: 28),
           const _SectionTitle(title: 'Help and information'),
-          for (final section in _sections)
+          for (final section in _helpSections)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: _SettingsCard(

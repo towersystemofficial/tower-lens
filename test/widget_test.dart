@@ -36,9 +36,19 @@ void main() {
     }
 
     // Verify the main navigation destinations are present.
-    expect(find.text('Tools'), findsWidgets);
-    expect(find.text('Library'), findsOneWidget);
-    expect(find.text('Settings'), findsOneWidget);
+    final navigationBar = find.byType(NavigationBar);
+    expect(
+      find.descendant(of: navigationBar, matching: find.text('Tools')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: navigationBar, matching: find.text('Library')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: navigationBar, matching: find.text('Settings')),
+      findsOneWidget,
+    );
 
     // The app follows the system display mode by default.
     final BuildContext context = tester.element(find.text('Tools').first);
@@ -59,7 +69,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    await tester.tap(find.text('Settings'));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text('Settings'),
+      ),
+    );
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Your experience'), findsOneWidget);

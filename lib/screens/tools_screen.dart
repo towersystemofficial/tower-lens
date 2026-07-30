@@ -119,7 +119,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
     setState(() => _usageCounts = {..._usageCounts, tool.id: count});
     await Navigator.push<void>(
       context,
-      MaterialPageRoute(builder: (_) => tool.screenBuilder()),
+      prismaticPageRoute(
+        context: context,
+        builder: (_) => tool.screenBuilder(),
+      ),
     );
   }
 
@@ -146,7 +149,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   'Choose a tool, then scan, import, or paste your text.',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 _ToolCard(
                   tool: featured,
                   featured: true,

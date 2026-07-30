@@ -4,6 +4,47 @@ import 'package:flutter/material.dart';
 
 import '../theme/appearance_settings.dart';
 
+Route<T> prismaticPageRoute<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+}) {
+  final motion =
+      Theme.of(context).extension<MotionStyle>()?.intensity ?? 0;
+  final duration = Duration(milliseconds: (280 * motion).round());
+
+  if (motion == 0) {
+    return PageRouteBuilder<T>(
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          builder(context),
+      transitionDuration: Duration.zero,
+      reverseTransitionDuration: Duration.zero,
+    );
+  }
+
+  return PageRouteBuilder<T>(
+    pageBuilder: (context, animation, secondaryAnimation) => builder(context),
+    transitionDuration: duration,
+    reverseTransitionDuration: duration,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final eased = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
+      return FadeTransition(
+        opacity: eased,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: Offset(0.035 * motion, 0.025 * motion),
+            end: Offset.zero,
+          ).animate(eased),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
 class PrismaticBackground extends StatefulWidget {
   const PrismaticBackground({super.key, required this.child});
 
@@ -163,14 +204,45 @@ class GlassNavigationBar extends StatelessWidget {
         Theme.of(context).extension<GlassStyle>() ??
         GlassStyle.fromLevel(GlassLevel.none);
     final colors = Theme.of(context).colorScheme;
-    Widget bar = NavigationBar(
-      backgroundColor: colors.surface.withValues(alpha: glass.surfaceOpacity),
-      selectedIndex: selectedIndex,
-      onDestinationSelected: onDestinationSelected,
-      destinations: destinations,
+    final radius = BorderRadius.circular(24);
+    Widget bar = Container(
+      decoration: BoxDecoration(
+        color: colors.surface.withValues(alpha: glass.surfaceOpacity),
+        borderRadius: radius,
+        border: Border.all(
+          color: colors.outlineVariant.withValues(
+            alpha: 0.58 + (0.2 * glass.intensity),
+          ),
+        ),
+        boxShadow: glass.glowOpacity == 0
+            ? null
+            : [
+                BoxShadow(
+                  color: colors.primary.withValues(
+                    alpha: glass.glowOpacity * 0.38,
+                  ),
+                  blurRadius: 26 * glass.intensity,
+                  spreadRadius: -8,
+                ),
+              ],
+      ),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: NavigationBar(
+          height: 68,
+          backgroundColor: Colors.transparent,
+          indicatorColor: colors.primaryContainer.withValues(
+            alpha: 0.72 + (0.18 * glass.intensity),
+          ),
+          selectedIndex: selectedIndex,
+          onDestinationSelected: onDestinationSelected,
+          destinations: destinations,
+        ),
+      ),
     );
     if (glass.blurSigma > 0) {
-      bar = ClipRect(
+      bar = ClipRRect(
+        borderRadius: radius,
         child: BackdropFilter(
           filter: ImageFilter.blur(
             sigmaX: glass.blurSigma,
@@ -180,6 +252,9 @@ class GlassNavigationBar extends StatelessWidget {
         ),
       );
     }
-    return bar;
+    return SafeArea(
+      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      child: bar,
+    );
   }
 }

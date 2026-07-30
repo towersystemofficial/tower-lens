@@ -57,7 +57,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 | ToS/privacy mode: paste, mocked structured summary, save | Implemented (mocked AI) |
 | Ingredient/allergy watchlist: manage list, high-fidelity scan, multi-pass AI risk analysis | **Implemented and device-verified through PR #45** |
 | Camera + OCR: live local recognition plus optional Claude-assisted High-Fidelity Mode | **Implemented and device-verified through PR #44** — High-Fidelity Mode is substantially more accurate; hostile real-world OCR stress testing is moved to beta testing |
-| Cohesive UI/UX redesign beyond the functional MVP shell | **In progress** — launcher/navigation, appearance/accessibility, and Settings cards are merged; shared prismatic surfaces are the active batch |
+| Cohesive UI/UX redesign beyond the functional MVP shell | **Implemented; awaiting combined device verification** — launcher/navigation, appearance/accessibility, Settings cards, shared prismatic surfaces, tool visuals, and the app-wide polish pass are assembled |
 | Dark theme (forced default) | Implemented |
 | `TextAiService` abstraction with mock fallback | Implemented |
 | Real Anthropic API integration | **Implemented for private development** -- merged in PR #28; production still requires a backend |
@@ -259,6 +259,11 @@ channel. TXT and Markdown imports are decoded locally in Dart.
      surfaces, restrained edge glow, and a glass bottom navigation bar. The
      existing glass and motion accessibility settings scale these effects,
      including fully opaque/static modes.
+   - The final assembly pass adds a floating rounded navigation surface,
+     motion-scaled tab and page transitions, and consistent rounded fields,
+     buttons, dialogs, snackbars, selection controls, and app bars. Existing
+     screen content and flows remain unchanged. The redesign now requires one
+     combined Pixel 9a device pass rather than separate testing per batch.
 
 7. **Price-check mode.** Add the previously deferred price-check/marketplace-estimate mode after the core app, import flow, prompts, Watchlist explanations, and redesign are established.
 
@@ -270,8 +275,8 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 ## 10. Next task for Codex
 
-**Continue Step 6: UI/UX redesign.** The shared glass foundation and four
-recognizable prismatic tool visuals are implemented. Next, polish navigation
-and visual consistency across the existing screens. Continue using small
-CI-gated pull requests, with one combined Pixel 9a device pass after all visual
-redesign batches are assembled.
+**Verify Step 6: UI/UX redesign on the Pixel 9a.** All five redesign batches
+are assembled. After the final polish PR passes analysis, tests, and APK
+packaging, perform one combined device pass covering navigation, every tool
+workspace, Library, Settings/Accessibility, all appearance levels, light/dark
+mode, text scaling, motion scaling, overflow, contrast, and state persistence.

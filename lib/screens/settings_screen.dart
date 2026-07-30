@@ -46,7 +46,8 @@ class SettingsScreen extends StatelessWidget {
   void _openPlaceholder(BuildContext context, String title) {
     Navigator.push<void>(
       context,
-      MaterialPageRoute(
+      prismaticPageRoute(
+        context: context,
         builder: (_) => Scaffold(
           appBar: AppBar(title: Text(title)),
           body: Center(
@@ -77,7 +78,8 @@ class SettingsScreen extends StatelessWidget {
             subtitle: const Text('Appearance, text size, and motion'),
             onTap: () => Navigator.push<void>(
               context,
-              MaterialPageRoute(
+              prismaticPageRoute(
+                context: context,
                 builder: (_) => AccessibilitySettingsScreen(
                   settings: appearanceSettings,
                 ),

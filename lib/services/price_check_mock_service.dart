@@ -6,9 +6,10 @@ class PriceCheckMockService implements PriceCheckService {
 
   final Duration delay;
 
+  @override
   Future<PriceCheckIdentification> identify(
     PriceCheckInput input,
-    [PriceCheckMockScenario scenario = PriceCheckMockScenario.typical],
+    [PriceCheckMockScenario scenario = PriceCheckMockScenario.typical]
   ) async {
     await Future<void>.delayed(delay);
     if (scenario == PriceCheckMockScenario.offline) {
@@ -70,10 +71,11 @@ class PriceCheckMockService implements PriceCheckService {
     );
   }
 
+  @override
   Future<PriceCheckMarketResult> research(
     PriceCheckInput input,
     PriceCheckIdentification identification,
-    [PriceCheckMockScenario scenario = PriceCheckMockScenario.typical],
+    [PriceCheckMockScenario scenario = PriceCheckMockScenario.typical]
   ) async {
     await Future<void>.delayed(delay);
     if (scenario == PriceCheckMockScenario.recoverableError) {
@@ -151,6 +153,7 @@ class PriceCheckMockService implements PriceCheckService {
     );
   }
 
+  @override
   Future<PriceCheckGuidanceResult> analyzeBuyer(
     PriceCheckMarketResult market,
   ) async {
@@ -174,6 +177,7 @@ class PriceCheckMockService implements PriceCheckService {
     );
   }
 
+  @override
   Future<PriceCheckGuidanceResult> analyzeSeller(
     PriceCheckMarketResult market,
   ) async {

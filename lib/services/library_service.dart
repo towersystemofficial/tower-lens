@@ -450,13 +450,17 @@ class LibraryService extends ChangeNotifier {
       buffer.writeln('- [${comparable.title}](${comparable.source}) — ${comparable.price}; ${comparable.status}; ${comparable.condition}; ${comparable.matchQuality}; ${comparable.date}');
     }
     buffer.writeln('\n## Value factors\n');
-    for (final factor in market.valueFactors) buffer.writeln('- $factor');
+    for (final factor in market.valueFactors) {
+      buffer.writeln('- $factor');
+    }
     return buffer.toString();
   }
 
   String _guidanceMarkdown(PriceCheckGuidanceResult result) {
     final buffer = StringBuffer('# ${result.heading}\n\n${result.summary}\n\n');
-    for (final entry in result.sections.entries) buffer.writeln('## ${entry.key}\n\n${entry.value}\n');
+    for (final entry in result.sections.entries) {
+      buffer.writeln('## ${entry.key}\n\n${entry.value}\n');
+    }
     return buffer.toString();
   }
 

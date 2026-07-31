@@ -72,6 +72,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await scrollTo(tester, find.text('Confirm identification'));
     expect(find.text('Confirm identification'), findsOneWidget);
     expect(find.text('Shared market result'), findsNothing);
 
@@ -105,6 +106,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.drag(
+      find.byType(Scrollable).first,
+      const Offset(0, 1000),
+    );
+    await tester.pumpAndSettle();
     await scrollTo(tester, find.text('Full item photo'));
     expect(find.text('Full item photo'), findsOneWidget);
     expect(find.text('Model label photo'), findsOneWidget);

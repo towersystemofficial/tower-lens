@@ -223,7 +223,12 @@ class _WatchlistScreenState extends State<WatchlistScreen> with SingleTickerProv
           const Text('Your watchlist', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           _watchlist.isEmpty
-              ? Text('Nothing added yet.', style: TextStyle(color: Colors.grey.shade600))
+              ? Text(
+                  'Nothing added yet.',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                )
               : Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -293,7 +298,12 @@ class _WatchlistScreenState extends State<WatchlistScreen> with SingleTickerProv
           if (_watchlist.isEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text('Add items to your watchlist first (My List tab).', style: TextStyle(color: Colors.grey.shade600)),
+              child: Text(
+                'Add items to your watchlist first (My List tab).',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
             ),
           if (_isChecking) ...[
             const SizedBox(height: 16),
@@ -325,7 +335,9 @@ class _WatchlistScreenState extends State<WatchlistScreen> with SingleTickerProv
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.orange),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.tertiary,
+                ),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(

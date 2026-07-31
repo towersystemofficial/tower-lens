@@ -60,5 +60,14 @@ void main() {
     final box = tester.widget<SizedBox>(featuredSize);
     expect(box.height, 148);
     expect(tester.getSize(featuredCard).width, 768);
+
+    final visualRegion = find.descendant(
+      of: featuredCard,
+      matching: find.byKey(
+        const ValueKey('featured-tool-visual-region'),
+      ),
+    );
+    expect(visualRegion, findsOneWidget);
+    expect(tester.getSize(visualRegion).width, 128);
   });
 }

@@ -8,6 +8,7 @@ enum ToolVisualKind {
   textAnalysis,
   termsAnalysis,
   allergyWatchlist,
+  priceCheck,
   customInstructions,
 }
 
@@ -137,6 +138,8 @@ class _ToolVisualPainter extends CustomPainter {
         _paintTerms(canvas, size, prism, faint, pulse);
       case ToolVisualKind.allergyWatchlist:
         _paintWatchlist(canvas, size, prism, faint, pulse);
+      case ToolVisualKind.priceCheck:
+        _paintPriceCheck(canvas, size, prism, faint, pulse);
       case ToolVisualKind.customInstructions:
         _paintInstructions(canvas, size, prism, faint, pulse);
     }
@@ -275,6 +278,38 @@ class _ToolVisualPainter extends CustomPainter {
     canvas.drawLine(
       Offset(cursorX, size.height * .68),
       Offset(cursorX, size.height * .76),
+      prism,
+    );
+  }
+
+  void _paintPriceCheck(
+    Canvas canvas,
+    Size size,
+    Paint prism,
+    Paint faint,
+    double pulse,
+  ) {
+    final tag = Path()
+      ..moveTo(size.width * .18, size.height * .27)
+      ..lineTo(size.width * .55, size.height * .14)
+      ..lineTo(size.width * .84, size.height * .43)
+      ..lineTo(size.width * .55, size.height * .78)
+      ..lineTo(size.width * .2, size.height * .62)
+      ..close();
+    canvas.drawPath(tag, prism);
+    canvas.drawCircle(
+      Offset(size.width * .33, size.height * .38),
+      size.width * .055,
+      faint,
+    );
+    canvas.drawLine(
+      Offset(size.width * .46, size.height * (.48 + pulse * .01)),
+      Offset(size.width * .68, size.height * (.48 + pulse * .01)),
+      prism,
+    );
+    canvas.drawLine(
+      Offset(size.width * .57, size.height * .37),
+      Offset(size.width * .57, size.height * .59),
       prism,
     );
   }

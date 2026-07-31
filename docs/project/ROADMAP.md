@@ -66,7 +66,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 | Accounts / authentication | Not started (correctly deferred per scope) |
 | Payments (Google Play Billing) | Not started (correctly deferred per scope) |
 | Ads | Not implemented, not planned unless explicitly revisited |
-| Price-check / marketplace estimate mode | Not started, explicitly deferred, speculative |
+| Price-check / marketplace estimate mode | **Mock workspace implemented; live functionality not started** — the complete deterministic UI supports both buying and selling, confirmation, comparable evidence, confidence-qualified ranges, distinct guidance, import/save previews, and every planned state; backend integration remains next |
 | iOS support | Not started, explicitly deferred |
 | PDF/Obsidian export beyond native Markdown | Not started |
 | PDF, TXT, and Markdown import | **Implemented and device-verified** — local extraction into editable Home/ToS source fields; all phone checks passed 2026-07-27 |
@@ -75,9 +75,9 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 ## 4. Current milestone and next milestone
 
-**Current milestone:** The local vertical slice and private-development Anthropic integration are implemented behind a swappable `TextAiService`. The mock fallback, loading/error state, library refresh notifications, tests, Android build repair, and working Flutter Android CI are merged. A future server can replace direct Anthropic calls through the existing configurable endpoint/authentication seam without changing the UI.
+**Current milestone:** The core private-development app is implemented and device-verified through Step 6. Tower Lens now has local file import and library management, refined Home and ToS analysis, High-Fidelity camera/OCR, AI-assisted Watchlist risk analysis, and the completed functional UI/UX redesign. Production distribution infrastructure remains intentionally deferred to Step 8, and deeper shader/asset art direction remains deferred to Step 11.
 
-**Next milestone:** Step 4's local PDF, TXT, and Markdown import is implemented and device-verified. Begin Step 5 by refining the Home and ToS prompts for consistent structure, source faithfulness, uncertainty handling, and resistance to instructions embedded in source documents. The broader automated-coverage expansion remains explicitly deferred.
+**Next milestone:** Complete Step 7, Price-check mode, using the approved staged backend pipeline below. The deterministic mock workspace and UI are implemented. The next PR adds the remote backend, identification and confirmation gate, live market research, optional Buyer and/or Seller analyses, saving/importing, and the remaining end-to-end functionality. Prompt refinement follows after the complete flow can be tested with real items.
 
 ## 5–6. Prioritized backlog
 
@@ -234,9 +234,73 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 5. **Watchlist AI explanations — COMPLETE.** PR #45 is merged and device-verified. Watchlist scans require High-Fidelity OCR; immediate local matching is preserved; three independent Claude risk reviews feed a fourth synthesis pass that distinguishes exact, categorical, contextual, and uncertain/free-from evidence and always leads with the safety disclaimer.
 
 6. **Define and implement the UI/UX redesign — COMPLETE.** The functional redesign is implemented and verified on the Pixel 9a. The app now uses three persistent destinations (Tools, Library, and Settings); Tools opens by default; the featured tool spans the full launcher width; tool selection, usage-based featuring, persistence, and every existing workspace remain functional. Settings uses grouped destinations in the approved order, with appearance and accessibility controls persisted app-wide. Light/dark modes, semantic text and background colors, text scaling, glass intensity, and motion controls are applied consistently. Device-polish follow-ups restored a non-floating navigation bar, removed unnecessary tab fades, corrected launcher sizing and clipping, and replaced backdrop blur with crisp cyan/violet/rose spectral lighting. The remaining desire for a more expressive holographic/sci-fi identity requires visual references, assets, and shader research and is intentionally deferred to Step 11.
-7. **Price-check mode.** Add the previously deferred price-check/marketplace-estimate mode after the core app, import flow, prompts, Watchlist explanations, and redesign are established.
+7. **Price-check mode — SCOPED; IMPLEMENTATION NEXT.** Add a dedicated tool that identifies ordinary secondhand items, researches their current market, estimates a price range, and optionally produces separate Buyer and/or Seller guidance. It is a decision aid, not a certified appraisal, authenticity check, legal determination, or guarantee of what an item will sell for.
 
-8. **Prepare for public distribution.** Add the backend/proxy, production-safe API-key custody, accounts/authentication as needed, credits or subscriptions and Google Play Billing, and resolve broad Android storage permission before store release.
+   **User flow and run choices:**
+   1. The user supplies the required photo and item fields, fills any optional accuracy fields, chooses `Default` or `Higher-credit`, and selects `Buyer guidance`, `Seller guidance`, or both.
+   2. The app shows the estimated token range and estimated maximum duration, using request-specific dynamic timeouts like the existing text-analysis tools. It does not expose search counts or a monetary-cost estimate.
+   3. The remote backend sends the normalized photos and input fields to Claude with the identification instructions appropriate to the selected credit tier.
+   4. Claude identifies the likely item and checks whether it is restricted, illegal, or unsuitable for general pricing. The user must confirm or edit the identification before any market research begins.
+   5. After confirmation, the backend runs the selected depth of cited market research and produces the shared market estimate.
+   6. The backend then passes the completed market research into one separate Buyer-analysis process, one separate Seller-analysis process, or both, exactly as selected. These downstream analyses consume additional tokens but do not repeat the web research.
+   7. The app displays the shared market result plus distinct Buyer and Seller output fields. Each selected guidance type is also saved as its own file. Generating one never silently generates or charges for the other.
+
+   **Credit tiers:**
+   - `Default` is the normal run: confirmed identification, focused cited research, three to eight strong comparables when available, an evidence-qualified price range, confidence, and basic risks.
+   - `Higher-credit` uses a broader/deeper identification and market-research process for a more thorough decision-assistant result. It does not automatically include Buyer or Seller guidance; those remain independent selections available to both tiers.
+   - Detailed search counts and prompt/search strategy will be finalized during the post-functionality prompt-refinement pass. Both tiers must use explicit general pricing guidelines rather than relying on an unconstrained request to "find a price."
+
+   **Inputs:**
+   - Required for every new run: at least one photo, condition, tested status, known issues (including damage or missing parts), quantity, ZIP/postal code, and country.
+   - Optional accuracy fields: description or pasted listing text/link, known make/model/variant/age or other identifying information, additional photos up to five total, included accessories, user modifications, asking price, and user-supplied comparison links or screenshots.
+   - The form begins with the compact required set and progressively exposes the larger optional field set. Normal photo analysis should read visible labels, model numbers, and barcodes; a dedicated barcode scanner is not part of this MVP.
+   - ZIP/postal code is strongly recommended context and is required alongside country so research can use a reasonably accurate local market and check applicable restrictions without requesting device-location permission.
+   - Output pricing uses the normal/default currency of the selected country. Item price is the comparison basis; shipping, taxes, platform fees, and net proceeds are not added to the MVP estimate.
+
+   **Identification, safety, and category boundaries:**
+   - Identification distinguishes photo-observed facts, user-supplied claims, and Claude inferences; reports uncertainty or conflicts; and returns an editable identification card for explicit confirmation.
+   - At the identification stage, fully stop restricted or illegal items from entering market research or Buyer/Seller analysis. Claude may use the supplied ZIP/postal code and country to determine relevant local restrictions. The result explains why the item cannot proceed without providing pricing or transaction guidance.
+   - Do not impose a narrow ordinary-goods category allowlist. The general pricing pipeline should attempt any lawful item for which ordinary comparable-market evidence can support a useful range.
+   - Do not price specialist, unique, rare, antique, or collectible items whose value materially depends on individualized expertise, provenance, authentication, professional grading, or condition inspection. Identify the likely category and explain why specialist valuation is needed.
+   - Category names alone do not force rejection: ordinary vehicles, jewelry, watches, art, medical devices, and similar goods may proceed when they are lawful and adequate ordinary comparable data exists. The identification gate decides based on the actual item's restriction and valuation needs.
+
+   **Market research and evidence rules:**
+   - Use current, public, attributable web evidence through Claude's cited web-search capability, following a deliberate search procedure that will be refined after functional implementation.
+   - Prefer recent completed/sold transactions when available. Active listings may be used as clearly labeled asking-price evidence, but must never be represented as confirmed sales or silently mixed with sold results.
+   - User-supplied listing/comparison links and screenshots are allowed as additional evidence. Never scrape authenticated pages, bypass access controls, automate marketplace accounts, post listings, or contact buyers or sellers.
+   - Preserve the source URL, retrieval date, currency, sale/listing status, condition, item price, match quality, and relevant unknowns for each cited comparable. Rank exact model/variant and similar-condition results first; exclude or visibly down-rank lots, parts-only listings, reproductions, mismatched specifications, materially different condition, suspicious outliers, and uncertain identities.
+   - Show the strongest three to eight comparables rather than every search result. Separate verified sold/completed evidence from active asking prices.
+
+   **Shared market result:**
+   - Show the confirmed identification, evidence date, geographic/currency context, comparable table, important assumptions, factors moving value up or down, and a rounded market price range rather than a single precise number.
+   - Show `High`, `Medium`, or `Low` confidence with a plain-language reason. Do not use a pseudo-precise percentage.
+   - When evidence is too weak for a reliable appraisal, explicitly say `No reliable estimate`, explain what is missing and how to improve it, and still provide a clearly labeled broad, low-confidence likely range when the available evidence supports even that much. If no defensible range exists, do not invent one.
+   - Always state that the result is informational and not a professional appraisal, authenticity determination, safety inspection, legal opinion, or sale guarantee. Surface evidence-based counterfeit, stolen-property, recall, damaged-battery, personal-data, and similar risks without asserting wrongdoing as fact.
+
+   **Separate Buyer analysis:**
+   - Consume the completed shared research in a new Claude process; do not redo identification or web research.
+   - Return an asking-price/deal assessment, suggested opening-offer range, walk-away ceiling range, questions to ask, tests to perform, missing-accessory and repair-cost considerations, and relevant scam/counterfeit/account-lock/stolen-property/recall/battery-damage warnings.
+   - Use price ranges throughout. The Buyer analysis has its own screen field and its own saved output file.
+
+   **Separate Seller analysis:**
+   - Consume the completed shared research in a new Claude process; do not redo identification or web research.
+   - Return `Quick sale`, `Fair listing`, and `Patient/optimistic listing` price ranges; an editable listing title and description; recommended photos; a disclosure checklist; and a negotiation-floor range.
+   - Do not recommend a marketplace or calculate expected net proceeds. The Seller analysis has its own screen field and its own saved output file.
+
+   **Privacy, saving, importing, and failure behavior:**
+   - Keep inputs on-device until the user explicitly starts the relevant stage. Strip EXIF metadata before upload, clearly preview what will be sent, and delete backend temporary images after the run.
+   - Saving is manual. Each saved price check creates a folder in the user's chosen Library location. That folder contains the saved photos, a separate input-fields file, the shared identification/research/estimate output, and separate Buyer and/or Seller analysis files for whichever processes were run.
+   - A new run may import a previous Price-check folder instead of starting from blank fields. Its photos and input fields auto-fill and remain editable.
+   - Prior analysis must not bias the new identification, search, estimate, or Buyer/Seller analysis. The prior outputs are summarized in a separate Claude process, withheld from the new market pipeline, and used only after the new analysis is complete to describe market changes between the dated runs.
+   - Price Check is entirely unavailable offline except for opening existing saved folders/reports through the Library; it must never substitute model-memory or cached prices for live research.
+   - Preserve editable inputs after identification or research failure. Never save a failed run as a successful estimate. No marketplace actions, account connections, background monitoring, alerts, inventory management, bidding, payments, shipping purchase, or tax/investment guidance are included.
+
+   **Architecture and implementation order:**
+   1. `PR 1 — Complete mock workspace/UI — COMPLETE:` the fifth Tools card and dedicated Price-check workspace now cover required and optional fields; one-to-five-photo management; Default/Higher-credit selection; independent Buyer/Seller selections; token and duration estimate surfaces; privacy review; editable identification confirmation; shared estimate/comparables; distinct Buyer, Seller, and prior-run market-change outputs; exact save-folder/import-folder previews; and exclusion, low-evidence, offline, loading, error, and retry states. All results are deterministic mock data; focused widget/model tests cover launcher integration, confirmation gating, dual guidance, prior-run import, restricted items, and low evidence. Live calls and persistence remain excluded from this increment.
+   2. `PR 2 — Full functionality:` add the actual remote backend/API proxy and production-safe provider-key custody needed by this feature; structured contracts for identification, confirmation, research, Buyer analysis, Seller analysis, prior-run summarization, and market-change comparison; cited Claude web research; dynamic token/duration estimates and timeouts; EXIF stripping and temporary-upload deletion; local multi-file folder persistence/import; and focused automated plus Pixel 9a end-to-end verification.
+   3. `Prompt refinement:` after the full pipeline works, test real items and refine the identification, exclusion/legal-check, Default/Higher-credit research, evidence ranking, price-range, Buyer, Seller, previous-run summary, and market-change comparison prompts. Finalize the exact research-depth/search behavior here rather than blocking UI or service implementation on prompt perfection.
+
+8. **Prepare for public distribution.** Extend and harden the Price-check backend for the rest of the app, add accounts/authentication as needed, credits or subscriptions and Google Play Billing, and resolve broad Android storage permission before store release.
 
 9. **Beta testing.** Run the app with the invited beta group and record functional bugs, confusing flows, output-quality failures, cost/latency problems, and real-world OCR limits. Include hostile OCR cases such as small print, dense and multi-column pages, uneven lighting, and angled documents; add further camera processing only when repeated beta evidence justifies it.
 
@@ -246,4 +310,4 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 ## 10. Next task for Codex
 
-**Begin Step 7: Price-check mode.** Define its user flow, data-source boundaries, confidence language, and MVP scope before implementation. Shader research remains the final roadmap item and should begin only after references are collected.
+**Build Price-check PR 2: full functionality.** Replace the deterministic seams with the production-safe remote backend, structured stage contracts, identification and legal/specialist gates, cited market research, separate Buyer/Seller analysis calls, dynamic estimates/timeouts, EXIF-safe uploads and cleanup, real multi-file saving/import, and prior-run market-change comparison. Preserve the approved PR 1 interaction model and keep the services separable for later prompt refinement. Shader research remains the final roadmap item and should begin only after references are collected.

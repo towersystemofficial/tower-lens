@@ -8,7 +8,7 @@ import 'package:tower_lens/widgets/prismatic_surface.dart';
 import 'package:tower_lens/widgets/tool_visual.dart';
 
 void main() {
-  testWidgets('launcher shows implemented tools and hides Appraiser',
+  testWidgets('launcher shows all implemented tools including Price Check',
       (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(
@@ -27,8 +27,8 @@ void main() {
     expect(find.text('ToS Analysis'), findsOneWidget);
     expect(find.text('Allergy Watchlist'), findsOneWidget);
     expect(find.text('Custom Instructions'), findsOneWidget);
-    expect(find.byType(ToolVisual), findsNWidgets(4));
-    expect(find.text('Appraiser'), findsNothing);
+    expect(find.text('Price Check'), findsOneWidget);
+    expect(find.byType(ToolVisual), findsNWidgets(5));
   });
 
   testWidgets('most-used tool becomes the full-width featured card',

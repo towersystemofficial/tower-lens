@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
 import '../services/tool_usage_service.dart';
+import '../theme/appearance_settings.dart';
 import '../widgets/prismatic_surface.dart';
 import '../widgets/tool_visual.dart';
 import 'home_screen.dart';
@@ -214,6 +215,9 @@ class _ToolCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final glass = Theme.of(context).extension<GlassStyle>() ??
+        GlassStyle.fromLevel(GlassLevel.none);
+
     return SizedBox(
       width: double.infinity,
       child: GlassCard(
@@ -225,63 +229,108 @@ class _ToolCard extends StatelessWidget {
           child: Stack(
             children: [
               Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        tool.colors.first.withValues(alpha: 0.72),
-                        tool.colors.last.withValues(alpha: 0.45),
-                      ],
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          tool.colors.first.withValues(
+                            alpha: 0.16 * glass.intensity,
+                          ),
+                          Colors.transparent,
+                          tool.colors.last.withValues(
+                            alpha: 0.12 * glass.intensity,
+                          ),
+                        ],
+                        stops: const [0, 0.5, 1],
+                      ),
                     ),
                   ),
                 ),
               ),
-              Positioned(
-                right: featured ? 16 : 4,
-                top: featured ? 12 : 10,
-                child: ToolVisual(
-                  kind: tool.visual,
-                  colors: tool.colors,
-                  compact: !featured,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (featured)
-                      const Icon(Icons.auto_awesome, color: Colors.white),
-                    const Spacer(),
-                    Text(
-                      tool.title,
-                      style: (featured
-                              ? Theme.of(context).textTheme.titleLarge
-                              : Theme.of(context).textTheme.titleMedium)
-                          ?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      tool.description,
-                      maxLines: featured ? 2 : 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.9),
+              if (featured)
+                Positioned.fill(
+                  left: 16,
+                  right: 16,
+                  child: Row(
+                    children: [
+                      Expanded(child: _ToolCardCopy(tool: tool)),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        key: const ValueKey('featured-tool-visual-region'),
+                        width: 128,
+                        child: Center(
+                          child: ToolVisual(
+                            kind: tool.visual,
+                            colors: tool.colors,
                           ),
-                    ),
-                  ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else ...[
+                Positioned(
+                  right: 4,
+                  top: 10,
+                  child: ToolVisual(
+                    kind: tool.visual,
+                    colors: tool.colors,
+                    compact: true,
+                  ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: _ToolCardCopy(tool: tool, compact: true),
+                ),
+              ],
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ToolCardCopy extends StatelessWidget {
+  const _ToolCardCopy({required this.tool, this.compact = false});
+
+  final _ToolDefinition tool;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        if (!compact) ...[
+          const Icon(Icons.auto_awesome, color: Colors.white),
+          const Spacer(),
+        ] else
+          const Spacer(),
+        Text(
+          tool.title,
+          style: (compact
+                  ? Theme.of(context).textTheme.titleMedium
+                  : Theme.of(context).textTheme.titleLarge)
+              ?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          tool.description,
+          maxLines: compact ? 3 : 2,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white.withValues(alpha: 0.9),
+              ),
+        ),
+      ],
     );
   }
 }

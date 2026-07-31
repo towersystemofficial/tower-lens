@@ -155,6 +155,7 @@ class GlassCard extends StatelessWidget {
     );
 
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -203,28 +204,25 @@ class GlassCard extends StatelessWidget {
             children: [
               Positioned.fill(
                 child: IgnorePointer(
-                  child: ClipRRect(
-                    borderRadius: radius,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: const Alignment(-1.4, -1),
-                          end: const Alignment(1.2, 1),
-                          colors: [
-                            Colors.transparent,
-                            colors.primary.withValues(
-                              alpha: 0.12 * glass.intensity,
-                            ),
-                            colors.secondary.withValues(
-                              alpha: 0.18 * glass.intensity,
-                            ),
-                            colors.tertiary.withValues(
-                              alpha: 0.1 * glass.intensity,
-                            ),
-                            Colors.transparent,
-                          ],
-                          stops: const [0, 0.32, 0.47, 0.61, 1],
-                        ),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: const Alignment(-1.4, -1),
+                        end: const Alignment(1.2, 1),
+                        colors: [
+                          Colors.transparent,
+                          colors.primary.withValues(
+                            alpha: 0.12 * glass.intensity,
+                          ),
+                          colors.secondary.withValues(
+                            alpha: 0.18 * glass.intensity,
+                          ),
+                          colors.tertiary.withValues(
+                            alpha: 0.1 * glass.intensity,
+                          ),
+                          Colors.transparent,
+                        ],
+                        stops: const [0, 0.32, 0.47, 0.61, 1],
                       ),
                     ),
                   ),

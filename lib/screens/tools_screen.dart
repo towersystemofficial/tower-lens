@@ -7,6 +7,7 @@ import '../theme/appearance_settings.dart';
 import '../widgets/prismatic_surface.dart';
 import '../widgets/tool_visual.dart';
 import 'home_screen.dart';
+import 'price_check_screen.dart';
 import 'tos_screen.dart';
 import 'watchlist_screen.dart';
 
@@ -80,6 +81,14 @@ class _ToolsScreenState extends State<ToolsScreen> {
         ),
       ),
       _ToolDefinition(
+        id: 'price_check',
+        title: 'Price Check',
+        description: 'Estimate an item’s market range for buying or selling.',
+        visual: ToolVisualKind.priceCheck,
+        colors: const [Color(0xff0277bd), Color(0xff00695c)],
+        screenBuilder: () => const PriceCheckScreen(),
+      ),
+      _ToolDefinition(
         id: 'custom_instructions',
         title: 'Custom Instructions',
         description: 'Tell the AI exactly how to help with your text.',
@@ -147,7 +156,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Choose a tool, then scan, import, or paste your text.',
+                  'Choose a tool, then scan, photograph, import, or paste.',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 24),

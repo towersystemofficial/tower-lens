@@ -1,0 +1,1094 @@
+import 'package:flutter/material.dart';
+
+import '../models/price_check.dart';
+import '../services/price_check_mock_service.dart';
+import '../widgets/prismatic_surface.dart';
+
+class PriceCheckScreen extends StatefulWidget {
+  const PriceCheckScreen({
+    super.key,
+    this.service = const PriceCheckMockService(),
+  });
+
+  final PriceCheckMockService service;
+
+  @override
+  State<PriceCheckScreen> createState() => _PriceCheckScreenState();
+}
+
+class _PriceCheckScreenState extends State<PriceCheckScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _issuesController = TextEditingController();
+  final _postalController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _knownInformationController = TextEditingController();
+  final _accessoriesController = TextEditingController();
+  final _modificationsController = TextEditingController();
+  final _askingPriceController = TextEditingController();
+  final _comparisonsController = TextEditingController();
+  final _identificationController = TextEditingController();
+
+  final List<String> _photos = [];
+  String? _condition;
+  String? _testedStatus;
+  int _quantity = 1;
+  String _country = 'United States';
+  PriceCheckTier _tier = PriceCheckTier.standard;
+  final Set<PriceCheckGuidance> _guidance = {
+    PriceCheckGuidance.buyer,
+  };
+  PriceCheckMockScenario _scenario = PriceCheckMockScenario.typical;
+  bool _showOptional = false;
+  bool _busy = false;
+  String? _error;
+  PriceCheckIdentification? _identification;
+  PriceCheckMarketResult? _market;
+  PriceCheckGuidanceResult? _buyer;
+  PriceCheckGuidanceResult? _seller;
+  bool _identificationConfirmed = false;
+  bool _hasPreviousRun = false;
+
+  @override
+  void dispose() {
+    _issuesController.dispose();
+    _postalController.dispose();
+    _descriptionController.dispose();
+    _knownInformationController.dispose();
+    _accessoriesController.dispose();
+    _modificationsController.dispose();
+    _askingPriceController.dispose();
+    _comparisonsController.dispose();
+    _identificationController.dispose();
+    super.dispose();
+  }
+
+  PriceCheckInput get _input => PriceCheckInput(
+        photos: List.unmodifiable(_photos),
+        condition: _condition ?? '',
+        testedStatus: _testedStatus ?? '',
+        knownIssues: _issuesController.text.trim(),
+        quantity: _quantity,
+        postalCode: _postalController.text.trim(),
+        country: _country,
+        tier: _tier,
+        guidance: Set.unmodifiable(_guidance),
+        description: _descriptionController.text.trim(),
+        knownInformation: _knownInformationController.text.trim(),
+        accessories: _accessoriesController.text.trim(),
+        modifications: _modificationsController.text.trim(),
+        askingPrice: _askingPriceController.text.trim(),
+        comparisonLinks: _comparisonsController.text.trim(),
+      );
+
+  bool get _canStart =>
+      _photos.isNotEmpty &&
+      _guidance.isNotEmpty &&
+      _scenario != PriceCheckMockScenario.offline &&
+      !_busy;
+
+  void _resetResults() {
+    _identification = null;
+    _identificationConfirmed = false;
+    _market = null;
+    _buyer = null;
+    _seller = null;
+    _error = null;
+  }
+
+  Future<void> _addMockPhoto() async {
+    if (_photos.length >= 5) return;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(
+              title: Text('Add a mock photo'),
+              subtitle: Text(
+                'Camera and gallery bytes are attached in the functionality PR.',
+              ),
+            ),
+            for (final name in const [
+              'Full item photo',
+              'Model label photo',
+              'Damage detail photo',
+              'Accessories photo',
+              'Comparison screenshot',
+            ])
+              ListTile(
+                leading: const Icon(Icons.add_a_photo_outlined),
+                title: Text(name),
+                onTap: () => Navigator.pop(context, name),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (choice != null && mounted) {
+      setState(() {
+        _photos.add(choice);
+        _resetResults();
+      });
+    }
+  }
+
+  Future<bool> _showPrivacyPreview() async {
+    final approved = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Review before sending'),
+        content: const Text(
+          'The selected photos and completed item fields will be sent for '
+          'identification. Photo location metadata will be removed. No market '
+          'research starts until you confirm the identification.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const ValueKey('approve-identification-upload'),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Identify item'),
+          ),
+        ],
+      ),
+    );
+    return approved ?? false;
+  }
+
+  Future<void> _identify() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (_photos.isEmpty) {
+      setState(() => _error = 'Add at least one photo.');
+      return;
+    }
+    if (_guidance.isEmpty) {
+      setState(() => _error = 'Select Buyer guidance, Seller guidance, or both.');
+      return;
+    }
+    if (!await _showPrivacyPreview() || !mounted) return;
+
+    setState(() {
+      _busy = true;
+      _resetResults();
+    });
+    try {
+      final identification = await widget.service.identify(_input, _scenario);
+      if (!mounted) return;
+      setState(() {
+        _identification = identification;
+        _identificationController.text = identification.title;
+      });
+    } on PriceCheckMockException catch (error) {
+      if (mounted) setState(() => _error = error.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _confirmAndResearch() async {
+    final identification = _identification;
+    if (identification == null || identification.gate != PriceCheckGate.clear) {
+      return;
+    }
+    final editedTitle = _identificationController.text.trim();
+    if (editedTitle.isEmpty) {
+      setState(() => _error = 'Enter or confirm the item identification.');
+      return;
+    }
+    final confirmed = PriceCheckIdentification(
+      title: editedTitle,
+      observedFacts: identification.observedFacts,
+      userClaims: identification.userClaims,
+      inferences: identification.inferences,
+      confidence: identification.confidence,
+    );
+
+    setState(() {
+      _busy = true;
+      _error = null;
+      _identification = confirmed;
+      _identificationConfirmed = true;
+      _market = null;
+      _buyer = null;
+      _seller = null;
+    });
+    try {
+      final market = await widget.service.research(_input, confirmed, _scenario);
+      PriceCheckGuidanceResult? buyer;
+      PriceCheckGuidanceResult? seller;
+      if (_guidance.contains(PriceCheckGuidance.buyer)) {
+        buyer = await widget.service.analyzeBuyer(market);
+      }
+      if (_guidance.contains(PriceCheckGuidance.seller)) {
+        seller = await widget.service.analyzeSeller(market);
+      }
+      if (!mounted) return;
+      setState(() {
+        _market = market;
+        _buyer = buyer;
+        _seller = seller;
+      });
+    } on PriceCheckMockException catch (error) {
+      if (mounted) setState(() => _error = error.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _importPreviousRun() async {
+    final shouldImport = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Import a previous Price Check'),
+        content: const ListTile(
+          leading: Icon(Icons.folder_outlined),
+          title: Text('2026-06-15 – DeWalt drill'),
+          subtitle: Text('Mock saved folder • photos and input fields'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const ValueKey('confirm-import-price-check'),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Import folder'),
+          ),
+        ],
+      ),
+    );
+    if (shouldImport != true || !mounted) return;
+    setState(() {
+      _photos
+        ..clear()
+        ..addAll(['Full item photo', 'Model label photo']);
+      _condition = 'Good';
+      _testedStatus = 'Tested and working';
+      _issuesController.text = 'Cosmetic wear; no known functional issues';
+      _postalController.text = '84101';
+      _country = 'United States';
+      _knownInformationController.text = 'DeWalt DCD791 drill/driver';
+      _accessoriesController.text = 'Belt clip; no battery or charger';
+      _showOptional = true;
+      _hasPreviousRun = true;
+      _resetResults();
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Previous photos and inputs imported. Earlier analysis will only be '
+          'used for a market-change comparison after the new run.',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _saveMockFolder() async {
+    final market = _market;
+    if (market == null) return;
+    final savedFiles = <String>[
+      'saved photos',
+      'input-fields.md',
+      'market-result.md',
+      if (_buyer != null) 'buyer-guidance.md',
+      if (_seller != null) 'seller-guidance.md',
+      if (_hasPreviousRun) 'market-changes.md',
+    ];
+    final controller = TextEditingController(
+      text: _identificationController.text.trim().isEmpty
+          ? 'Price Check'
+          : _identificationController.text.trim(),
+    );
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Save Price Check folder'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(labelText: 'Folder name'),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'This folder will contain:\n'
+              '${savedFiles.map((file) => '• $file').join('\n')}',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const ValueKey('confirm-save-price-check'),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Save folder'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (saved == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mock Price Check folder saved to the Library.'),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Price Check')),
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              children: [
+                Text(
+                  'Estimate an ordinary item’s current market range.',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'This mock workspace uses sample results and never uploads '
+                  'photos or performs live research.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 16),
+                _PrototypeStateCard(
+                  scenario: _scenario,
+                  onChanged: (value) => setState(() {
+                    _scenario = value;
+                    _resetResults();
+                  }),
+                ),
+                if (_scenario == PriceCheckMockScenario.offline) ...[
+                  const SizedBox(height: 12),
+                  const _OfflineCard(),
+                ],
+                const SizedBox(height: 12),
+                _buildPhotosCard(),
+                const SizedBox(height: 12),
+                _buildRequiredFieldsCard(),
+                const SizedBox(height: 12),
+                _buildOptionalFieldsCard(),
+                const SizedBox(height: 12),
+                _buildRunChoicesCard(),
+                const SizedBox(height: 12),
+                _buildEstimateCard(),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  _ErrorCard(message: _error!, onRetry: _identify),
+                ],
+                if (_busy) ...[
+                  const SizedBox(height: 16),
+                  const Center(child: CircularProgressIndicator()),
+                  const SizedBox(height: 8),
+                  const Center(child: Text('Running deterministic mock…')),
+                ],
+                if (_identification != null) ...[
+                  const SizedBox(height: 12),
+                  _buildIdentificationCard(_identification!),
+                ],
+                if (_market != null) ...[
+                  const SizedBox(height: 12),
+                  _MarketResultCard(result: _market!),
+                ],
+                if (_buyer != null) ...[
+                  const SizedBox(height: 12),
+                  _GuidanceCard(result: _buyer!),
+                ],
+                if (_seller != null) ...[
+                  const SizedBox(height: 12),
+                  _GuidanceCard(result: _seller!),
+                ],
+                if (_market != null && _hasPreviousRun) ...[
+                  const SizedBox(height: 12),
+                  const _MarketChangesCard(),
+                ],
+                if (_market != null) ...[
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    key: const ValueKey('save-price-check'),
+                    onPressed: _saveMockFolder,
+                    icon: const Icon(Icons.create_new_folder_outlined),
+                    label: const Text('Save Price Check folder'),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _busy ? null : _importPreviousRun,
+                  icon: const Icon(Icons.folder_open_outlined),
+                  label: const Text('Import previous Price Check'),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Informational only—not an appraisal, authentication, safety '
+                  'inspection, legal opinion, or sale guarantee.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotosCard() {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionTitle(
+            icon: Icons.photo_camera_outlined,
+            title: 'Photos',
+            subtitle: '${_photos.length}/5 • at least one required',
+          ),
+          const SizedBox(height: 12),
+          if (_photos.isEmpty)
+            const Text('Add the full item first. Labels and damage help accuracy.')
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (var index = 0; index < _photos.length; index++)
+                  InputChip(
+                    avatar: const Icon(Icons.image_outlined, size: 18),
+                    label: Text(_photos[index]),
+                    onDeleted: _busy
+                        ? null
+                        : () => setState(() {
+                              _photos.removeAt(index);
+                              _resetResults();
+                            }),
+                  ),
+              ],
+            ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            key: const ValueKey('add-price-check-photo'),
+            onPressed: _photos.length >= 5 || _busy ? null : _addMockPhoto,
+            icon: const Icon(Icons.add_a_photo_outlined),
+            label: Text(_photos.isEmpty ? 'Add required photo' : 'Add another photo'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRequiredFieldsCard() {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionTitle(
+            icon: Icons.fact_check_outlined,
+            title: 'Required item details',
+            subtitle: 'Tell the research what the photo cannot.',
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            key: const ValueKey('price-condition'),
+            initialValue: _condition,
+            decoration: const InputDecoration(labelText: 'Condition'),
+            items: const [
+              'New',
+              'Like new',
+              'Good',
+              'Fair',
+              'Poor',
+              'For parts',
+            ].map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
+            validator: (value) => value == null ? 'Select a condition.' : null,
+            onChanged: _busy ? null : (value) => setState(() => _condition = value),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            key: const ValueKey('price-tested-status'),
+            initialValue: _testedStatus,
+            decoration: const InputDecoration(labelText: 'Tested status'),
+            items: const [
+              'Tested and working',
+              'Partially tested',
+              'Untested',
+              'Not working',
+              'Not applicable',
+            ].map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
+            validator: (value) => value == null ? 'Select a tested status.' : null,
+            onChanged: _busy ? null : (value) => setState(() => _testedStatus = value),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            key: const ValueKey('price-known-issues'),
+            controller: _issuesController,
+            decoration: const InputDecoration(
+              labelText: 'Known issues',
+              hintText: 'Damage, missing parts, wear, or “None known”',
+            ),
+            minLines: 2,
+            maxLines: 4,
+            validator: (value) => (value?.trim().isEmpty ?? true)
+                ? 'Describe known issues or enter “None known”.'
+                : null,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<int>(
+                  initialValue: _quantity,
+                  decoration: const InputDecoration(labelText: 'Quantity'),
+                  items: [
+                    for (var value = 1; value <= 10; value++)
+                      DropdownMenuItem(value: value, child: Text('$value')),
+                  ],
+                  onChanged: _busy ? null : (value) => setState(() => _quantity = value ?? 1),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  key: const ValueKey('price-postal-code'),
+                  controller: _postalController,
+                  decoration: const InputDecoration(labelText: 'ZIP / postal code'),
+                  validator: (value) => (value?.trim().isEmpty ?? true)
+                      ? 'Enter a postal code.'
+                      : null,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: _country,
+            decoration: const InputDecoration(labelText: 'Country'),
+            items: const [
+              'United States',
+              'Canada',
+              'United Kingdom',
+              'Australia',
+              'Other',
+            ].map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
+            onChanged: _busy ? null : (value) => setState(() => _country = value ?? _country),
+          ),
+          const SizedBox(height: 8),
+          const Text('Prices will use the selected country’s default currency.'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOptionalFieldsCard() {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            value: _showOptional,
+            onChanged: _busy ? null : (value) => setState(() => _showOptional = value),
+            title: const Text('Optional accuracy details'),
+            subtitle: const Text('Add anything that may improve identification or matching.'),
+          ),
+          if (_showOptional) ...[
+            const SizedBox(height: 8),
+            _OptionalField(
+              controller: _descriptionController,
+              label: 'Description or listing text/link',
+              lines: 3,
+            ),
+            const SizedBox(height: 12),
+            _OptionalField(
+              controller: _knownInformationController,
+              label: 'Known make, model, variant, age, or identifiers',
+            ),
+            const SizedBox(height: 12),
+            _OptionalField(controller: _accessoriesController, label: 'Included accessories'),
+            const SizedBox(height: 12),
+            _OptionalField(controller: _modificationsController, label: 'User modifications'),
+            const SizedBox(height: 12),
+            _OptionalField(controller: _askingPriceController, label: 'Asking price'),
+            const SizedBox(height: 12),
+            _OptionalField(
+              controller: _comparisonsController,
+              label: 'Comparison links or screenshot notes',
+              lines: 3,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRunChoicesCard() {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionTitle(
+            icon: Icons.tune,
+            title: 'Run choices',
+            subtitle: 'Research depth and guidance are charged separately.',
+          ),
+          const SizedBox(height: 16),
+          SegmentedButton<PriceCheckTier>(
+            segments: const [
+              ButtonSegment(
+                value: PriceCheckTier.standard,
+                label: Text('Default'),
+                icon: Icon(Icons.bolt_outlined),
+              ),
+              ButtonSegment(
+                value: PriceCheckTier.higherCredit,
+                label: Text('Higher-credit'),
+                icon: Icon(Icons.manage_search),
+              ),
+            ],
+            selected: {_tier},
+            onSelectionChanged: _busy
+                ? null
+                : (value) => setState(() {
+                      _tier = value.single;
+                      _resetResults();
+                    }),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _tier == PriceCheckTier.standard
+                ? 'Focused identification and cited market research.'
+                : 'Broader identification and deeper market research.',
+          ),
+          const SizedBox(height: 16),
+          const Text('Select one or both analyses:'),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              FilterChip(
+                key: const ValueKey('buyer-guidance-chip'),
+                selected: _guidance.contains(PriceCheckGuidance.buyer),
+                label: const Text('Buyer guidance'),
+                avatar: const Icon(Icons.shopping_cart_outlined, size: 18),
+                onSelected: _busy
+                    ? null
+                    : (selected) => setState(() {
+                          selected
+                              ? _guidance.add(PriceCheckGuidance.buyer)
+                              : _guidance.remove(PriceCheckGuidance.buyer);
+                          _resetResults();
+                        }),
+              ),
+              FilterChip(
+                key: const ValueKey('seller-guidance-chip'),
+                selected: _guidance.contains(PriceCheckGuidance.seller),
+                label: const Text('Seller guidance'),
+                avatar: const Icon(Icons.sell_outlined, size: 18),
+                onSelected: _busy
+                    ? null
+                    : (selected) => setState(() {
+                          selected
+                              ? _guidance.add(PriceCheckGuidance.seller)
+                              : _guidance.remove(PriceCheckGuidance.seller);
+                          _resetResults();
+                        }),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEstimateCard() {
+    final high = _tier == PriceCheckTier.higherCredit;
+    final guidanceCount = _guidance.length;
+    final lowTokens = (high ? 4200 : 2200) + (guidanceCount * 700);
+    final highTokens = (high ? 7200 : 3900) + (guidanceCount * 1300);
+    final minutes = (high ? 4 : 2) + guidanceCount;
+    return GlassCard(
+      tint: Theme.of(context).colorScheme.primary,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionTitle(
+            icon: Icons.schedule_outlined,
+            title: 'Estimated run',
+            subtitle: 'Local preview; no API call is made.',
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '${_formatNumber(lowTokens)}–${_formatNumber(highTokens)} tokens',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 4),
+          Text('Allow up to $minutes minutes after identification is confirmed.'),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            key: const ValueKey('start-price-identification'),
+            onPressed: _canStart ? _identify : null,
+            icon: const Icon(Icons.center_focus_strong),
+            label: const Text('Review and identify item'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIdentificationCard(PriceCheckIdentification result) {
+    final stopped = result.gate != PriceCheckGate.clear;
+    return GlassCard(
+      tint: stopped ? Theme.of(context).colorScheme.error : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionTitle(
+            icon: stopped ? Icons.block : Icons.manage_search,
+            title: stopped ? 'Cannot continue' : 'Confirm identification',
+            subtitle: stopped
+                ? 'No pricing or transaction guidance will be generated.'
+                : 'Edit anything incorrect before market research.',
+          ),
+          const SizedBox(height: 16),
+          if (stopped) ...[
+            Text(result.title, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(result.stopReason!),
+          ] else ...[
+            TextField(
+              key: const ValueKey('editable-identification'),
+              controller: _identificationController,
+              enabled: !_busy && !_identificationConfirmed,
+              decoration: const InputDecoration(labelText: 'Identified item'),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Text('Confidence: ${result.confidence}'),
+          const SizedBox(height: 12),
+          _EvidenceList(title: 'Observed in photos', items: result.observedFacts),
+          _EvidenceList(title: 'User-supplied claims', items: result.userClaims),
+          _EvidenceList(title: 'AI inferences', items: result.inferences),
+          if (!stopped && !_identificationConfirmed) ...[
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              key: const ValueKey('confirm-price-identification'),
+              onPressed: _busy ? null : _confirmAndResearch,
+              icon: const Icon(Icons.check_circle_outline),
+              label: const Text('Confirm and research market'),
+            ),
+          ],
+          if (_identificationConfirmed) ...[
+            const SizedBox(height: 8),
+            const Row(
+              children: [
+                Icon(Icons.verified_outlined, size: 18),
+                SizedBox(width: 8),
+                Text('Identification confirmed'),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatNumber(int value) {
+    final text = value.toString();
+    return text.length <= 3
+        ? text
+        : '${text.substring(0, text.length - 3)},${text.substring(text.length - 3)}';
+  }
+}
+
+class _PrototypeStateCard extends StatelessWidget {
+  const _PrototypeStateCard({required this.scenario, required this.onChanged});
+
+  final PriceCheckMockScenario scenario;
+  final ValueChanged<PriceCheckMockScenario> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    const labels = {
+      PriceCheckMockScenario.typical: 'Typical result',
+      PriceCheckMockScenario.lowEvidence: 'Low evidence',
+      PriceCheckMockScenario.restricted: 'Restricted item',
+      PriceCheckMockScenario.specialist: 'Specialist valuation required',
+      PriceCheckMockScenario.offline: 'Offline',
+      PriceCheckMockScenario.recoverableError: 'Recoverable error',
+    };
+    return GlassCard(
+      tint: Theme.of(context).colorScheme.tertiary,
+      child: DropdownButtonFormField<PriceCheckMockScenario>(
+        key: const ValueKey('price-mock-scenario'),
+        initialValue: scenario,
+        decoration: const InputDecoration(
+          labelText: 'Prototype state preview',
+          helperText: 'Review deterministic UI states before the backend exists.',
+        ),
+        items: [
+          for (final value in PriceCheckMockScenario.values)
+            DropdownMenuItem(value: value, child: Text(labels[value]!)),
+        ],
+        onChanged: (value) {
+          if (value != null) onChanged(value);
+        },
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.icon, required this.title, required this.subtitle});
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 2),
+              Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OptionalField extends StatelessWidget {
+  const _OptionalField({required this.controller, required this.label, this.lines = 1});
+
+  final TextEditingController controller;
+  final String label;
+  final int lines;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(labelText: label),
+      minLines: lines,
+      maxLines: lines == 1 ? 2 : lines + 2,
+    );
+  }
+}
+
+class _EvidenceList extends StatelessWidget {
+  const _EvidenceList({required this.title, required this.items});
+
+  final String title;
+  final List<String> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+          for (final item in items)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text('• $item'),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  const _ErrorCard({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      tint: Theme.of(context).colorScheme.error,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
+          const SizedBox(width: 12),
+          Expanded(child: Text(message)),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
+        ],
+      ),
+    );
+  }
+}
+
+class _OfflineCard extends StatelessWidget {
+  const _OfflineCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      tint: Theme.of(context).colorScheme.error,
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.cloud_off_outlined),
+          SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Price Check needs an internet connection for every new run. '
+              'Saved reports remain available through the Library.',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MarketResultCard extends StatelessWidget {
+  const _MarketResultCard({required this.result});
+
+  final PriceCheckMarketResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionTitle(
+            icon: Icons.insights_outlined,
+            title: result.noReliableEstimate
+                ? 'No reliable estimate'
+                : 'Shared market result',
+            subtitle: result.context,
+          ),
+          const SizedBox(height: 16),
+          Text(result.range, style: Theme.of(context).textTheme.headlineMedium),
+          const SizedBox(height: 4),
+          Text('${result.confidence} confidence — ${result.confidenceReason}'),
+          const SizedBox(height: 16),
+          Text('Strongest comparables', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          for (final comparable in result.comparables)
+            Card(
+              child: ListTile(
+                title: Text('${comparable.price} • ${comparable.title}'),
+                subtitle: Text(
+                  '${comparable.status} • ${comparable.condition}\n'
+                  '${comparable.source} • ${comparable.date} • '
+                  '${comparable.matchQuality} match',
+                ),
+                isThreeLine: true,
+              ),
+            ),
+          const SizedBox(height: 12),
+          _EvidenceList(title: 'Value factors', items: result.valueFactors),
+        ],
+      ),
+    );
+  }
+}
+
+class _GuidanceCard extends StatelessWidget {
+  const _GuidanceCard({required this.result});
+
+  final PriceCheckGuidanceResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      tint: result.heading.startsWith('Buyer')
+          ? Theme.of(context).colorScheme.primary
+          : Theme.of(context).colorScheme.tertiary,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(result.heading, style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          Text(result.summary),
+          const SizedBox(height: 12),
+          for (final entry in result.sections.entries) ...[
+            if (result.heading.startsWith('Seller') &&
+                (entry.key == 'Draft title' ||
+                    entry.key == 'Draft description'))
+              TextFormField(
+                initialValue: entry.value,
+                minLines: entry.key == 'Draft description' ? 3 : 1,
+                maxLines: entry.key == 'Draft description' ? 6 : 2,
+                decoration: InputDecoration(
+                  labelText: entry.key,
+                  helperText: 'Editable before saving',
+                ),
+              )
+            else ...[
+              Text(
+                entry.key,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 2),
+              Text(entry.value),
+            ],
+            const SizedBox(height: 10),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MarketChangesCard extends StatelessWidget {
+  const _MarketChangesCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionTitle(
+            icon: Icons.compare_arrows,
+            title: 'Market changes since the previous check',
+            subtitle: 'Compared only after the new market analysis was complete.',
+          ),
+          SizedBox(height: 12),
+          Text(
+            'The current mock range is slightly narrower than the June report. '
+            'Recent completed sales support the lower half of the old range; '
+            'differences in included batteries remain the largest uncertainty.',
+          ),
+          SizedBox(height: 8),
+          Text(
+            'The prior analysis was not sent into identification, research, or '
+            'Buyer/Seller guidance.',
+          ),
+        ],
+      ),
+    );
+  }
+}

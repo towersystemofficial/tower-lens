@@ -48,9 +48,9 @@ enum AppTextSize {
 
 enum MotionLevel {
   none('No motion', 0),
-  minimal('Minimal', 0.33),
-  subtle('Subtle', 0.66),
-  dynamic('Dynamic', 1);
+  minimal('Minimal', 0.2),
+  subtle('Subtle', 0.4),
+  dynamic('Dynamic', 0.7);
 
   const MotionLevel(this.label, this.intensity);
   final String label;

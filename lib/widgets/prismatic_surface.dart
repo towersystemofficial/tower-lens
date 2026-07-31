@@ -8,7 +8,7 @@ Route<T> prismaticPageRoute<T>({
 }) {
   final motion =
       Theme.of(context).extension<MotionStyle>()?.intensity ?? 0;
-  final duration = Duration(milliseconds: (280 * motion).round());
+  final duration = Duration(milliseconds: (200 * motion).round());
 
   if (motion == 0) {
     return PageRouteBuilder<T>(
@@ -29,15 +29,12 @@ Route<T> prismaticPageRoute<T>({
         curve: Curves.easeOutCubic,
         reverseCurve: Curves.easeInCubic,
       );
-      return FadeTransition(
-        opacity: eased,
-        child: SlideTransition(
-          position: Tween<Offset>(
-            begin: Offset(0.035 * motion, 0.025 * motion),
-            end: Offset.zero,
-          ).animate(eased),
-          child: child,
-        ),
+      return SlideTransition(
+        position: Tween<Offset>(
+          begin: Offset(0.025 * motion, 0.015 * motion),
+          end: Offset.zero,
+        ).animate(eased),
+        child: child,
       );
     },
   );

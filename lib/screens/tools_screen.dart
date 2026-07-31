@@ -234,7 +234,7 @@ class _ToolCard extends StatelessWidget {
         padding: EdgeInsets.zero,
         tint: tool.colors.first,
         child: SizedBox(
-          height: featured ? 164 : null,
+          height: featured ? 184 : null,
           child: Stack(
             children: [
               Positioned.fill(
@@ -246,11 +246,11 @@ class _ToolCard extends StatelessWidget {
                         end: Alignment.bottomRight,
                         colors: [
                           tool.colors.first.withValues(
-                            alpha: 0.16 * glass.intensity,
+                            alpha: 0.14 + (0.06 * glass.intensity),
                           ),
                           Colors.transparent,
                           tool.colors.last.withValues(
-                            alpha: 0.12 * glass.intensity,
+                            alpha: 0.1 + (0.05 * glass.intensity),
                           ),
                         ],
                         stops: const [0, 0.5, 1],
@@ -269,7 +269,7 @@ class _ToolCard extends StatelessWidget {
                       const SizedBox(width: 12),
                       SizedBox(
                         key: const ValueKey('featured-tool-visual-region'),
-                        width: 128,
+                        width: 120,
                         child: Center(
                           child: ToolVisual(
                             kind: tool.visual,

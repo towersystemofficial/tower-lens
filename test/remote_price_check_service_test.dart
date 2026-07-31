@@ -27,7 +27,7 @@ void main() {
             'price': r'$75', 'status': 'Completed sale', 'condition': 'Good',
             'matchQuality': 'High', 'date': '2026-07-20'}],
           'valueFactors': ['Accessories vary.'], 'noReliableEstimate': false,
-        }}), 200);
+        }}), 200, headers: {'content-type': 'application/json; charset=utf-8'});
       }),
     );
     final result = await service.research(input, const PriceCheckIdentification(

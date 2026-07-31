@@ -45,7 +45,7 @@ void main() {
 
     expect(noGlass.blurSigma, 0);
     expect(noGlass.surfaceOpacity, 1);
-    expect(strongGlass.blurSigma, greaterThan(noGlass.blurSigma));
+    expect(strongGlass.blurSigma, 0);
     expect(strongGlass.glowOpacity, greaterThan(0));
     expect(noMotion.transitionDuration, Duration.zero);
     expect(dynamicMotion.transitionDuration, greaterThan(Duration.zero));

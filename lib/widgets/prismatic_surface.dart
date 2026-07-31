@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 
 import '../theme/appearance_settings.dart';
@@ -156,7 +154,7 @@ class GlassCard extends StatelessWidget {
       colors.surfaceContainerHighest.withValues(alpha: glass.surfaceOpacity),
     );
 
-    Widget result = Container(
+    return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -201,24 +199,43 @@ class GlassCard extends StatelessWidget {
         child: InkWell(
           borderRadius: radius,
           onTap: onTap,
-          child: Padding(padding: padding, child: child),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: ClipRRect(
+                    borderRadius: radius,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: const Alignment(-1.4, -1),
+                          end: const Alignment(1.2, 1),
+                          colors: [
+                            Colors.transparent,
+                            colors.primary.withValues(
+                              alpha: 0.12 * glass.intensity,
+                            ),
+                            colors.secondary.withValues(
+                              alpha: 0.18 * glass.intensity,
+                            ),
+                            colors.tertiary.withValues(
+                              alpha: 0.1 * glass.intensity,
+                            ),
+                            Colors.transparent,
+                          ],
+                          stops: const [0, 0.32, 0.47, 0.61, 1],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(padding: padding, child: child),
+            ],
+          ),
         ),
       ),
     );
-
-    if (glass.blurSigma > 0) {
-      result = ClipRRect(
-        borderRadius: radius,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: glass.blurSigma,
-            sigmaY: glass.blurSigma,
-          ),
-          child: result,
-        ),
-      );
-    }
-    return result;
   }
 }
 
@@ -240,7 +257,7 @@ class GlassNavigationBar extends StatelessWidget {
         Theme.of(context).extension<GlassStyle>() ??
         GlassStyle.fromLevel(GlassLevel.none);
     final colors = Theme.of(context).colorScheme;
-    Widget bar = Container(
+    final bar = Container(
       decoration: BoxDecoration(
         color: colors.surface.withValues(alpha: glass.surfaceOpacity),
         border: Border(
@@ -273,15 +290,6 @@ class GlassNavigationBar extends StatelessWidget {
         destinations: destinations,
       ),
     );
-    if (glass.blurSigma > 0) {
-      bar = BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: glass.blurSigma,
-          sigmaY: glass.blurSigma,
-        ),
-        child: bar,
-      );
-    }
     return SafeArea(top: false, child: bar);
   }
 }

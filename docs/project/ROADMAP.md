@@ -57,7 +57,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 | ToS/privacy mode: paste, mocked structured summary, save | Implemented (mocked AI) |
 | Ingredient/allergy watchlist: manage list, high-fidelity scan, multi-pass AI risk analysis | **Implemented and device-verified through PR #45** |
 | Camera + OCR: live local recognition plus optional Claude-assisted High-Fidelity Mode | **Implemented and device-verified through PR #44** — High-Fidelity Mode is substantially more accurate; hostile real-world OCR stress testing is moved to beta testing |
-| Cohesive UI/UX redesign beyond the functional MVP shell | **Implemented and device-verified** — navigation, launcher layout, appearance/accessibility, Settings organization, theme consistency, crisp holographic surfaces, and app-wide polish are complete; deeper asset/shader art direction is deferred to Step 11 |
+| Cohesive UI/UX redesign beyond the functional MVP shell | **Implemented and device-verified** — navigation, launcher layout, appearance/accessibility, Settings organization, theme consistency, crisp holographic surfaces, and app-wide polish are complete; deeper asset/shader art direction is deferred to Step 12 |
 | Dark theme (forced default) | Implemented |
 | `TextAiService` abstraction with mock fallback | Implemented |
 | Real Anthropic API integration | **Implemented for private development** -- merged in PR #28; production still requires a backend |
@@ -75,7 +75,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 ## 4. Current milestone and next milestone
 
-**Current milestone:** The core private-development app is implemented and device-verified through Step 6. Tower Lens now has local file import and library management, refined Home and ToS analysis, High-Fidelity camera/OCR, AI-assisted Watchlist risk analysis, and the completed functional UI/UX redesign. Production distribution infrastructure remains intentionally deferred to Step 8, and deeper shader/asset art direction remains deferred to Step 11.
+**Current milestone:** The core private-development app is implemented and device-verified through Step 6. Tower Lens now has local file import and library management, refined Home and ToS analysis, High-Fidelity camera/OCR, AI-assisted Watchlist risk analysis, and the completed functional UI/UX redesign. Production distribution infrastructure remains intentionally deferred to Step 8, and deeper shader/asset art direction remains deferred to Step 12.
 
 **Next milestone:** Complete Step 7, Price-check mode, using the approved staged backend pipeline below. The deterministic mock workspace and UI are implemented. The next PR adds the remote backend, identification and confirmation gate, live market research, optional Buyer and/or Seller analyses, saving/importing, and the remaining end-to-end functionality. Prompt refinement follows after the complete flow can be tested with real items.
 
@@ -233,7 +233,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 5. **Watchlist AI explanations — COMPLETE.** PR #45 is merged and device-verified. Watchlist scans require High-Fidelity OCR; immediate local matching is preserved; three independent Claude risk reviews feed a fourth synthesis pass that distinguishes exact, categorical, contextual, and uncertain/free-from evidence and always leads with the safety disclaimer.
 
-6. **Define and implement the UI/UX redesign — COMPLETE.** The functional redesign is implemented and verified on the Pixel 9a. The app now uses three persistent destinations (Tools, Library, and Settings); Tools opens by default; the featured tool spans the full launcher width; tool selection, usage-based featuring, persistence, and every existing workspace remain functional. Settings uses grouped destinations in the approved order, with appearance and accessibility controls persisted app-wide. Light/dark modes, semantic text and background colors, text scaling, glass intensity, and motion controls are applied consistently. Device-polish follow-ups restored a non-floating navigation bar, removed unnecessary tab fades, corrected launcher sizing and clipping, and replaced backdrop blur with crisp cyan/violet/rose spectral lighting. The remaining desire for a more expressive holographic/sci-fi identity requires visual references, assets, and shader research and is intentionally deferred to Step 11.
+6. **Define and implement the UI/UX redesign — COMPLETE.** The functional redesign is implemented and verified on the Pixel 9a. The app now uses three persistent destinations (Tools, Library, and Settings); Tools opens by default; the featured tool spans the full launcher width; tool selection, usage-based featuring, persistence, and every existing workspace remain functional. Settings uses grouped destinations in the approved order, with appearance and accessibility controls persisted app-wide. Light/dark modes, semantic text and background colors, text scaling, glass intensity, and motion controls are applied consistently. Device-polish follow-ups restored a non-floating navigation bar, removed unnecessary tab fades, corrected launcher sizing and clipping, and replaced backdrop blur with crisp cyan/violet/rose spectral lighting. The remaining desire for a more expressive holographic/sci-fi identity requires visual references, assets, and shader research and is intentionally deferred to Step 12.
 7. **Price-check mode — SCOPED; IMPLEMENTATION NEXT.** Add a dedicated tool that identifies ordinary secondhand items, researches their current market, estimates a price range, and optionally produces separate Buyer and/or Seller guidance. It is a decision aid, not a certified appraisal, authenticity check, legal determination, or guarantee of what an item will sell for.
 
    **User flow and run choices:**
@@ -304,9 +304,15 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 9. **Beta testing.** Run the app with the invited beta group and record functional bugs, confusing flows, output-quality failures, cost/latency problems, and real-world OCR limits. Include hostile OCR cases such as small print, dense and multi-column pages, uneven lighting, and angled documents; add further camera processing only when repeated beta evidence justifies it.
 
-10. **Write a blurb.** Produce the concise public-facing description after beta feedback has settled what the app reliably does and which benefits are worth emphasizing.
+10. **Second AI prompt refinement.** Use beta-test output to perform a second app-wide prompt-quality pass after every major tool and live pipeline can be evaluated together. Revisit summaries, ToS analysis, Simplify Text, High-Fidelity OCR, Watchlist, Price Check, and any other AI-backed mode whose real-world output shows recurring quality or faithfulness problems.
+   - For `Simplify Text`, Claude may replace a difficult word with a short phrase when no clean one-to-one synonym preserves the meaning.
+   - Claude may make the smallest local grammatical or sentence-structure adjustment necessary to integrate that phrase naturally and preserve the source's ideas.
+   - Claude must not rewrite the sentence as a whole. Preserve its original meaning, order of ideas, emphasis, and structure as closely as practical.
+   - When neither a direct synonym nor an easy phrase replacement exists, Claude may use limited judgment to produce the clearest faithful substitution rather than forcing an awkward or inaccurate one-to-one replacement.
 
-11. **Shader research.** Collect visual references and investigate the asset pipeline and rendering approach needed for a more expressive holographic/sci-fi interface. Evaluate Flutter-native custom shaders, fragment shaders, layered assets, performance on the Pixel 9a, and accessibility scaling before committing to another visual implementation pass.
+11. **Write a blurb.** Produce the concise public-facing description after beta feedback and the second prompt-refinement pass have settled what the app reliably does and which benefits are worth emphasizing.
+
+12. **Shader research.** Collect visual references and investigate the asset pipeline and rendering approach needed for a more expressive holographic/sci-fi interface. Evaluate Flutter-native custom shaders, fragment shaders, layered assets, performance on the Pixel 9a, and accessibility scaling before committing to another visual implementation pass.
 
 ## 10. Next task for Codex
 

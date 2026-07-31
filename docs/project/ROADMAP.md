@@ -57,7 +57,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 | ToS/privacy mode: paste, mocked structured summary, save | Implemented (mocked AI) |
 | Ingredient/allergy watchlist: manage list, high-fidelity scan, multi-pass AI risk analysis | **Implemented and device-verified through PR #45** |
 | Camera + OCR: live local recognition plus optional Claude-assisted High-Fidelity Mode | **Implemented and device-verified through PR #44** — High-Fidelity Mode is substantially more accurate; hostile real-world OCR stress testing is moved to beta testing |
-| Cohesive UI/UX redesign beyond the functional MVP shell | **Implemented; awaiting combined device verification** — launcher/navigation, appearance/accessibility, Settings cards, shared prismatic surfaces, tool visuals, and the app-wide polish pass are assembled |
+| Cohesive UI/UX redesign beyond the functional MVP shell | **Implemented and device-verified** — navigation, launcher layout, appearance/accessibility, Settings organization, theme consistency, crisp holographic surfaces, and app-wide polish are complete; deeper asset/shader art direction is deferred to Step 11 |
 | Dark theme (forced default) | Implemented |
 | `TextAiService` abstraction with mock fallback | Implemented |
 | Real Anthropic API integration | **Implemented for private development** -- merged in PR #28; production still requires a backend |
@@ -233,38 +233,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 5. **Watchlist AI explanations — COMPLETE.** PR #45 is merged and device-verified. Watchlist scans require High-Fidelity OCR; immediate local matching is preserved; three independent Claude risk reviews feed a fourth synthesis pass that distinguishes exact, categorical, contextual, and uncertain/free-from evidence and always leads with the safety disclaimer.
 
-6. **Define and implement the UI/UX redesign — IN PROGRESS.** Preserve the
-   approved information density and individual tool workflows while making the
-   app feel friendlier and less clinical. The first increment replaces the
-   four-destination functional shell with three persistent destinations:
-   Tools, Library, and Settings.
-   - Tools is the default launcher. The most-used implemented tool spans the
-     full width, and all remaining tools flow through a responsive two-column
-     grid. Usage counts are stored in local app preferences under stable tool
-     IDs and disappear with the app. Tool cards use gradients as temporary
-     image-ready backgrounds.
-   - The initially available cards are Text Analysis (Summarize/Simplify), ToS
-     Analysis, Allergy Watchlist, and Custom Instructions. Appraiser remains
-     hidden until implemented. The registry/grid must accept future tools
-     without another launcher redesign.
-   - Every card opens its existing workspace directly, where camera, import,
-     and paste/text inputs remain available.
-   - Library retains its approved layout and behavior unchanged.
-   - Settings provides General Settings, Tutorials, Accessibility, Shop,
-     Contact Developer, About App, and ToS destinations. Content for unfinished
-     settings destinations and the broader visual-language pass will follow in
-     later redesign increments.
-   - The shared visual layer uses a midnight-navy or pale-glass background,
-     motion-scaled prismatic light, real backdrop blur, translucent rounded
-     surfaces, restrained edge glow, and a glass bottom navigation bar. The
-     existing glass and motion accessibility settings scale these effects,
-     including fully opaque/static modes.
-   - The final assembly pass adds a floating rounded navigation surface,
-     motion-scaled tab and page transitions, and consistent rounded fields,
-     buttons, dialogs, snackbars, selection controls, and app bars. Existing
-     screen content and flows remain unchanged. The redesign now requires one
-     combined Pixel 9a device pass rather than separate testing per batch.
-
+6. **Define and implement the UI/UX redesign — COMPLETE.** The functional redesign is implemented and verified on the Pixel 9a. The app now uses three persistent destinations (Tools, Library, and Settings); Tools opens by default; the featured tool spans the full launcher width; tool selection, usage-based featuring, persistence, and every existing workspace remain functional. Settings uses grouped destinations in the approved order, with appearance and accessibility controls persisted app-wide. Light/dark modes, semantic text and background colors, text scaling, glass intensity, and motion controls are applied consistently. Device-polish follow-ups restored a non-floating navigation bar, removed unnecessary tab fades, corrected launcher sizing and clipping, and replaced backdrop blur with crisp cyan/violet/rose spectral lighting. The remaining desire for a more expressive holographic/sci-fi identity requires visual references, assets, and shader research and is intentionally deferred to Step 11.
 7. **Price-check mode.** Add the previously deferred price-check/marketplace-estimate mode after the core app, import flow, prompts, Watchlist explanations, and redesign are established.
 
 8. **Prepare for public distribution.** Add the backend/proxy, production-safe API-key custody, accounts/authentication as needed, credits or subscriptions and Google Play Billing, and resolve broad Android storage permission before store release.
@@ -273,10 +242,8 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 10. **Write a blurb.** Produce the concise public-facing description after beta feedback has settled what the app reliably does and which benefits are worth emphasizing.
 
+11. **Shader research.** Collect visual references and investigate the asset pipeline and rendering approach needed for a more expressive holographic/sci-fi interface. Evaluate Flutter-native custom shaders, fragment shaders, layered assets, performance on the Pixel 9a, and accessibility scaling before committing to another visual implementation pass.
+
 ## 10. Next task for Codex
 
-**Verify Step 6: UI/UX redesign on the Pixel 9a.** All five redesign batches
-are assembled. After the final polish PR passes analysis, tests, and APK
-packaging, perform one combined device pass covering navigation, every tool
-workspace, Library, Settings/Accessibility, all appearance levels, light/dark
-mode, text scaling, motion scaling, overflow, contrast, and state persistence.
+**Begin Step 7: Price-check mode.** Define its user flow, data-source boundaries, confidence language, and MVP scope before implementation. Shader research remains the final roadmap item and should begin only after references are collected.

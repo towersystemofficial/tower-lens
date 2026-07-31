@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tower_lens/models/library_entry.dart';
+import 'package:tower_lens/models/price_check.dart';
 import 'package:tower_lens/services/library_service.dart';
 
 void main() {
@@ -294,6 +295,41 @@ void main() {
         service.moveEntry(outside, 'General'),
         throwsArgumentError,
       );
+    });
+
+    test('saves and imports a multi-file Price Check folder', () async {
+      final photo = File(p.join(tempDir.path, 'item.jpg'));
+      await photo.writeAsBytes([0xff, 0xd8, 0xff, 0xd9]);
+      final input = PriceCheckInput(
+        photos: [photo.path], condition: 'Good',
+        testedStatus: 'Tested and working', knownIssues: 'None known',
+        quantity: 2, postalCode: '84101', country: 'United States',
+        tier: PriceCheckTier.standard,
+        guidance: const {PriceCheckGuidance.buyer},
+      );
+      const identification = PriceCheckIdentification(
+        title: 'Test item', observedFacts: [], userClaims: [],
+        inferences: [], confidence: 'Medium',
+      );
+      const market = PriceCheckMarketResult(
+        range: r'$10–$20 USD', confidence: 'Medium',
+        confidenceReason: 'Test evidence', context: 'Utah • USD',
+        comparables: [], valueFactors: [],
+      );
+      await service.savePriceCheckFolder(
+        parentFolder: '', folderName: 'Test Price Check', input: input,
+        identification: identification, market: market,
+        buyer: const PriceCheckGuidanceResult(
+          heading: 'Buyer guidance', summary: 'Test', sections: {},
+        ),
+      );
+
+      expect(await service.listPriceCheckFolders(), contains('Test Price Check'));
+      final imported = await service.importPriceCheckFolder('Test Price Check');
+      expect(imported.input.quantity, 2);
+      expect(imported.input.photos.single, endsWith('1-item.jpg'));
+      expect(imported.priorOutputs, contains(r'$10–$20 USD'));
+      expect(imported.priorOutputs, contains('Buyer guidance'));
     });
   });
 }

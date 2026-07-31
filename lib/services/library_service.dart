@@ -4,12 +4,14 @@
 // YAML-style frontmatter for each saved item.
 
 import 'dart:io';
+import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/library_entry.dart';
+import '../models/price_check.dart';
 
 class LibraryFileExistsException implements Exception {
   final String filename;
@@ -332,6 +334,134 @@ class LibraryService extends ChangeNotifier {
     }
     await _ensureStructure();
     notifyListeners();
+  }
+
+  Future<List<String>> listPriceCheckFolders() async {
+    if (!isConfigured) return [];
+    await _ensureStructure();
+    final folders = <String>[];
+    await for (final entity in _rootDir.list(recursive: true)) {
+      if (entity is File && p.basename(entity.path) == 'input-fields.md') {
+        folders.add(p.relative(entity.parent.path, from: _rootDir.path));
+      }
+    }
+    folders.sort();
+    return folders;
+  }
+
+  Future<PriceCheckPreviousRun> importPriceCheckFolder(String folder) async {
+    final directory = _folderDirectory(folder);
+    final inputFile = File(p.join(directory.path, 'input-fields.md'));
+    if (!await inputFile.exists()) {
+      throw const FormatException('The selected folder is not a Price Check.');
+    }
+    final inputText = await inputFile.readAsString();
+    final jsonStart = inputText.indexOf('```json\n');
+    final jsonEnd = inputText.indexOf('\n```', jsonStart + 8);
+    if (jsonStart < 0 || jsonEnd < 0) {
+      throw const FormatException('The saved Price Check inputs are unreadable.');
+    }
+    final data = jsonDecode(inputText.substring(jsonStart + 8, jsonEnd))
+        as Map<String, dynamic>;
+    final photoDirectory = Directory(p.join(directory.path, 'photos'));
+    final photos = await photoDirectory.exists()
+        ? (await photoDirectory.list().where((entity) => entity is File).cast<File>().toList())
+            .map((file) => file.path)
+            .toList()
+        : <String>[];
+    final outputs = <String>[];
+    for (final filename in const [
+      'market-result.md', 'buyer-guidance.md', 'seller-guidance.md', 'market-changes.md',
+    ]) {
+      final file = File(p.join(directory.path, filename));
+      if (await file.exists()) outputs.add(await file.readAsString());
+    }
+    data['photos'] = photos;
+    return PriceCheckPreviousRun(
+      folderPath: folder,
+      input: PriceCheckInput.fromJson(data),
+      priorOutputs: outputs.join('\n\n---\n\n'),
+    );
+  }
+
+  Future<String> savePriceCheckFolder({
+    required String parentFolder,
+    required String folderName,
+    required PriceCheckInput input,
+    required PriceCheckIdentification identification,
+    required PriceCheckMarketResult market,
+    PriceCheckGuidanceResult? buyer,
+    PriceCheckGuidanceResult? seller,
+    String? marketChanges,
+  }) async {
+    await _ensureStructure();
+    if (!isConfigured) throw StateError('Choose a Library location first.');
+    final safeParent = _validatedFolderPath(parentFolder);
+    final safeName = _validatedFolderName(folderName);
+    if (await _folderNameExists(safeParent, safeName)) {
+      throw LibraryFolderExistsException(safeName);
+    }
+    final folder = safeParent.isEmpty ? safeName : p.join(safeParent, safeName);
+    final directory = _folderDirectory(folder);
+    await directory.create(recursive: true);
+    final photosDirectory = Directory(p.join(directory.path, 'photos'));
+    await photosDirectory.create();
+    final savedPhotoPaths = <String>[];
+    for (var index = 0; index < input.photos.length; index++) {
+      final source = File(input.photos[index]);
+      if (!await source.exists()) continue;
+      final filename = '${index + 1}-${_safeAssetName(p.basename(source.path))}';
+      final destination = p.join(photosDirectory.path, filename);
+      await source.copy(destination);
+      savedPhotoPaths.add(p.join('photos', filename));
+    }
+    final savedInput = input.toJson(encodedPhotos: savedPhotoPaths);
+    await File(p.join(directory.path, 'input-fields.md')).writeAsString(
+      '# Price Check inputs\n\nSaved ${DateTime.now().toIso8601String()}\n\n```json\n'
+      '${const JsonEncoder.withIndent('  ').convert(savedInput)}\n```\n',
+    );
+    await File(p.join(directory.path, 'market-result.md')).writeAsString(
+      _marketMarkdown(identification, market),
+    );
+    if (buyer != null) {
+      await File(p.join(directory.path, 'buyer-guidance.md')).writeAsString(_guidanceMarkdown(buyer));
+    }
+    if (seller != null) {
+      await File(p.join(directory.path, 'seller-guidance.md')).writeAsString(_guidanceMarkdown(seller));
+    }
+    if (marketChanges != null && marketChanges.trim().isNotEmpty) {
+      await File(p.join(directory.path, 'market-changes.md')).writeAsString('# Market changes\n\n$marketChanges\n');
+    }
+    notifyListeners();
+    return folder;
+  }
+
+  String _safeAssetName(String name) => name
+      .replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '-')
+      .replaceAll(RegExp(r'-+'), '-');
+
+  String _marketMarkdown(PriceCheckIdentification id, PriceCheckMarketResult market) {
+    final buffer = StringBuffer('# ${id.title}\n\n');
+    buffer.writeln('**Range:** ${market.range}');
+    buffer.writeln('**Confidence:** ${market.confidence} — ${market.confidenceReason}');
+    buffer.writeln('**Context:** ${market.context}\n');
+    buffer.writeln('## Comparables\n');
+    for (final comparable in market.comparables) {
+      buffer.writeln('- [${comparable.title}](${comparable.source}) — ${comparable.price}; ${comparable.status}; ${comparable.condition}; ${comparable.matchQuality}; ${comparable.date}');
+    }
+    buffer.writeln('\n## Value factors\n');
+    for (final factor in market.valueFactors) {
+      buffer.writeln('- $factor');
+    }
+    return buffer.toString();
+  }
+
+  String _guidanceMarkdown(PriceCheckGuidanceResult result) {
+    final buffer = StringBuffer('# ${result.heading}\n\n${result.summary}\n\n');
+    for (final entry in result.sections.entries) {
+      buffer.writeln('## ${entry.key}\n\n${entry.value}\n');
+    }
+    return buffer.toString();
   }
 
   String _slug(String s) =>

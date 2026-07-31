@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/price_check.dart';
 import '../services/price_check_mock_service.dart';
+import '../services/price_check_service.dart';
+import '../services/library_service.dart';
 import '../widgets/prismatic_surface.dart';
 import 'price_check_camera_screen.dart';
 
@@ -21,11 +23,15 @@ class PriceCheckScreen extends StatefulWidget {
     this.service = const PriceCheckMockService(),
     this.cameraPicker,
     this.filePicker,
+    this.prototypeMode = true,
+    this.libraryService,
   });
 
-  final PriceCheckMockService service;
+  final PriceCheckService service;
   final PriceCheckCameraPicker? cameraPicker;
   final PriceCheckFilePicker? filePicker;
+  final bool prototypeMode;
+  final LibraryService? libraryService;
 
   @override
   State<PriceCheckScreen> createState() => _PriceCheckScreenState();
@@ -37,6 +43,7 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
   final _formKey = GlobalKey<FormState>();
   final _issuesController = TextEditingController();
   final _postalController = TextEditingController();
+  final _quantityController = TextEditingController(text: '1');
   final _descriptionController = TextEditingController();
   final _knownInformationController = TextEditingController();
   final _accessoriesController = TextEditingController();
@@ -64,11 +71,14 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
   PriceCheckGuidanceResult? _seller;
   bool _identificationConfirmed = false;
   bool _hasPreviousRun = false;
+  String? _marketChanges;
+  String _previousOutputs = '';
 
   @override
   void dispose() {
     _issuesController.dispose();
     _postalController.dispose();
+    _quantityController.dispose();
     _descriptionController.dispose();
     _knownInformationController.dispose();
     _accessoriesController.dispose();
@@ -109,6 +119,7 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
     _market = null;
     _buyer = null;
     _seller = null;
+    _marketChanges = null;
     _error = null;
   }
 
@@ -255,6 +266,8 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
         _identification = identification;
         _identificationController.text = identification.title;
       });
+    } on PriceCheckServiceException catch (error) {
+      if (mounted) setState(() => _error = error.message);
     } on PriceCheckMockException catch (error) {
       if (mounted) setState(() => _error = error.message);
     } finally {
@@ -299,12 +312,21 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
       if (_guidance.contains(PriceCheckGuidance.seller)) {
         seller = await widget.service.analyzeSeller(market);
       }
+      final marketChanges = _hasPreviousRun
+          ? await widget.service.compareMarketChanges(
+              priorOutputs: _previousOutputs,
+              currentMarket: market,
+            )
+          : null;
       if (!mounted) return;
       setState(() {
         _market = market;
         _buyer = buyer;
         _seller = seller;
+        _marketChanges = marketChanges;
       });
+    } on PriceCheckServiceException catch (error) {
+      if (mounted) setState(() => _error = error.message);
     } on PriceCheckMockException catch (error) {
       if (mounted) setState(() => _error = error.message);
     } finally {
@@ -313,6 +335,10 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
   }
 
   Future<void> _importPreviousRun() async {
+    if (!widget.prototypeMode && widget.libraryService != null) {
+      await _importSavedRun();
+      return;
+    }
     final shouldImport = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -361,6 +387,65 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
     );
   }
 
+  Future<void> _importSavedRun() async {
+    final library = widget.libraryService!;
+    final folders = await library.listPriceCheckFolders();
+    if (!mounted) return;
+    if (folders.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No saved Price Check folders were found.')),
+      );
+      return;
+    }
+    final folder = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Import a previous Price Check'),
+        children: [
+          for (final folder in folders)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, folder),
+              child: Text(folder),
+            ),
+        ],
+      ),
+    );
+    if (folder == null || !mounted) return;
+    try {
+      final saved = await library.importPriceCheckFolder(folder);
+      final input = saved.input;
+      setState(() {
+        _photos..clear()..addAll(input.photos);
+        _condition = input.condition;
+        _testedStatus = input.testedStatus;
+        _issuesController.text = input.knownIssues;
+        _quantity = input.quantity;
+        _quantityController.text = '${input.quantity}';
+        _postalController.text = input.postalCode;
+        _country = input.country;
+        _tier = input.tier;
+        _guidance..clear()..addAll(input.guidance);
+        _descriptionController.text = input.description;
+        _knownInformationController.text = input.knownInformation;
+        _accessoriesController.text = input.accessories;
+        _modificationsController.text = input.modifications;
+        _askingPriceController.text = input.askingPrice;
+        _comparisonsController.text = input.comparisonLinks;
+        _showOptional = true;
+        _hasPreviousRun = true;
+        _previousOutputs = saved.priorOutputs;
+        _resetResults();
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Previous photos and inputs imported. Old analysis is reserved for comparison after the new run.')),
+        );
+      }
+    } on Object catch (error) {
+      if (mounted) setState(() => _error = 'Could not import that Price Check: $error');
+    }
+  }
+
   Future<void> _saveMockFolder() async {
     final market = _market;
     if (market == null) return;
@@ -377,25 +462,43 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
           ? 'Price Check'
           : _identificationController.text.trim(),
     );
+    final folders = !widget.prototypeMode && widget.libraryService != null
+        ? await widget.libraryService!.listAllFolders()
+        : <String>[];
+    if (!mounted) {
+      controller.dispose();
+      return;
+    }
+    var parentFolder = folders.contains('Price Check') ? 'Price Check' : '';
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Save Price Check folder'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        content: StatefulBuilder(builder: (context, setDialogState) => SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             TextField(
               controller: controller,
               decoration: const InputDecoration(labelText: 'Folder name'),
             ),
             const SizedBox(height: 16),
+            if (!widget.prototypeMode) ...[
+              DropdownButtonFormField<String>(
+                initialValue: parentFolder,
+                decoration: const InputDecoration(labelText: 'Save inside'),
+                items: [
+                  const DropdownMenuItem(value: '', child: Text('Library root')),
+                  for (final folder in folders) DropdownMenuItem(value: folder, child: Text(folder)),
+                ],
+                onChanged: (value) => setDialogState(() => parentFolder = value ?? ''),
+              ),
+              const SizedBox(height: 16),
+            ],
             Text(
               'This folder will contain:\n'
               '${savedFiles.map((file) => '• $file').join('\n')}',
             ),
-          ],
-        ),
+          ]),
+        )),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -409,13 +512,30 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
         ],
       ),
     );
+    final folderName = controller.text.trim();
     controller.dispose();
     if (saved == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mock Price Check folder saved to the Library.'),
-        ),
-      );
+      if (!widget.prototypeMode && widget.libraryService != null && _identification != null) {
+        try {
+          await widget.libraryService!.savePriceCheckFolder(
+            parentFolder: parentFolder,
+            folderName: folderName,
+            input: _input,
+            identification: _identification!,
+            market: market,
+            buyer: _buyer,
+            seller: _seller,
+            marketChanges: _marketChanges,
+          );
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Price Check saved to the Library.')));
+        } on Object catch (error) {
+          if (mounted) setState(() => _error = 'Could not save Price Check: $error');
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Mock Price Check folder saved to the Library.')),
+        );
+      }
     }
   }
 
@@ -435,18 +555,21 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'This mock workspace uses sample results and never uploads '
-                  'photos or performs live research.',
+                  widget.prototypeMode
+                      ? 'Prototype mode uses sample results and never uploads photos.'
+                      : 'Photos and completed fields are sent only after your review.',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
-                const SizedBox(height: 16),
-                _PrototypeStateCard(
-                  scenario: _scenario,
-                  onChanged: (value) => setState(() {
-                    _scenario = value;
-                    _resetResults();
-                  }),
-                ),
+                if (widget.prototypeMode) ...[
+                  const SizedBox(height: 16),
+                  _PrototypeStateCard(
+                    scenario: _scenario,
+                    onChanged: (value) => setState(() {
+                      _scenario = value;
+                      _resetResults();
+                    }),
+                  ),
+                ],
                 if (_scenario == PriceCheckMockScenario.offline) ...[
                   const SizedBox(height: 12),
                   const _OfflineCard(),
@@ -469,7 +592,11 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
                   const SizedBox(height: 16),
                   const Center(child: CircularProgressIndicator()),
                   const SizedBox(height: 8),
-                  const Center(child: Text('Running deterministic mock…')),
+                  Center(
+                    child: Text(widget.prototypeMode
+                        ? 'Running deterministic mock…'
+                        : 'Running Price Check…'),
+                  ),
                 ],
                 if (_identification != null) ...[
                   const SizedBox(height: 12),
@@ -487,9 +614,9 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
                   const SizedBox(height: 12),
                   _GuidanceCard(result: _seller!),
                 ],
-                if (_market != null && _hasPreviousRun) ...[
+                if (_marketChanges != null) ...[
                   const SizedBox(height: 12),
-                  const _MarketChangesCard(),
+                  _MarketChangesCard(summary: _marketChanges!),
                 ],
                 if (_market != null) ...[
                   const SizedBox(height: 12),
@@ -624,7 +751,7 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
               Expanded(
                 child: TextFormField(
                   key: const ValueKey('price-quantity'),
-                  initialValue: '$_quantity',
+                  controller: _quantityController,
                   decoration: const InputDecoration(labelText: 'Quantity'),
                   enabled: !_busy,
                   keyboardType: TextInputType.number,
@@ -808,10 +935,12 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionTitle(
+          _SectionTitle(
             icon: Icons.schedule_outlined,
             title: 'Estimated run',
-            subtitle: 'Local preview; no API call is made.',
+            subtitle: widget.prototypeMode
+                ? 'Local preview; no API call is made.'
+                : 'Estimate scales with research depth and selected modes.',
           ),
           const SizedBox(height: 12),
           Text(
@@ -1146,27 +1275,25 @@ class _GuidanceCard extends StatelessWidget {
 }
 
 class _MarketChangesCard extends StatelessWidget {
-  const _MarketChangesCard();
+  const _MarketChangesCard({required this.summary});
+
+  final String summary;
 
   @override
   Widget build(BuildContext context) {
-    return const GlassCard(
+    return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionTitle(
+          const _SectionTitle(
             icon: Icons.compare_arrows,
             title: 'Market changes since the previous check',
             subtitle: 'Compared only after the new market analysis was complete.',
           ),
-          SizedBox(height: 12),
-          Text(
-            'The current mock range is slightly narrower than the June report. '
-            'Recent completed sales support the lower half of the old range; '
-            'differences in included batteries remain the largest uncertainty.',
-          ),
-          SizedBox(height: 8),
-          Text(
+          const SizedBox(height: 12),
+          Text(summary),
+          const SizedBox(height: 8),
+          const Text(
             'The prior analysis was not sent into identification, research, or '
             'Buyer/Seller guidance.',
           ),

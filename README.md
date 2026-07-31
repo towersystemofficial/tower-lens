@@ -57,3 +57,15 @@ flutter run \
 The proxy remains responsible for securely storing the Anthropic API key. If no
 Anthropic key or proxy bearer token is configured, the app stays on the mock
 service and makes no AI network requests.
+
+Price Check has a separate staged backend in `backend/price-check`. Run it with
+`ANTHROPIC_API_KEY` and `PRICE_CHECK_BEARER_TOKEN`, then configure the app with:
+
+```sh
+flutter run \
+  --dart-define=PRICE_CHECK_BACKEND_URL=https://your-server.example/price-check \
+  --dart-define=PRICE_CHECK_BEARER_TOKEN=your-client-token
+```
+
+Without `PRICE_CHECK_BACKEND_URL`, Price Check stays in deterministic prototype
+mode and makes no market-research requests.

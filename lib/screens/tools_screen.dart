@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
 import '../services/tool_usage_service.dart';
+import '../services/price_check_mock_service.dart';
+import '../services/remote_price_check_service.dart';
 import '../theme/appearance_settings.dart';
 import '../widgets/prismatic_surface.dart';
 import '../widgets/tool_visual.dart';
@@ -32,6 +34,10 @@ class ToolsScreen extends StatefulWidget {
 }
 
 class _ToolsScreenState extends State<ToolsScreen> {
+  static const _priceCheckBackendUrl =
+      String.fromEnvironment('PRICE_CHECK_BACKEND_URL');
+  static const _priceCheckBearerToken =
+      String.fromEnvironment('PRICE_CHECK_BEARER_TOKEN');
   late final List<_ToolDefinition> _tools;
   Map<String, int> _usageCounts = const {};
 
@@ -86,7 +92,16 @@ class _ToolsScreenState extends State<ToolsScreen> {
         description: 'Estimate an item’s market range for buying or selling.',
         visual: ToolVisualKind.priceCheck,
         colors: const [Color(0xff0277bd), Color(0xff00695c)],
-        screenBuilder: () => const PriceCheckScreen(),
+        screenBuilder: () => PriceCheckScreen(
+          service: _priceCheckBackendUrl.isEmpty
+              ? const PriceCheckMockService()
+              : RemotePriceCheckService(
+                  endpoint: Uri.parse(_priceCheckBackendUrl),
+                  bearerToken: _priceCheckBearerToken,
+                ),
+          prototypeMode: _priceCheckBackendUrl.isEmpty,
+          libraryService: widget.libraryService,
+        ),
       ),
       _ToolDefinition(
         id: 'custom_instructions',

@@ -1,13 +1,15 @@
 import '../models/price_check.dart';
+import 'price_check_service.dart';
 
-class PriceCheckMockService {
+class PriceCheckMockService implements PriceCheckService {
   const PriceCheckMockService({this.delay = const Duration(milliseconds: 250)});
 
   final Duration delay;
 
+  @override
   Future<PriceCheckIdentification> identify(
     PriceCheckInput input,
-    PriceCheckMockScenario scenario,
+    [PriceCheckMockScenario scenario = PriceCheckMockScenario.typical]
   ) async {
     await Future<void>.delayed(delay);
     if (scenario == PriceCheckMockScenario.offline) {
@@ -69,10 +71,11 @@ class PriceCheckMockService {
     );
   }
 
+  @override
   Future<PriceCheckMarketResult> research(
     PriceCheckInput input,
     PriceCheckIdentification identification,
-    PriceCheckMockScenario scenario,
+    [PriceCheckMockScenario scenario = PriceCheckMockScenario.typical]
   ) async {
     await Future<void>.delayed(delay);
     if (scenario == PriceCheckMockScenario.recoverableError) {
@@ -150,6 +153,7 @@ class PriceCheckMockService {
     );
   }
 
+  @override
   Future<PriceCheckGuidanceResult> analyzeBuyer(
     PriceCheckMarketResult market,
   ) async {
@@ -173,6 +177,7 @@ class PriceCheckMockService {
     );
   }
 
+  @override
   Future<PriceCheckGuidanceResult> analyzeSeller(
     PriceCheckMarketResult market,
   ) async {
@@ -193,6 +198,18 @@ class PriceCheckMockService {
             'chuck, battery contacts, accessories, and every damaged area.',
       },
     );
+  }
+
+  @override
+  Future<String> compareMarketChanges({
+    required String priorOutputs,
+    required PriceCheckMarketResult currentMarket,
+  }) async {
+    await Future<void>.delayed(delay);
+    return 'The current mock range is slightly narrower than the previous '
+        'report. Recent completed sales support the lower half of the old '
+        'range; differences in included accessories remain the largest '
+        'uncertainty. The prior analysis was not used for the new research.';
   }
 }
 

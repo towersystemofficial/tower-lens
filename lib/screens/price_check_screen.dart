@@ -1,22 +1,39 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/price_check.dart';
 import '../services/price_check_mock_service.dart';
 import '../widgets/prismatic_surface.dart';
+import 'price_check_camera_screen.dart';
+
+typedef PriceCheckCameraPicker = Future<String?> Function(
+  BuildContext context,
+);
+typedef PriceCheckFilePicker = Future<List<String>> Function(int remaining);
+
+enum _PhotoSource { camera, files }
 
 class PriceCheckScreen extends StatefulWidget {
   const PriceCheckScreen({
     super.key,
     this.service = const PriceCheckMockService(),
+    this.cameraPicker,
+    this.filePicker,
   });
 
   final PriceCheckMockService service;
+  final PriceCheckCameraPicker? cameraPicker;
+  final PriceCheckFilePicker? filePicker;
 
   @override
   State<PriceCheckScreen> createState() => _PriceCheckScreenState();
 }
 
 class _PriceCheckScreenState extends State<PriceCheckScreen> {
+  static const _privacyWarningDisabledPreference =
+      'price_check_privacy_warning_disabled';
   final _formKey = GlobalKey<FormState>();
   final _issuesController = TextEditingController();
   final _postalController = TextEditingController();
@@ -95,70 +112,123 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
     _error = null;
   }
 
-  Future<void> _addMockPhoto() async {
+  Future<String?> _takePhoto(BuildContext context) => Navigator.push<String>(
+        context,
+        MaterialPageRoute(builder: (_) => const PriceCheckCameraScreen()),
+      );
+
+  Future<List<String>> _pickPhotoFiles(int remaining) async {
+    final result = await FilePicker.platform.pickFiles(
+      dialogTitle: 'Choose item photos',
+      type: FileType.image,
+      allowMultiple: true,
+    );
+    if (result == null) return const [];
+    return result.files
+        .take(remaining)
+        .map((file) => file.path ?? file.name)
+        .toList(growable: false);
+  }
+
+  Future<void> _addPhotos() async {
     if (_photos.length >= 5) return;
-    final choice = await showModalBottomSheet<String>(
+    final source = await showModalBottomSheet<_PhotoSource>(
       context: context,
       showDragHandle: true,
       builder: (context) => SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const ListTile(
-                title: Text('Add a mock photo'),
-                subtitle: Text(
-                  'Camera and gallery bytes are attached in the functionality PR.',
-                ),
-              ),
-              for (final name in const [
-                'Full item photo',
-                'Model label photo',
-                'Damage detail photo',
-                'Accessories photo',
-                'Comparison screenshot',
-              ])
-                ListTile(
-                  leading: const Icon(Icons.add_a_photo_outlined),
-                  title: Text(name),
-                  onTap: () => Navigator.pop(context, name),
-                ),
-            ],
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(
+              title: Text('Add photo'),
+              subtitle: Text('Use the camera or choose existing image files.'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Open camera'),
+              onTap: () => Navigator.pop(context, _PhotoSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.folder_open_outlined),
+              title: const Text('Upload from files'),
+              onTap: () => Navigator.pop(context, _PhotoSource.files),
+            ),
+          ],
         ),
       ),
     );
-    if (choice != null && mounted) {
+    if (source == null || !mounted) return;
+
+    final additions = switch (source) {
+      _PhotoSource.camera => [
+          if (await (widget.cameraPicker ?? _takePhoto)(context)
+              case final String path)
+            path,
+        ],
+      _PhotoSource.files => await (widget.filePicker ?? _pickPhotoFiles)(
+          5 - _photos.length,
+        ),
+    };
+    if (additions.isNotEmpty && mounted) {
       setState(() {
-        _photos.add(choice);
+        _photos.addAll(additions.take(5 - _photos.length));
         _resetResults();
       });
     }
   }
 
   Future<bool> _showPrivacyPreview() async {
+    final preferences = await SharedPreferences.getInstance();
+    if (!mounted) return false;
+    if (preferences.getBool(_privacyWarningDisabledPreference) ?? false) {
+      return true;
+    }
+    var doNotShowAgain = false;
     final approved = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Review before sending'),
-        content: const Text(
-          'The selected photos and completed item fields will be sent for '
-          'identification. Photo location metadata will be removed. No market '
-          'research starts until you confirm the identification.',
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Review before sending'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'The selected photos and completed item fields will be sent for '
+                  'identification. Photo location metadata will be removed. No market '
+                  'research starts until you confirm the identification.',
+                ),
+                const SizedBox(height: 12),
+                CheckboxListTile(
+                  key: const ValueKey('price-check-warning-dismissal'),
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  value: doNotShowAgain,
+                  onChanged: (value) => setDialogState(
+                    () => doNotShowAgain = value ?? false,
+                  ),
+                  title: const Text('Do not show again'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              key: const ValueKey('approve-identification-upload'),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Identify item'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            key: const ValueKey('approve-identification-upload'),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Identify item'),
-          ),
-        ],
       ),
     );
+    if (approved == true && doNotShowAgain) {
+      await preferences.setBool(_privacyWarningDisabledPreference, true);
+    }
     return approved ?? false;
   }
 
@@ -471,7 +541,7 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
                 for (var index = 0; index < _photos.length; index++)
                   InputChip(
                     avatar: const Icon(Icons.image_outlined, size: 18),
-                    label: Text(_photos[index]),
+                    label: Text(p.basename(_photos[index])),
                     onDeleted: _busy
                         ? null
                         : () => setState(() {
@@ -484,7 +554,7 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
           const SizedBox(height: 12),
           OutlinedButton.icon(
             key: const ValueKey('add-price-check-photo'),
-            onPressed: _photos.length >= 5 || _busy ? null : _addMockPhoto,
+            onPressed: _photos.length >= 5 || _busy ? null : _addPhotos,
             icon: const Icon(Icons.add_a_photo_outlined),
             label: Text(_photos.isEmpty ? 'Add required photo' : 'Add another photo'),
           ),
@@ -552,14 +622,25 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
           Row(
             children: [
               Expanded(
-                child: DropdownButtonFormField<int>(
-                  initialValue: _quantity,
+                child: TextFormField(
+                  key: const ValueKey('price-quantity'),
+                  initialValue: '$_quantity',
                   decoration: const InputDecoration(labelText: 'Quantity'),
-                  items: [
-                    for (var value = 1; value <= 10; value++)
-                      DropdownMenuItem(value: value, child: Text('$value')),
-                  ],
-                  onChanged: _busy ? null : (value) => setState(() => _quantity = value ?? 1),
+                  enabled: !_busy,
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    final quantity = int.tryParse(value?.trim() ?? '');
+                    return quantity == null || quantity < 1
+                        ? 'Enter a quantity of 1 or more.'
+                        : null;
+                  },
+                  onChanged: (value) {
+                    final quantity = int.tryParse(value.trim());
+                    if (quantity != null && quantity > 0) {
+                      _quantity = quantity;
+                      _resetResults();
+                    }
+                  },
                 ),
               ),
               const SizedBox(width: 12),
@@ -653,12 +734,12 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
               ButtonSegment(
                 value: PriceCheckTier.standard,
                 label: Text('Default'),
-                icon: Icon(Icons.bolt_outlined),
+                icon: Icon(Icons.manage_search),
               ),
               ButtonSegment(
                 value: PriceCheckTier.higherCredit,
-                label: Text('Higher-credit'),
-                icon: Icon(Icons.manage_search),
+                label: Text('In-depth'),
+                icon: Icon(Icons.bolt_outlined),
               ),
             ],
             selected: {_tier},
@@ -676,7 +757,7 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
                 : 'Broader identification and deeper market research.',
           ),
           const SizedBox(height: 16),
-          const Text('Select one or both analyses:'),
+          const Text('Select one or both modes:'),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,

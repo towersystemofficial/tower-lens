@@ -89,7 +89,13 @@ class _TowerLensAppState extends State<TowerLensApp> {
               systemScale * _appearanceSettings.textSize.multiplier,
             ),
           ),
-          child: child!,
+          child: Listener(
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: (_) {
+              FocusManager.instance.primaryFocus?.unfocus();
+            },
+            child: child!,
+          ),
         );
       },
       home: RootShell(appearanceSettings: _appearanceSettings),

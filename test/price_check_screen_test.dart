@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tower_lens/models/price_check.dart';
 import 'package:tower_lens/screens/price_check_screen.dart';
 import 'package:tower_lens/services/price_check_mock_service.dart';
 
 void main() {
-  Widget buildScreen() => const MaterialApp(
+  Widget buildScreen() => MaterialApp(
         home: PriceCheckScreen(
-          service: PriceCheckMockService(delay: Duration.zero),
+          service: const PriceCheckMockService(delay: Duration.zero),
+          filePicker: (_) async => ['Full item photo'],
         ),
       );
+
+  setUp(() => SharedPreferences.setMockInitialValues({}));
 
   Future<void> scrollTo(WidgetTester tester, Finder finder) async {
     await tester.scrollUntilVisible(
@@ -23,7 +27,9 @@ void main() {
   Future<void> completeRequiredInputs(WidgetTester tester) async {
     await tester.tap(find.byKey(const ValueKey('add-price-check-photo')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Full item photo'));
+    expect(find.text('Open camera'), findsOneWidget);
+    expect(find.text('Upload from files'), findsOneWidget);
+    await tester.tap(find.text('Upload from files'));
     await tester.pumpAndSettle();
 
     await scrollTo(tester, find.byKey(const ValueKey('price-condition')));
@@ -122,6 +128,51 @@ void main() {
       find.byKey(const ValueKey('price-postal-code')),
     );
     expect(postal.controller?.text, '84101');
+  });
+
+  testWidgets('run controls use custom quantity and approved mode labels',
+      (tester) async {
+    await tester.pumpWidget(buildScreen());
+    await scrollTo(tester, find.byKey(const ValueKey('price-quantity')));
+
+    await tester.enterText(
+      find.byKey(const ValueKey('price-quantity')),
+      '37',
+    );
+    expect(find.text('37'), findsOneWidget);
+
+    await scrollTo(tester, find.text('In-depth'));
+    expect(find.text('Default'), findsOneWidget);
+    expect(find.text('In-depth'), findsOneWidget);
+    expect(find.text('Select one or both modes:'), findsOneWidget);
+    expect(find.text('Higher-credit'), findsNothing);
+  });
+
+  testWidgets('privacy warning can be dismissed permanently', (tester) async {
+    await tester.pumpWidget(buildScreen());
+    await completeRequiredInputs(tester);
+    await scrollTo(
+      tester,
+      find.byKey(const ValueKey('start-price-identification')),
+    );
+    await tester.tap(find.byKey(const ValueKey('start-price-identification')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey('price-check-warning-dismissal')),
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('approve-identification-upload')),
+    );
+    await tester.pumpAndSettle();
+
+    await scrollTo(
+      tester,
+      find.byKey(const ValueKey('start-price-identification')),
+    );
+    await tester.tap(find.byKey(const ValueKey('start-price-identification')));
+    await tester.pumpAndSettle();
+    expect(find.text('Review before sending'), findsNothing);
   });
 
   test('mock service exposes restricted and low-evidence states', () async {

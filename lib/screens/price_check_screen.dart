@@ -695,7 +695,7 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionTitle(
+          const _SectionTitle(
             icon: Icons.fact_check_outlined,
             title: 'Required item details',
             subtitle: 'Tell the research what the photo cannot.',

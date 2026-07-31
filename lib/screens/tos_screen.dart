@@ -316,7 +316,12 @@ class _TosScreenState extends State<TosScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 constraints: const BoxConstraints(minHeight: 80),
-                decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(4)),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                ),
                 child: MarkdownContent(
                   data: _output,
                   emptyPlaceholder: 'Results will appear here.',
@@ -324,7 +329,10 @@ class _TosScreenState extends State<TosScreen> {
               ),
               const SizedBox(height: 12),
               Text('Informational summary only -- not legal advice.',
-                  style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic)),
+                  style: TextStyle(
+                     color: Theme.of(context).colorScheme.onSurfaceVariant,
+                     fontStyle: FontStyle.italic,
+                   )),
             ],
           ),
         ),

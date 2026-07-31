@@ -45,6 +45,10 @@ jobs:
       - name: Run unit tests
         run: flutter test
 
+      - name: Test Price Check backend
+        working-directory: backend/price-check
+        run: npm test
+
       - name: Build debug APK
         run: flutter build apk --debug
 

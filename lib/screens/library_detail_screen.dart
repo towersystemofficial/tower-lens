@@ -17,7 +17,12 @@ class LibraryDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(dateFormat.format(entry.timestamp), style: TextStyle(color: Colors.grey.shade600)),
+            Text(
+              dateFormat.format(entry.timestamp),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: 16),
             const Text('Source Text', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),

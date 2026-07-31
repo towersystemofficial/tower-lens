@@ -225,7 +225,7 @@ class _ToolCard extends StatelessWidget {
         padding: EdgeInsets.zero,
         tint: tool.colors.first,
         child: SizedBox(
-          height: featured ? 148 : null,
+          height: featured ? 164 : null,
           child: Stack(
             children: [
               Positioned.fill(
@@ -302,12 +302,14 @@ class _ToolCardCopy extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         if (!compact) ...[
-          const Icon(Icons.auto_awesome, color: Colors.white),
+          Icon(Icons.auto_awesome, color: colors.primary),
           const Spacer(),
         ] else
           const Spacer(),
@@ -317,7 +319,7 @@ class _ToolCardCopy extends StatelessWidget {
                   ? Theme.of(context).textTheme.titleMedium
                   : Theme.of(context).textTheme.titleLarge)
               ?.copyWith(
-            color: Colors.white,
+            color: colors.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -327,7 +329,7 @@ class _ToolCardCopy extends StatelessWidget {
           maxLines: compact ? 3 : 2,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: colors.onSurfaceVariant,
               ),
         ),
       ],

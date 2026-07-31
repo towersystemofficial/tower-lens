@@ -465,6 +465,10 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
     final folders = !widget.prototypeMode && widget.libraryService != null
         ? await widget.libraryService!.listAllFolders()
         : <String>[];
+    if (!mounted) {
+      controller.dispose();
+      return;
+    }
     var parentFolder = folders.contains('Price Check') ? 'Price Check' : '';
     final saved = await showDialog<bool>(
       context: context,
@@ -691,7 +695,7 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionTitle(
+          _SectionTitle(
             icon: Icons.fact_check_outlined,
             title: 'Required item details',
             subtitle: 'Tell the research what the photo cannot.',
@@ -931,7 +935,7 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionTitle(
+          _SectionTitle(
             icon: Icons.schedule_outlined,
             title: 'Estimated run',
             subtitle: widget.prototypeMode

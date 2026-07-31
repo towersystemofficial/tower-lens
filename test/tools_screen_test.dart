@@ -53,12 +53,12 @@ void main() {
     final featuredSize = find.descendant(
       of: featuredCard,
       matching: find.byWidgetPredicate(
-        (widget) => widget is SizedBox && widget.height == 148,
+        (widget) => widget is SizedBox && widget.height == 164,
       ),
     );
     expect(featuredSize, findsOneWidget);
     final box = tester.widget<SizedBox>(featuredSize);
-    expect(box.height, 148);
+    expect(box.height, 164);
     expect(tester.getSize(featuredCard).width, 768);
 
     final visualRegion = find.descendant(

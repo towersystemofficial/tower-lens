@@ -101,28 +101,30 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
       context: context,
       showDragHandle: true,
       builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const ListTile(
-              title: Text('Add a mock photo'),
-              subtitle: Text(
-                'Camera and gallery bytes are attached in the functionality PR.',
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const ListTile(
+                title: Text('Add a mock photo'),
+                subtitle: Text(
+                  'Camera and gallery bytes are attached in the functionality PR.',
+                ),
               ),
-            ),
-            for (final name in const [
-              'Full item photo',
-              'Model label photo',
-              'Damage detail photo',
-              'Accessories photo',
-              'Comparison screenshot',
-            ])
-              ListTile(
-                leading: const Icon(Icons.add_a_photo_outlined),
-                title: Text(name),
-                onTap: () => Navigator.pop(context, name),
-              ),
-          ],
+              for (final name in const [
+                'Full item photo',
+                'Model label photo',
+                'Damage detail photo',
+                'Accessories photo',
+                'Comparison screenshot',
+              ])
+                ListTile(
+                  leading: const Icon(Icons.add_a_photo_outlined),
+                  title: Text(name),
+                  onTap: () => Navigator.pop(context, name),
+                ),
+            ],
+          ),
         ),
       ),
     );

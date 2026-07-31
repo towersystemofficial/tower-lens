@@ -16,7 +16,9 @@ class MarkdownContent extends StatelessWidget {
     if (data.trim().isEmpty) {
       return Text(
         emptyPlaceholder,
-        style: TextStyle(color: Colors.grey.shade600),
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       );
     }
 

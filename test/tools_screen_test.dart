@@ -8,7 +8,7 @@ import 'package:tower_lens/widgets/prismatic_surface.dart';
 import 'package:tower_lens/widgets/tool_visual.dart';
 
 void main() {
-  testWidgets('launcher shows all implemented tools including Price Check',
+  testWidgets('launcher hides deferred tools and ends with coming soon',
       (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(
@@ -27,8 +27,16 @@ void main() {
     expect(find.text('ToS Analysis'), findsOneWidget);
     expect(find.text('Allergy Watchlist'), findsOneWidget);
     expect(find.text('Custom Instructions'), findsOneWidget);
-    expect(find.text('Price Check'), findsOneWidget);
-    expect(find.byType(ToolVisual), findsNWidgets(5));
+    expect(find.text('Price Check'), findsNothing);
+    expect(find.text('More features coming soon'), findsOneWidget);
+    expect(find.byType(ToolVisual), findsNWidgets(4));
+
+    final cards = find.byType(GlassCard).evaluate().toList();
+    final comingSoonCard = find.ancestor(
+      of: find.text('More features coming soon'),
+      matching: find.byType(GlassCard),
+    );
+    expect(comingSoonCard.evaluate().single, same(cards.last));
   });
 
   testWidgets('most-used tool becomes the full-width featured card',

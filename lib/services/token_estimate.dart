@@ -1,3 +1,4 @@
+import 'credit_pricing.dart';
 import 'text_ai_service.dart';
 
 class TokenEstimate {
@@ -15,8 +16,12 @@ class TokenEstimate {
   final Duration requestTimeout;
   final int confidencePercent;
 
+  int get creditLowerBound => CreditPricing.estimateLowerBound(lowerBound);
+
+  int get creditUpperBound => CreditPricing.estimateUpperBound(upperBound);
+
   String get buttonLabel =>
-      '${_format(lowerBound)}–${_format(upperBound)} tokens, '
+      '${_format(creditLowerBound)}–${_format(creditUpperBound)} credits, '
       '$confidencePercent% confidence';
 
   String? get durationWarning {

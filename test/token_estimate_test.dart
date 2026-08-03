@@ -1,9 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tower_lens/services/credit_pricing.dart';
 import 'package:tower_lens/services/text_ai_service.dart';
 import 'package:tower_lens/services/token_estimate.dart';
 
 void main() {
-  test('estimates a range containing input and likely output tokens', () {
+  test('shows a 3.15-times credit estimate for likely token usage', () {
     final estimate = TextAiTokenEstimator.estimate(
       taskType: TextAiTaskType.summary,
       sourceText: List.filled(500, 'word').join(' '),
@@ -12,8 +13,28 @@ void main() {
 
     expect(estimate.lowerBound, greaterThan(0));
     expect(estimate.upperBound, greaterThan(estimate.lowerBound));
+    expect(
+      estimate.creditLowerBound,
+      CreditPricing.estimateLowerBound(estimate.lowerBound),
+    );
+    expect(
+      estimate.creditUpperBound,
+      CreditPricing.estimateUpperBound(estimate.upperBound),
+    );
     expect(estimate.confidencePercent, 80);
-    expect(estimate.buttonLabel, contains('tokens, 80% confidence'));
+    expect(estimate.buttonLabel, contains('credits, 80% confidence'));
+  });
+
+  test('rounds the authoritative 3.15-times actual-usage charge up', () {
+    expect(CreditPricing.chargeForActualTokens(100), 315);
+    expect(CreditPricing.chargeForActualTokens(101), 319);
+  });
+
+  test('uses clean whole-dollar purchase grants and first-purchase bonus', () {
+    expect(CreditPricing.normalPurchaseCredits(1), 50000);
+    expect(CreditPricing.normalPurchaseCredits(20), 1000000);
+    expect(CreditPricing.firstPurchaseCredits(1), 75000);
+    expect(CreditPricing.firstPurchaseCredits(20), 1500000);
   });
 
   test('uses a generous API ceiling rather than the estimate as a hard cap', () {

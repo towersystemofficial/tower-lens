@@ -180,7 +180,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 - Implemented behavior: normal mode retains fast, entirely on-device live ML Kit OCR. Optional High-Fidelity Mode switches to maximum camera resolution, captures a still on Freeze, and asks Claude to reconstruct the text from the image plus the frozen and five preceding local OCR readings. It preserves editable review/rescan behavior, shows processing and privacy/cost notices, deletes the temporary still, and falls back to local OCR on failure.
 - Device evidence from 2026-07-27: High-Fidelity Mode works on the Pixel 9a and produces substantially better OCR than the prior scanner.
 - Follow-up evaluation: moved to beta testing. Test small print, dense full pages, headings plus paragraphs, columns, uneven lighting, and angled pages across real users and documents; only add cropping, boundary guidance, or perspective correction if beta evidence shows they are needed.
-- Privacy/cost: normal mode remains entirely on-device. High-Fidelity Mode explicitly warns that it sends the scanned image and recent OCR readings to Claude and uses API tokens.
+- Privacy/cost: normal mode remains entirely on-device. High-Fidelity Mode explicitly warns that it sends the scanned image and recent OCR readings to Claude and uses credits.
 - Dependencies: broader automated-coverage expansion remains deferred.
 
 ### Deferred / explicitly out of scope for now (per product principles, not forgotten)
@@ -239,7 +239,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
    **User flow and run choices:**
    1. The user supplies the required photo and item fields, fills any optional accuracy fields, chooses `Default` or `In-depth`, and selects `Buyer guidance`, `Seller guidance`, or both.
-   2. The app shows the estimated token range and estimated maximum duration, using request-specific dynamic timeouts like the existing text-analysis tools. It does not expose search counts or a monetary-cost estimate.
+   2. The app shows the estimated credit range and estimated maximum duration, using request-specific dynamic timeouts like the existing text-analysis tools. It does not expose search counts or a monetary-cost estimate.
    3. The remote backend sends the normalized photos and input fields to Claude with the identification instructions appropriate to the selected credit tier.
    4. Claude identifies the likely item and checks whether it is restricted, illegal, or unsuitable for general pricing. The user must confirm or edit the identification before any market research begins.
    5. After confirmation, the backend runs the selected depth of cited market research and produces the shared market estimate.
@@ -301,7 +301,18 @@ channel. TXT and Markdown imports are decoded locally in Dart.
    2. `PR 2 — Full functionality — COMPLETE; MERGED IN PR #59:` the repository now includes the remote backend/API proxy and production-safe provider-key custody; structured contracts for identification, confirmation, research, Buyer analysis, Seller analysis, prior-run summarization, and market-change comparison; cited Claude web research; dynamic token/duration estimates and timeouts; metadata-safe transient photos; local multi-file folder persistence/import; and focused automated coverage.
    3. `Activation and prompt refinement — DEFERRED TO BETA/PUBLIC RELEASE:` deploy the backend, restore the launcher entry, test real items on the Pixel 9a, and refine the identification, exclusion/legal-check, Default/In-depth research, evidence ranking, price-range, Buyer, Seller, previous-run summary, and market-change comparison prompts. Finalize the exact research-depth/search behavior during that release phase.
 
-7. **Prepare for public distribution.** Build the shared production backend for the active app, add accounts/authentication as needed, credits or subscriptions and Google Play Billing, and resolve broad Android storage permission before store release. Price Check deployment and activation remain excluded here and are handled under Step 10.
+7. **Prepare for public distribution.** Build the shared production backend for the active app, add accounts/authentication and Google Play Billing, and resolve broad Android storage permission before store release. Price Check deployment and activation remain excluded here and are handled under Step 10.
+
+   **Approved beta billing model:**
+   - Use one-time credit packs only. Do not launch with a subscription. A subscription may be reconsidered later only if users ask for it.
+   - Let users explore the app and tutorial without an account, but require `Continue with Google` before buying credits so the backend can preserve purchased balances across reinstalls and devices.
+   - Give no free starting credits during beta. Grant 1.5x the normal credits on the user's first completed credit purchase instead, applying the multiplier before the final whole-credit rounding.
+   - Keep the currency legible: one estimated Claude token corresponds to one base credit. Apply the approved 3x operating charge plus a 0.15x Google Play allowance, for a total of 3.15 credits per estimated/actual provider token. Every tool must show the 3.15x credit estimate before a run rather than exposing the unmultiplied provider-token estimate.
+   - Launch with whole-dollar purchase options of $1, $2, $5, $10, and $20, plus a custom whole-dollar amount. Do not use `.99` prices. Implement Custom through Google Play's supported multi-quantity purchase flow for the $1 consumable product, and grant credits only from the quantity verified by the backend.
+   - Grant a clean 50,000 normal credits per whole purchase dollar. Presets therefore grant 50,000 / 100,000 / 250,000 / 500,000 / 1,000,000 credits for $1 / $2 / $5 / $10 / $20. Custom amounts use the same 50,000-credits-per-dollar rule. This deliberately rounds down from the output-rate-derived 66,666 credits per dollar; together with the 3.15x usage charge, that conservative grant covers Google's 15% cut even on the first-purchase bonus under the approved simplified cost model.
+   - Grant 1.5x credits on the first completed purchase: 75,000 / 150,000 / 375,000 / 750,000 / 1,500,000 for the presets. Under the simplified share model, `3.15 / 1.5 = 2.1x`; the conservative 50,000-credit pack grant keeps the purchase non-loss-making after Google's cut while giving up the intended developer-profit share.
+   - The estimate is not the final debit. After each successful Claude request, the production backend must read Claude's reported `input_tokens` and `output_tokens`, sum them, calculate `ceil(actual provider tokens x 3.15)`, and atomically debit that many credits from the user's server-side balance. Failed provider requests must not be charged. The app must display the server-confirmed debit; it must never calculate or authorize the balance mutation locally.
+   - Do not implement silent automatic charging. Let users choose a preferred refill pack, low-balance threshold, and monthly spending ceiling; below the threshold, offer a quick-refill prompt that still opens Google Play's required purchase confirmation. Stop prompting after the chosen monthly ceiling is reached.
 
 8. **Write a blurb.** Produce the concise public-facing description of the app and the benefits worth emphasizing.
 

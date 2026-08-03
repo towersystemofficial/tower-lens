@@ -92,7 +92,7 @@ void main() {
     expect(service.instruction, contains('top 5000'));
   });
 
-  testWidgets('Run button shows a local token estimate', (tester) async {
+  testWidgets('Run button shows a local credit estimate', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
@@ -110,7 +110,7 @@ void main() {
     await tester.enterText(find.byType(TextField).at(1), 'Explain this');
     await tester.pump();
 
-    expect(find.textContaining('tokens, 80% confidence'), findsOneWidget);
+    expect(find.textContaining('credits, 80% confidence'), findsOneWidget);
   });
 
   testWidgets('warns before long Home and ToS requests', (tester) async {

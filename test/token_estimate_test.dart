@@ -3,7 +3,7 @@ import 'package:tower_lens/services/text_ai_service.dart';
 import 'package:tower_lens/services/token_estimate.dart';
 
 void main() {
-  test('estimates a range containing input and likely output tokens', () {
+  test('shows a three-times credit estimate for likely token usage', () {
     final estimate = TextAiTokenEstimator.estimate(
       taskType: TextAiTaskType.summary,
       sourceText: List.filled(500, 'word').join(' '),
@@ -12,8 +12,10 @@ void main() {
 
     expect(estimate.lowerBound, greaterThan(0));
     expect(estimate.upperBound, greaterThan(estimate.lowerBound));
+    expect(estimate.creditLowerBound, estimate.lowerBound * 3);
+    expect(estimate.creditUpperBound, estimate.upperBound * 3);
     expect(estimate.confidencePercent, 80);
-    expect(estimate.buttonLabel, contains('tokens, 80% confidence'));
+    expect(estimate.buttonLabel, contains('credits, 80% confidence'));
   });
 
   test('uses a generous API ceiling rather than the estimate as a hard cap', () {

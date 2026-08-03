@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/price_check.dart';
+import '../services/credit_pricing.dart';
 import '../services/price_check_mock_service.dart';
 import '../services/price_check_service.dart';
 import '../services/library_service.dart';
@@ -927,10 +928,12 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
   Widget _buildEstimateCard() {
     final high = _tier == PriceCheckTier.higherCredit;
     final guidanceCount = _guidance.length;
-    final lowCredits =
-        ((high ? 4200 : 2200) + (guidanceCount * 700)) * 3;
-    final highCredits =
-        ((high ? 7200 : 3900) + (guidanceCount * 1300)) * 3;
+    final lowCredits = CreditPricing.estimateLowerBound(
+      (high ? 4200 : 2200) + (guidanceCount * 700),
+    );
+    final highCredits = CreditPricing.estimateUpperBound(
+      (high ? 7200 : 3900) + (guidanceCount * 1300),
+    );
     final minutes = (high ? 4 : 2) + guidanceCount;
     return GlassCard(
       tint: Theme.of(context).colorScheme.primary,

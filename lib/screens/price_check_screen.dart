@@ -927,8 +927,10 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
   Widget _buildEstimateCard() {
     final high = _tier == PriceCheckTier.higherCredit;
     final guidanceCount = _guidance.length;
-    final lowTokens = (high ? 4200 : 2200) + (guidanceCount * 700);
-    final highTokens = (high ? 7200 : 3900) + (guidanceCount * 1300);
+    final lowCredits =
+        ((high ? 4200 : 2200) + (guidanceCount * 700)) * 3;
+    final highCredits =
+        ((high ? 7200 : 3900) + (guidanceCount * 1300)) * 3;
     final minutes = (high ? 4 : 2) + guidanceCount;
     return GlassCard(
       tint: Theme.of(context).colorScheme.primary,
@@ -944,7 +946,7 @@ class _PriceCheckScreenState extends State<PriceCheckScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            '${_formatNumber(lowTokens)}–${_formatNumber(highTokens)} tokens',
+            '${_formatNumber(lowCredits)}–${_formatNumber(highCredits)} credits',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 4),

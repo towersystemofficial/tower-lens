@@ -3,13 +3,10 @@ import 'package:flutter/material.dart';
 import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
 import '../services/tool_usage_service.dart';
-import '../services/price_check_mock_service.dart';
-import '../services/remote_price_check_service.dart';
 import '../theme/appearance_settings.dart';
 import '../widgets/prismatic_surface.dart';
 import '../widgets/tool_visual.dart';
 import 'home_screen.dart';
-import 'price_check_screen.dart';
 import 'tos_screen.dart';
 import 'watchlist_screen.dart';
 
@@ -34,10 +31,6 @@ class ToolsScreen extends StatefulWidget {
 }
 
 class _ToolsScreenState extends State<ToolsScreen> {
-  static const _priceCheckBackendUrl =
-      String.fromEnvironment('PRICE_CHECK_BACKEND_URL');
-  static const _priceCheckBearerToken =
-      String.fromEnvironment('PRICE_CHECK_BEARER_TOKEN');
   late final List<_ToolDefinition> _tools;
   Map<String, int> _usageCounts = const {};
 
@@ -84,23 +77,6 @@ class _ToolsScreenState extends State<ToolsScreen> {
           libraryService: widget.libraryService,
           textAiService: widget.textAiService,
           usesRealAi: widget.usesRealAi,
-        ),
-      ),
-      _ToolDefinition(
-        id: 'price_check',
-        title: 'Price Check',
-        description: 'Estimate an item’s market range for buying or selling.',
-        visual: ToolVisualKind.priceCheck,
-        colors: const [Color(0xff0277bd), Color(0xff00695c)],
-        screenBuilder: () => PriceCheckScreen(
-          service: _priceCheckBackendUrl.isEmpty
-              ? const PriceCheckMockService()
-              : RemotePriceCheckService(
-                  endpoint: Uri.parse(_priceCheckBackendUrl),
-                  bearerToken: _priceCheckBearerToken,
-                ),
-          prototypeMode: _priceCheckBackendUrl.isEmpty,
-          libraryService: widget.libraryService,
         ),
       ),
       _ToolDefinition(
@@ -184,7 +160,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: remaining.length,
+                  itemCount: remaining.length + 1,
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: constraints.maxWidth < 360 ? 1 : 2,
                     crossAxisSpacing: 12,
@@ -192,6 +168,9 @@ class _ToolsScreenState extends State<ToolsScreen> {
                     childAspectRatio: constraints.maxWidth < 360 ? 2.1 : 0.92,
                   ),
                   itemBuilder: (context, index) {
+                    if (index == remaining.length) {
+                      return const _ComingSoonCard();
+                    }
                     final tool = remaining[index];
                     return _ToolCard(
                       tool: tool,
@@ -203,6 +182,59 @@ class _ToolsScreenState extends State<ToolsScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ComingSoonCard extends StatelessWidget {
+  const _ComingSoonCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      tint: colors.tertiary,
+      child: Stack(
+        children: [
+          Positioned(
+            right: 14,
+            top: 14,
+            child: Icon(
+              Icons.auto_awesome,
+              size: 44,
+              color: colors.tertiary.withValues(alpha: 0.72),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                const Spacer(),
+                Text(
+                  'More features coming soon',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: colors.onSurface,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'New ways to understand and use what you scan.',
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

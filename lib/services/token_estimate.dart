@@ -15,8 +15,14 @@ class TokenEstimate {
   final Duration requestTimeout;
   final int confidencePercent;
 
+  static const int creditUsageMultiplier = 3;
+
+  int get creditLowerBound => lowerBound * creditUsageMultiplier;
+
+  int get creditUpperBound => upperBound * creditUsageMultiplier;
+
   String get buttonLabel =>
-      '${_format(lowerBound)}–${_format(upperBound)} tokens, '
+      '${_format(creditLowerBound)}–${_format(creditUpperBound)} credits, '
       '$confidencePercent% confidence';
 
   String? get durationWarning {

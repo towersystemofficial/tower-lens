@@ -302,7 +302,7 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
             title: const Text('High-Fidelity Mode'),
             content: const Text(
               'This mode sends the scanned image and recent on-device OCR '
-              'readings to Claude. It uses API tokens. Normal mode keeps OCR '
+              'readings to Claude. It uses credits. Normal mode keeps OCR '
               'entirely on this device.',
             ),
             actions: [
@@ -423,7 +423,7 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
                         style: TextStyle(color: Colors.white),
                       ),
                       subtitle: const Text(
-                        'Uses API tokens',
+                        'Uses credits',
                         style: TextStyle(color: Colors.white70),
                       ),
                     ),

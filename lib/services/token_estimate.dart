@@ -1,3 +1,4 @@
+import 'credit_pricing.dart';
 import 'text_ai_service.dart';
 
 class TokenEstimate {
@@ -15,11 +16,9 @@ class TokenEstimate {
   final Duration requestTimeout;
   final int confidencePercent;
 
-  static const int creditUsageMultiplier = 3;
+  int get creditLowerBound => CreditPricing.estimateLowerBound(lowerBound);
 
-  int get creditLowerBound => lowerBound * creditUsageMultiplier;
-
-  int get creditUpperBound => upperBound * creditUsageMultiplier;
+  int get creditUpperBound => CreditPricing.estimateUpperBound(upperBound);
 
   String get buttonLabel =>
       '${_format(creditLowerBound)}–${_format(creditUpperBound)} credits, '

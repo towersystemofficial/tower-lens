@@ -68,7 +68,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Send message'),
       200,
-      scrollable: find.byType(Scrollable),
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.tap(find.text('Send message'));
     await tester.pump();

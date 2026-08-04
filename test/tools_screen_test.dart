@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tower_lens/screens/tools_screen.dart';
 import 'package:tower_lens/services/library_service.dart';
+import 'package:tower_lens/services/credit_account_store.dart';
 import 'package:tower_lens/services/text_ai_service.dart';
 import 'package:tower_lens/widgets/prismatic_surface.dart';
 import 'package:tower_lens/widgets/tool_visual.dart';
@@ -18,6 +19,7 @@ void main() {
           textAiService: MockTextAiService(),
           usesRealAi: false,
           onConfigureAi: () {},
+          accountStore: PreviewCreditAccountStore(),
         ),
       ),
     );
@@ -49,6 +51,7 @@ void main() {
           textAiService: MockTextAiService(),
           usesRealAi: false,
           onConfigureAi: () {},
+          accountStore: PreviewCreditAccountStore(),
         ),
       ),
     );

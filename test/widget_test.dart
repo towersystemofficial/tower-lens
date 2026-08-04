@@ -88,6 +88,27 @@ void main() {
       lessThan(tester.getTopLeft(find.text('Shop')).dy),
     );
 
+    for (final title in [
+      'Tutorials',
+      'About Tower Lens',
+      'Terms of Service',
+      'Privacy Policy',
+      'Contact & Support',
+    ]) {
+      await tester.scrollUntilVisible(
+        find.text(title),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(find.text(title), findsOneWidget);
+    }
+
+    await tester.scrollUntilVisible(
+      find.text('General Settings'),
+      -200,
+      scrollable: find.byType(Scrollable).last,
+    );
+
     await tester.tap(find.text('General Settings'));
     await tester.pump(const Duration(seconds: 1));
     await tester.enterText(find.byType(TextFormField), 'sk-ant-test-key');

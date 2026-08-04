@@ -38,7 +38,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Accounts and purchases'),
       200,
-      scrollable: find.byType(Scrollable),
+      scrollable: find.byType(Scrollable).last,
     );
 
     expect(find.text('Accounts and purchases'), findsOneWidget);

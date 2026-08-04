@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../theme/appearance_settings.dart';
 import '../widgets/prismatic_surface.dart';
+import '../services/credit_account_store.dart';
+import 'shop_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   final bool usesRealAi;
   final VoidCallback onConfigureAi;
   final AppearanceSettings appearanceSettings;
+  final CreditAccountStore accountStore;
 
   const SettingsScreen({
     super.key,
     required this.usesRealAi,
     required this.onConfigureAi,
     required this.appearanceSettings,
+    required this.accountStore,
   });
 
   static const _helpSections = [
@@ -94,8 +99,20 @@ class SettingsScreen extends StatelessWidget {
           _SettingsCard(
             icon: Icons.storefront_outlined,
             title: const Text('Shop'),
-            subtitle: const Text('Plans and future upgrades'),
-            onTap: () => _openPlaceholder(context, 'Shop'),
+            subtitle: ListenableBuilder(
+              listenable: accountStore,
+              builder: (context, _) => Text(
+                '${NumberFormat.compact().format(accountStore.balance)} '
+                'credits · One-time credit packs',
+              ),
+            ),
+            onTap: () => Navigator.push<void>(
+              context,
+              prismaticPageRoute(
+                context: context,
+                builder: (_) => ShopScreen(accountStore: accountStore),
+              ),
+            ),
           ),
           const SizedBox(height: 28),
           const _SectionTitle(title: 'Help and information'),

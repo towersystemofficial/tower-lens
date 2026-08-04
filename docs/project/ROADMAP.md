@@ -303,7 +303,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 7. **Prepare for public distribution.** Build the shared production backend for the active app, add accounts/authentication and Google Play Billing, and resolve broad Android storage permission before store release. Price Check deployment and activation remain excluded here and are handled under Step 10.
 
-   - **Public-information UI complete:** Settings now opens real About Tower Lens, Terms of Service, Privacy Policy, and Contact & Support screens. Contact links to the public issue tracker and Support Developer opens Ko-fi. The legal text is deliberately marked pre-release and must be reviewed/finalized once the production backend, account deletion flow, and billing behavior exist.
+   - **Public-information UI complete:** Settings now opens real About Tower Lens, Terms of Service, Privacy Policy, Contact Developer, and Support Developer screens. Contact uses a private Web3Forms form with required subject/message fields and optional reply email; Support Developer opens Ko-fi. The legal text is deliberately marked pre-release and must be reviewed/finalized once the production backend, account deletion flow, and billing behavior exist.
    - **Tutorial remains separate:** the Tutorials destination is preserved as a placeholder, but the first-launch/setup tutorial is its own follow-up increment and is not bundled into the public-information UI.
 
    **Approved beta billing model:**

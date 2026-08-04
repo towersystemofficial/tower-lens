@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../services/credit_account_store.dart';
 import '../theme/appearance_settings.dart';
 import '../widgets/prismatic_surface.dart';
-import '../services/credit_account_store.dart';
+import 'public_information_screen.dart';
 import 'shop_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -19,29 +20,6 @@ class SettingsScreen extends StatelessWidget {
     required this.appearanceSettings,
     required this.accountStore,
   });
-
-  static const _helpSections = [
-    (
-      title: 'Tutorials',
-      subtitle: 'Learn how to use Switchboard',
-      icon: Icons.school_outlined,
-    ),
-    (
-      title: 'About App',
-      subtitle: 'Version and project information',
-      icon: Icons.info_outline,
-    ),
-    (
-      title: 'ToS',
-      subtitle: 'Read the app terms',
-      icon: Icons.description_outlined,
-    ),
-    (
-      title: 'Contact Developer',
-      subtitle: 'Send feedback or ask for help',
-      icon: Icons.mail_outline,
-    ),
-  ];
 
   void _openPlaceholder(BuildContext context, String title) {
     Navigator.push<void>(
@@ -60,6 +38,16 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _openInformation(BuildContext context, PublicInformationType type) {
+    Navigator.push<void>(
+      context,
+      prismaticPageRoute(
+        context: context,
+        builder: (_) => PublicInformationScreen(type: type),
       ),
     );
   }
@@ -116,16 +104,44 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 28),
           const _SectionTitle(title: 'Help and information'),
-          for (final section in _helpSections)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _SettingsCard(
-                icon: section.icon,
-                title: Text(section.title),
-                subtitle: Text(section.subtitle),
-                onTap: () => _openPlaceholder(context, section.title),
-              ),
-            ),
+          _SettingsCard(
+            icon: Icons.school_outlined,
+            title: const Text('Tutorials'),
+            subtitle: const Text('Coming in a separate build step'),
+            onTap: () => _openPlaceholder(context, 'Tutorials'),
+          ),
+          const SizedBox(height: 10),
+          _SettingsCard(
+            icon: Icons.info_outline,
+            title: const Text('About Tower Lens'),
+            subtitle: const Text('Version, purpose, and project information'),
+            onTap: () =>
+                _openInformation(context, PublicInformationType.about),
+          ),
+          const SizedBox(height: 10),
+          _SettingsCard(
+            icon: Icons.description_outlined,
+            title: const Text('Terms of Service'),
+            subtitle: const Text('Pre-release terms for using Tower Lens'),
+            onTap: () =>
+                _openInformation(context, PublicInformationType.terms),
+          ),
+          const SizedBox(height: 10),
+          _SettingsCard(
+            icon: Icons.privacy_tip_outlined,
+            title: const Text('Privacy Policy'),
+            subtitle: const Text('How local and AI-processed data is handled'),
+            onTap: () =>
+                _openInformation(context, PublicInformationType.privacy),
+          ),
+          const SizedBox(height: 10),
+          _SettingsCard(
+            icon: Icons.mail_outline,
+            title: const Text('Contact & Support'),
+            subtitle: const Text('Feedback, help, and support the developer'),
+            onTap: () =>
+                _openInformation(context, PublicInformationType.contact),
+          ),
         ],
       ),
     );

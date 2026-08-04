@@ -1,22 +1,26 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 
 import '../services/external_link_service.dart';
 import '../widgets/prismatic_surface.dart';
 
-const _projectUrl = 'https://github.com/towersystemofficial/tower-lens';
-const _issuesUrl = 'https://github.com/towersystemofficial/tower-lens/issues';
 const _kofiUrl = 'https://ko-fi.com/towersys';
+const _web3FormsAccessKey = '048fc029-bddf-43ef-9bae-a2564ff4caa2';
 
 class PublicInformationScreen extends StatelessWidget {
   const PublicInformationScreen({
     super.key,
     required this.type,
     this.linkService = const ExternalLinkService(),
+    this.contactFormService = const Web3FormsContactFormService(),
   });
 
   final PublicInformationType type;
   final ExternalLinkService linkService;
+  final ContactFormService contactFormService;
 
   Future<void> _openLink(BuildContext context, String url) async {
     try {
@@ -40,45 +44,42 @@ class PublicInformationScreen extends StatelessWidget {
           PublicInformationType.terms => _terms(context),
           PublicInformationType.privacy => _privacy(context),
           PublicInformationType.contact => _contact(context),
+          PublicInformationType.support => _support(context),
         },
       ),
     );
   }
 
   List<Widget> _about(BuildContext context) => [
-        _hero(
-          context,
-          icon: Icons.auto_awesome_outlined,
+        const _InfoCard(
           title: 'Tower Lens',
-          body: 'Scan or paste difficult text and turn it into something '
-              'easier to understand.',
+          body: 'Version 0.0.63\n\nDeveloper: TowerSys',
         ),
         const SizedBox(height: 12),
         const _InfoCard(
-          title: 'What it does',
-          body: 'Tower Lens can summarize dense writing, simplify vocabulary, '
-              'review Terms of Service and privacy policies, and help inspect '
-              'ingredient labels against a personal watchlist.',
-        ),
-        const SizedBox(height: 12),
-        const _InfoCard(
-          title: 'Built around your data',
-          body: 'Your library and watchlist stay on your device unless you '
-              'choose an AI-powered action. You control what is saved and can '
-              'delete it whenever you want.',
-        ),
-        const SizedBox(height: 12),
-        _ActionCard(
-          icon: Icons.code,
-          title: 'View the project',
-          subtitle: 'Source code, releases, and development progress',
-          onTap: () => _openLink(context, _projectUrl),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Version 0.1.0 (1) · Pre-release beta',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodySmall,
+          title: 'About the app',
+          body: 'Tower Lens is an AI-powered application designed to assist '
+              'its users in extracting information from everyday sources. '
+              'Paste text, import documents/images, or use your camera to '
+              'quickly parse and simplify information.\n\n'
+              'Tower Lens is an assistive tool, and is not a replacement for '
+              'human faculties or reasoning. It is designed to assist human '
+              'capabilities, not replace them, as your ability to reason '
+              'exists for a purpose. Because of this, all tools are designed '
+              'to convert information into more accessible formats, without '
+              'doing any thinking for the users.\n\n'
+              'Tower Lens was developed for my own personal use, to do jobs '
+              'that would help friends of mine and me. It is designed with a '
+              'philosophy of transparency, and catering to the user-first. '
+              'All user data is kept as local and private as possible, I '
+              'store none of it. The only information that goes onto the '
+              'internet is the bare minimum necessary for the AI to process, '
+              'and any information you receive from using the app is stored '
+              'on your device so you may access it at any time, even without '
+              'the app installed.\n\n'
+              'Note that AI-generated results may contain mistakes, so legal, '
+              'medical, financial, safety, and other important information '
+              'should always be verified.',
         ),
       ];
 
@@ -173,30 +174,26 @@ class PublicInformationScreen extends StatelessWidget {
           context,
           icon: Icons.forum_outlined,
           title: 'Contact the developer',
-          body: 'Report a problem, request a feature, or ask for help with '
-              'Tower Lens.',
+          body: 'Send a private message about Tower Lens.',
         ),
         const SizedBox(height: 12),
-        _ActionCard(
-          icon: Icons.bug_report_outlined,
-          title: 'Feedback and support',
-          subtitle: 'Open the Tower Lens issue tracker',
-          onTap: () => _openLink(context, _issuesUrl),
+        _ContactForm(service: contactFormService),
+      ];
+
+  List<Widget> _support(BuildContext context) => [
+        _hero(
+          context,
+          icon: Icons.volunteer_activism_outlined,
+          title: 'Support the developer',
+          body: 'If Tower Lens helps you, you can support its continued '
+              'development through Ko-fi.',
         ),
         const SizedBox(height: 12),
         _ActionCard(
           icon: Icons.volunteer_activism_outlined,
-          title: 'Support Developer',
-          subtitle: 'Help fund development through Ko-fi',
+          title: 'Open Ko-fi',
+          subtitle: 'ko-fi.com/towersys',
           onTap: () => _openLink(context, _kofiUrl),
-        ),
-        const SizedBox(height: 12),
-        const _InfoCard(
-          title: 'Before reporting a bug',
-          body: 'Please include what you were trying to do, what happened, your '
-              'app version, and whether the problem happens again. Never post '
-              'API keys, payment details, private documents, or other sensitive '
-              'information in a public issue.',
         ),
       ];
 
@@ -234,11 +231,167 @@ enum PublicInformationType {
   about('About Tower Lens'),
   terms('Terms of Service'),
   privacy('Privacy Policy'),
-  contact('Contact & Support');
+  contact('Contact Developer'),
+  support('Support Developer');
 
   const PublicInformationType(this.title);
   final String title;
 }
+
+abstract class ContactFormService {
+  const ContactFormService();
+
+  Future<void> submit({
+    required String subject,
+    required String message,
+    String? email,
+  });
+}
+
+class Web3FormsContactFormService extends ContactFormService {
+  const Web3FormsContactFormService();
+
+  @override
+  Future<void> submit({
+    required String subject,
+    required String message,
+    String? email,
+  }) async {
+    final response = await http.post(
+      Uri.parse('https://api.web3forms.com/submit'),
+      headers: const {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'access_key': _web3FormsAccessKey,
+        'subject': subject,
+        'message': message,
+        'from_name': 'Tower Lens contact form',
+        if (email != null && email.isNotEmpty) 'email': email,
+      }),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Web3Forms rejected the message.');
+    }
+  }
+}
+
+class _ContactForm extends StatefulWidget {
+  const _ContactForm({required this.service});
+
+  final ContactFormService service;
+
+  @override
+  State<_ContactForm> createState() => _ContactFormState();
+}
+
+class _ContactFormState extends State<_ContactForm> {
+  final _formKey = GlobalKey<FormState>();
+  final _subjectController = TextEditingController();
+  final _messageController = TextEditingController();
+  final _emailController = TextEditingController();
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _subjectController.dispose();
+    _messageController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _submitting = true);
+    try {
+      await widget.service.submit(
+        subject: _subjectController.text.trim(),
+        message: _messageController.text.trim(),
+        email: _emailController.text.trim(),
+      );
+      if (!mounted) return;
+      _subjectController.clear();
+      _messageController.clear();
+      _emailController.clear();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Message sent. Thank you!')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not send your message. Please try again.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  String? _required(String? value, String field) =>
+      value == null || value.trim().isEmpty ? '$field is required.' : null;
+
+  String? _email(String? value) {
+    final email = value?.trim() ?? '';
+    if (email.isEmpty) return null;
+    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)
+        ? null
+        : 'Enter a valid email address.';
+  }
+
+  @override
+  Widget build(BuildContext context) => GlassCard(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: _subjectController,
+                decoration: const InputDecoration(
+                  labelText: 'Subject',
+                  border: OutlineInputBorder(),
+                ),
+                textInputAction: TextInputAction.next,
+                validator: (value) => _required(value, 'Subject'),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _messageController,
+                decoration: const InputDecoration(
+                  labelText: 'Message',
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                ),
+                minLines: 5,
+                maxLines: 10,
+                validator: (value) => _required(value, 'Message'),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email (optional)',
+                  helperText: 'Only include this if you want a reply.',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                autofillHints: const [AutofillHints.email],
+                validator: _email,
+              ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: _submitting ? null : _submit,
+                icon: _submitting
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.send_outlined),
+                label: Text(_submitting ? 'Sending…' : 'Send message'),
+              ),
+            ],
+          ),
+        ),
+      );
 
 class _InfoCard extends StatelessWidget {
   const _InfoCard({required this.title, required this.body});

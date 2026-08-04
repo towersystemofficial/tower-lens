@@ -392,6 +392,7 @@ class _ContactFormState extends State<_ContactForm> {
           ),
         ),
       );
+}
 
 class _InfoCard extends StatelessWidget {
   const _InfoCard({required this.title, required this.body});

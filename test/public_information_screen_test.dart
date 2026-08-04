@@ -44,17 +44,50 @@ void main() {
     expect(find.text('Accounts and purchases'), findsOneWidget);
   });
 
-  testWidgets('contact screen opens Ko-fi through the native link boundary',
+  testWidgets('support screen opens Ko-fi through the native link boundary',
       (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: PublicInformationScreen(type: PublicInformationType.support),
+      ),
+    );
+
+    await tester.tap(find.text('Open Ko-fi'));
+    await tester.pump();
+
+    expect(openedUrls, ['https://ko-fi.com/towersys']);
+  });
+
+  testWidgets('contact form requires subject and message', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: PublicInformationScreen(type: PublicInformationType.contact),
       ),
     );
 
-    await tester.tap(find.text('Support Developer'));
+    await tester.scrollUntilVisible(
+      find.text('Send message'),
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.tap(find.text('Send message'));
     await tester.pump();
 
-    expect(openedUrls, ['https://ko-fi.com/towersys']);
+    expect(find.text('Subject is required.'), findsOneWidget);
+    expect(find.text('Message is required.'), findsOneWidget);
+    expect(find.text('Only include this if you want a reply.'), findsOneWidget);
+  });
+
+  testWidgets('about screen uses the approved copy and version', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: PublicInformationScreen(type: PublicInformationType.about),
+      ),
+    );
+
+    expect(find.textContaining('Version 0.0.63'), findsOneWidget);
+    expect(find.textContaining('Developer: TowerSys'), findsOneWidget);
+    expect(find.textContaining('human faculties or reasoning'), findsOneWidget);
+    expect(find.text('View the project'), findsNothing);
   });
 }

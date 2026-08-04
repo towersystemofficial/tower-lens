@@ -9,6 +9,7 @@ import '../services/token_estimate.dart';
 import '../widgets/markdown_content.dart';
 import '../widgets/markdown_editor.dart';
 import '../widgets/library_save_dialog.dart';
+import '../widgets/report_ai_output_button.dart';
 import 'camera_scan_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -443,6 +444,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   emptyPlaceholder: 'Results will appear here.',
                 ),
               ),
+              if (_hasSuccessfulOutput) ...[
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ReportAiOutputButton(output: _output),
+                ),
+              ],
             ],
           ),
         ),

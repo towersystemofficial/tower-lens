@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'services/library_service.dart';
+import 'services/credit_account_store.dart';
 import 'services/text_ai_service.dart';
 import 'services/text_ai_service_factory.dart';
 import 'screens/library_screen.dart';
@@ -211,11 +212,18 @@ class _RootShellState extends State<RootShell> {
   static const _anthropicApiKeyPreference = 'anthropic_api_key';
 
   final LibraryService _libraryService = LibraryService();
+  final CreditAccountStore _creditAccountStore = PreviewCreditAccountStore();
   late TextAiService _textAiService;
   int _index = 0;
   bool _ready = false;
   bool _usesRealAi = false;
   String _apiKey = '';
+
+  @override
+  void dispose() {
+    _creditAccountStore.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -225,7 +233,10 @@ class _RootShellState extends State<RootShell> {
 
   Future<void> _init() async {
     final preferences = await SharedPreferences.getInstance();
-    await _libraryService.load();
+    await Future.wait([
+      _libraryService.load(),
+      _creditAccountStore.load(),
+    ]);
     final apiKey = preferences.getString(_anthropicApiKeyPreference) ?? '';
     if (!mounted) return;
     setState(() {
@@ -278,12 +289,14 @@ class _RootShellState extends State<RootShell> {
         textAiService: _textAiService,
         usesRealAi: _usesRealAi,
         onConfigureAi: _configureApiKey,
+        accountStore: _creditAccountStore,
       ),
       LibraryScreen(libraryService: _libraryService),
       SettingsScreen(
         usesRealAi: _usesRealAi,
         onConfigureAi: _configureApiKey,
         appearanceSettings: widget.appearanceSettings,
+        accountStore: _creditAccountStore,
       ),
     ];
 

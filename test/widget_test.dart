@@ -88,6 +88,19 @@ void main() {
       lessThan(tester.getTopLeft(find.text('Shop')).dy),
     );
 
+    await tester.tap(find.text('General Settings'));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.enterText(find.byType(TextFormField), 'sk-ant-test-key');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Anthropic AI configured'), findsOneWidget);
+    expect(
+      find.text('API key saved. Tower Lens will use real Anthropic responses.'),
+      findsOneWidget,
+    );
+
     for (final title in [
       'Tutorials',
       'About Tower Lens',
@@ -103,25 +116,6 @@ void main() {
       );
       expect(find.text(title), findsOneWidget);
     }
-
-    await tester.scrollUntilVisible(
-      find.text('General Settings'),
-      -200,
-      scrollable: find.byType(Scrollable).last,
-    );
-
-    await tester.tap(find.text('General Settings'));
-    await tester.pump(const Duration(seconds: 1));
-    await tester.enterText(find.byType(TextFormField), 'sk-ant-test-key');
-    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
-    await tester.pump(const Duration(seconds: 1));
-
-    expect(tester.takeException(), isNull);
-    expect(find.text('Anthropic AI configured'), findsOneWidget);
-    expect(
-      find.text('API key saved. Tower Lens will use real Anthropic responses.'),
-      findsOneWidget,
-    );
   });
 
   testWidgets('accessibility appearance controls are available',

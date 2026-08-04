@@ -34,6 +34,13 @@ void main() {
     expect(find.text('Pre-release Privacy Policy'), findsOneWidget);
     expect(find.text('Stored on your device'), findsOneWidget);
     expect(find.text('Sent for AI processing'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Accounts and purchases'),
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+
     expect(find.text('Accounts and purchases'), findsOneWidget);
   });
 

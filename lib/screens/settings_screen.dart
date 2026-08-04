@@ -137,10 +137,18 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 10),
           _SettingsCard(
             icon: Icons.mail_outline,
-            title: const Text('Contact & Support'),
-            subtitle: const Text('Feedback, help, and support the developer'),
+            title: const Text('Contact Developer'),
+            subtitle: const Text('Send a private message'),
             onTap: () =>
                 _openInformation(context, PublicInformationType.contact),
+          ),
+          const SizedBox(height: 10),
+          _SettingsCard(
+            icon: Icons.volunteer_activism_outlined,
+            title: const Text('Support Developer'),
+            subtitle: const Text('Support TowerSys through Ko-fi'),
+            onTap: () =>
+                _openInformation(context, PublicInformationType.support),
           ),
         ],
       ),

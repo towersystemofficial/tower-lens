@@ -1,23 +1,36 @@
 class CreditPricing {
   const CreditPricing._();
 
-  static const int usageMultiplierNumerator = 315;
+  static const int usageMultiplierNumerator = 350;
   static const int usageMultiplierDenominator = 100;
   static const int creditsPerDollar = 50000;
 
-  /// The authoritative charge for completed Claude usage.
+  /// The authoritative charge for one AI request.
   ///
-  /// The backend must pass the sum of Claude's reported input and output
-  /// tokens and debit the returned whole-credit value.
-  static int chargeForActualTokens(int providerTokens) =>
+  /// A user is charged only when the request produced a usable result. Provider
+  /// usage from failed, empty, invalid, or otherwise unusable responses is a
+  /// Tower Systems cost and must never be deducted from the user's balance.
+  static int chargeForCompletedRequest({
+    required int inputTokens,
+    required int outputTokens,
+    required bool hasUsableOutput,
+  }) {
+    if (!hasUsableOutput) return 0;
+    if (inputTokens < 0 || outputTokens < 0) {
+      throw ArgumentError('Reported token usage cannot be negative.');
+    }
+    return _chargeForProviderTokens(inputTokens + outputTokens);
+  }
+
+  static int _chargeForProviderTokens(int providerTokens) =>
       _divideRoundUp(providerTokens * usageMultiplierNumerator,
           usageMultiplierDenominator);
 
   static int estimateLowerBound(int providerTokens) =>
-      _roundDown(chargeForActualTokens(providerTokens), 50);
+      _roundDown(_chargeForProviderTokens(providerTokens), 50);
 
   static int estimateUpperBound(int providerTokens) =>
-      _roundUp(chargeForActualTokens(providerTokens), 50);
+      _roundUp(_chargeForProviderTokens(providerTokens), 50);
 
   static int normalPurchaseCredits(int wholeDollars) =>
       wholeDollars * creditsPerDollar;

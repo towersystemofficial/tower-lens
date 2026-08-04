@@ -303,6 +303,9 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 7. **Prepare for public distribution.** Build the shared production backend for the active app, add accounts/authentication and Google Play Billing, and resolve broad Android storage permission before store release. Price Check deployment and activation remain excluded here and are handled under Step 10.
 
+   - **Public-information UI complete:** Settings now opens real About Tower Lens, Terms of Service, Privacy Policy, and Contact & Support screens. Contact links to the public issue tracker and Support Developer opens Ko-fi. The legal text is deliberately marked pre-release and must be reviewed/finalized once the production backend, account deletion flow, and billing behavior exist.
+   - **Tutorial remains separate:** the Tutorials destination is preserved as a placeholder, but the first-launch/setup tutorial is its own follow-up increment and is not bundled into the public-information UI.
+
    **Approved beta billing model:**
    - Use one-time credit packs only. Do not launch with a subscription. A subscription may be reconsidered later only if users ask for it.
    - Let users explore the app and tutorial without an account, but require `Continue with Google` before buying credits so the backend can preserve purchased balances across reinstalls and devices.
@@ -331,4 +334,4 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 ## 10. Next task for Codex
 
-**Prepare the active four-tool app for public distribution.** Define and implement the shared backend/account/metering boundary and resolve the Android storage-permission release blocker. Keep Price Check dormant until its Step 10 beta work is intentionally resumed; the blurb and shader-research stages now occur before beta testing.
+**Build the tutorial as its own public-distribution increment.** Add the first-launch/setup tutorial without changing the completed public-information screens. After the tutorial, define and implement the shared backend/account/metering boundary and resolve the Android storage-permission release blocker. Keep Price Check dormant until its Step 10 beta work is intentionally resumed.

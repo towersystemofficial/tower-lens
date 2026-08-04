@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../services/library_service.dart';
+import '../services/credit_account_store.dart';
 import '../services/text_ai_service.dart';
 import '../services/tool_usage_service.dart';
 import '../theme/appearance_settings.dart';
 import '../widgets/prismatic_surface.dart';
 import '../widgets/tool_visual.dart';
+import '../widgets/credit_balance_badge.dart';
 import 'home_screen.dart';
 import 'tos_screen.dart';
 import 'watchlist_screen.dart';
+import 'shop_screen.dart';
 
 class ToolsScreen extends StatefulWidget {
   final LibraryService libraryService;
@@ -16,6 +19,7 @@ class ToolsScreen extends StatefulWidget {
   final bool usesRealAi;
   final VoidCallback onConfigureAi;
   final ToolUsageService usageService;
+  final CreditAccountStore accountStore;
 
   const ToolsScreen({
     super.key,
@@ -23,6 +27,7 @@ class ToolsScreen extends StatefulWidget {
     required this.textAiService,
     required this.usesRealAi,
     required this.onConfigureAi,
+    required this.accountStore,
     this.usageService = const ToolUsageService(),
   });
 
@@ -127,13 +132,32 @@ class _ToolsScreenState extends State<ToolsScreen> {
     );
   }
 
+  void _openShop() {
+    Navigator.push<void>(
+      context,
+      prismaticPageRoute(
+        context: context,
+        builder: (_) => ShopScreen(accountStore: widget.accountStore),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final featured = _featuredTool;
     final remaining = _tools.where((tool) => tool.id != featured.id).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Tools')),
+      appBar: AppBar(
+        title: const Text('Tools'),
+        actions: [
+          CreditBalanceBadge(
+            accountStore: widget.accountStore,
+            onTap: _openShop,
+          ),
+          const SizedBox(width: 12),
+        ],
+      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(

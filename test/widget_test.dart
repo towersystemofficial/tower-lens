@@ -93,7 +93,8 @@ void main() {
       'About Tower Lens',
       'Terms of Service',
       'Privacy Policy',
-      'Contact & Support',
+      'Contact Developer',
+      'Support Developer',
     ]) {
       await tester.scrollUntilVisible(
         find.text(title),

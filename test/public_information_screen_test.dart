@@ -85,9 +85,66 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('Version 0.0.63'), findsOneWidget);
+    expect(find.textContaining('Version 0.0.64'), findsOneWidget);
     expect(find.textContaining('Developer: TowerSys'), findsOneWidget);
     expect(find.textContaining('human faculties or reasoning'), findsOneWidget);
     expect(find.text('View the project'), findsNothing);
+  });
+
+  testWidgets('reported output prefills the contact form', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: PublicInformationScreen(
+          type: PublicInformationType.contact,
+          initialContactSubject: 'Reported AI output',
+          initialContactMessage: 'Example output',
+        ),
+      ),
+    );
+
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is TextFormField &&
+            widget.controller?.text == 'Reported AI output',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is TextFormField &&
+            widget.controller?.text == 'Example output',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('terms explain the 3.5-times credit charge', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: PublicInformationScreen(type: PublicInformationType.terms),
+      ),
+    );
+
+    await tester.scrollUntilVisible(
+      find.text('Credits and purchases'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+
+    expect(find.textContaining('multiplied by 3.5'), findsOneWidget);
+    expect(find.textContaining('no credits are deducted'), findsOneWidget);
+    expect(
+      find.textContaining('Tower Systems absorbs that cost'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('direct AI processing costs'), findsOneWidget);
+    expect(
+      find.textContaining('server and infrastructure costs'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('developer compensation'), findsOneWidget);
+    expect(find.textContaining('Google Play service fees'), findsOneWidget);
   });
 }

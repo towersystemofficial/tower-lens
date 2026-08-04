@@ -100,6 +100,22 @@ void main() {
       find.text('API key saved. Tower Lens will use real Anthropic responses.'),
       findsOneWidget,
     );
+
+    for (final title in [
+      'Tutorials',
+      'About Tower Lens',
+      'Terms of Service',
+      'Privacy Policy',
+      'Contact Developer',
+      'Support Developer',
+    ]) {
+      await tester.scrollUntilVisible(
+        find.text(title),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(find.text(title), findsOneWidget);
+    }
   });
 
   testWidgets('accessibility appearance controls are available',

@@ -1,5 +1,7 @@
 package com.example.tower_lens
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
@@ -12,6 +14,7 @@ import java.io.ByteArrayInputStream
 class MainActivity : FlutterActivity() {
     private val documentImportChannel = "com.example.tower_lens/document_import"
     private val appearanceChannel = "com.example.tower_lens/appearance"
+    private val externalLinksChannel = "com.example.tower_lens/external_links"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -70,6 +73,29 @@ class MainActivity : FlutterActivity() {
                     }
                 }
             }.start()
+        }
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            externalLinksChannel,
+        ).setMethodCallHandler { call, result ->
+            if (call.method != "open") {
+                result.notImplemented()
+                return@setMethodCallHandler
+            }
+
+            val url = call.argument<String>("url")
+            if (url == null || (!url.startsWith("https://") && !url.startsWith("mailto:"))) {
+                result.error("invalid_url", "Tower Lens blocked an invalid link.", null)
+                return@setMethodCallHandler
+            }
+
+            try {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                result.success(true)
+            } catch (error: Exception) {
+                result.error("link_not_opened", "No app is available to open this link.", error.message)
+            }
         }
     }
 }

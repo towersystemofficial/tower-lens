@@ -4,7 +4,7 @@ import 'package:tower_lens/services/text_ai_service.dart';
 import 'package:tower_lens/services/token_estimate.dart';
 
 void main() {
-  test('shows a 3.15-times credit estimate for likely token usage', () {
+  test('shows a 3.5-times credit estimate for likely token usage', () {
     final estimate = TextAiTokenEstimator.estimate(
       taskType: TextAiTaskType.summary,
       sourceText: List.filled(500, 'word').join(' '),
@@ -25,9 +25,34 @@ void main() {
     expect(estimate.buttonLabel, contains('credits, 80% confidence'));
   });
 
-  test('rounds the authoritative 3.15-times actual-usage charge up', () {
-    expect(CreditPricing.chargeForActualTokens(100), 315);
-    expect(CreditPricing.chargeForActualTokens(101), 319);
+  test('rounds the authoritative 3.5-times actual-usage charge up', () {
+    expect(
+      CreditPricing.chargeForCompletedRequest(
+        inputTokens: 60,
+        outputTokens: 40,
+        hasUsableOutput: true,
+      ),
+      350,
+    );
+    expect(
+      CreditPricing.chargeForCompletedRequest(
+        inputTokens: 60,
+        outputTokens: 41,
+        hasUsableOutput: true,
+      ),
+      354,
+    );
+  });
+
+  test('does not charge failed requests even when the provider used tokens', () {
+    expect(
+      CreditPricing.chargeForCompletedRequest(
+        inputTokens: 1200,
+        outputTokens: 83,
+        hasUsableOutput: false,
+      ),
+      0,
+    );
   });
 
   test('uses clean whole-dollar purchase grants and first-purchase bonus', () {

@@ -3,6 +3,7 @@ import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
 import '../services/watchlist_service.dart';
 import '../widgets/library_save_dialog.dart';
+import '../widgets/report_ai_output_button.dart';
 import 'camera_scan_screen.dart';
 
 class WatchlistScreen extends StatefulWidget {
@@ -349,6 +350,13 @@ class _WatchlistScreenState extends State<WatchlistScreen> with SingleTickerProv
                         '${widget.usesRealAi ? "" : "\n\nConfigure an Anthropic API key for categorical and contextual analysis."}',
               ),
             ),
+            if (_analysis != null) ...[
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerRight,
+                child: ReportAiOutputButton(output: _analysis!),
+              ),
+            ],
             if (_checkError != null) ...[
               const SizedBox(height: 8),
               Text(

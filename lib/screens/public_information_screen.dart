@@ -16,11 +16,15 @@ class PublicInformationScreen extends StatelessWidget {
     required this.type,
     this.linkService = const ExternalLinkService(),
     this.contactFormService = const Web3FormsContactFormService(),
+    this.initialContactSubject = '',
+    this.initialContactMessage = '',
   });
 
   final PublicInformationType type;
   final ExternalLinkService linkService;
   final ContactFormService contactFormService;
+  final String initialContactSubject;
+  final String initialContactMessage;
 
   Future<void> _openLink(BuildContext context, String url) async {
     try {
@@ -53,7 +57,7 @@ class PublicInformationScreen extends StatelessWidget {
   List<Widget> _about(BuildContext context) => [
         const _InfoCard(
           title: 'Tower Lens',
-          body: 'Version 0.0.63\n\nDeveloper: TowerSys',
+          body: 'Version 0.0.64\n\nDeveloper: TowerSys',
         ),
         const SizedBox(height: 12),
         const _InfoCard(
@@ -106,9 +110,18 @@ class PublicInformationScreen extends StatelessWidget {
           title: 'Credits and purchases',
           body: 'Paid credits are consumable and are used when AI requests are '
               'completed. The app shows an estimate before a run; the final '
-              'charge is based on actual usage. Purchases and refunds are also '
-              'subject to Google Play policies. Subscriptions and automatic '
-              'charges are not offered in the beta.',
+              'charge is based on actual input and output token usage reported '
+              'by the AI provider. The final charge is the total reported '
+              'tokens multiplied by 3.5, rounded up to the next whole credit. '
+              'If a request does not produce a usable result, no credits are '
+              'deducted, even if the AI provider reports token usage for the '
+              'failed request. Tower Systems absorbs that cost.\n\n'
+              'The 3.5x multiplier is intended to allocate 1x toward direct AI '
+              'processing costs, 1x toward server and infrastructure costs, '
+              '1x toward developer compensation and continued development, '
+              'and 0.5x toward Google Play service fees.\n\n'
+              'Purchases and refunds are also subject to Google Play policies. '
+              'Subscriptions and automatic charges are not offered in the beta.',
         ),
         const SizedBox(height: 12),
         const _InfoCard(
@@ -177,7 +190,11 @@ class PublicInformationScreen extends StatelessWidget {
           body: 'Send a private message about Tower Lens.',
         ),
         const SizedBox(height: 12),
-        _ContactForm(service: contactFormService),
+        _ContactForm(
+          service: contactFormService,
+          initialSubject: initialContactSubject,
+          initialMessage: initialContactMessage,
+        ),
       ];
 
   List<Widget> _support(BuildContext context) => [
@@ -275,9 +292,15 @@ class Web3FormsContactFormService extends ContactFormService {
 }
 
 class _ContactForm extends StatefulWidget {
-  const _ContactForm({required this.service});
+  const _ContactForm({
+    required this.service,
+    required this.initialSubject,
+    required this.initialMessage,
+  });
 
   final ContactFormService service;
+  final String initialSubject;
+  final String initialMessage;
 
   @override
   State<_ContactForm> createState() => _ContactFormState();
@@ -285,10 +308,17 @@ class _ContactForm extends StatefulWidget {
 
 class _ContactFormState extends State<_ContactForm> {
   final _formKey = GlobalKey<FormState>();
-  final _subjectController = TextEditingController();
-  final _messageController = TextEditingController();
+  late final TextEditingController _subjectController;
+  late final TextEditingController _messageController;
   final _emailController = TextEditingController();
   bool _submitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _subjectController = TextEditingController(text: widget.initialSubject);
+    _messageController = TextEditingController(text: widget.initialMessage);
+  }
 
   @override
   void dispose() {

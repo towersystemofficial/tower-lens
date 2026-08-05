@@ -1,7 +1,7 @@
 name: tower_lens
 description: "Scan or paste dense text and ask what it means."
 publish_to: 'none'
-version: 0.0.63+63
+version: 0.0.64+64
 
 environment:
   sdk: ^3.12.0

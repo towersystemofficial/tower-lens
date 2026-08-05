@@ -9,6 +9,7 @@ import '../services/token_estimate.dart';
 import '../widgets/markdown_content.dart';
 import '../widgets/markdown_editor.dart';
 import '../widgets/library_save_dialog.dart';
+import '../widgets/report_ai_output_button.dart';
 import 'camera_scan_screen.dart';
 
 class TosScreen extends StatefulWidget {
@@ -327,6 +328,13 @@ class _TosScreenState extends State<TosScreen> {
                   emptyPlaceholder: 'Results will appear here.',
                 ),
               ),
+              if (_hasSuccessfulOutput) ...[
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ReportAiOutputButton(output: _output),
+                ),
+              ],
               const SizedBox(height: 12),
               Text('Informational summary only -- not legal advice.',
                   style: TextStyle(

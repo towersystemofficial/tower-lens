@@ -44,6 +44,16 @@ void main() {
     );
   });
 
+  test('requires the highest estimate rounded up to the next thousand', () {
+    expect(CreditPricing.requiredBalanceForEstimate(1), 1000);
+    expect(CreditPricing.requiredBalanceForEstimate(1000), 1000);
+    expect(CreditPricing.requiredBalanceForEstimate(1001), 2000);
+    expect(
+      () => CreditPricing.requiredBalanceForEstimate(-1),
+      throwsArgumentError,
+    );
+  });
+
   test('does not charge failed requests even when the provider used tokens', () {
     expect(
       CreditPricing.chargeForCompletedRequest(

@@ -8,7 +8,6 @@ import '../widgets/prismatic_surface.dart';
 import 'public_information_screen.dart';
 import 'planned_features_screen.dart';
 import 'shop_screen.dart';
-import 'tutorial_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   final bool usesRealAi;
@@ -25,6 +24,27 @@ class SettingsScreen extends StatelessWidget {
     required this.accountStore,
     required this.featureSettings,
   });
+
+  void _openPlaceholder(BuildContext context, String title) {
+    Navigator.push<void>(
+      context,
+      prismaticPageRoute(
+        context: context,
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: Text(title)),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                '$title will be filled out in a later redesign increment.',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   void _openInformation(BuildContext context, PublicInformationType type) {
     Navigator.push<void>(
@@ -101,14 +121,8 @@ class SettingsScreen extends StatelessWidget {
           _SettingsCard(
             icon: Icons.school_outlined,
             title: const Text('Tutorials'),
-            subtitle: const Text('Learn how to use Tower Lens'),
-            onTap: () => Navigator.push<void>(
-              context,
-              prismaticPageRoute(
-                context: context,
-                builder: (_) => const TutorialScreen(),
-              ),
-            ),
+            subtitle: const Text('Coming in a separate build step'),
+            onTap: () => _openPlaceholder(context, 'Tutorials'),
           ),
           const SizedBox(height: 10),
           _SettingsCard(

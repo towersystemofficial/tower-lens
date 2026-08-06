@@ -57,6 +57,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
           title: 'Text Analysis',
           initialPreset: TextAiTaskType.summary,
           allowCustomInstructions: false,
+          accountStore: widget.accountStore,
         ),
       ),
       _ToolDefinition(
@@ -70,6 +71,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
           textAiService: widget.textAiService,
           usesRealAi: widget.usesRealAi,
           onConfigureAi: widget.onConfigureAi,
+          accountStore: widget.accountStore,
         ),
       ),
       _ToolDefinition(
@@ -97,6 +99,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
           onConfigureAi: widget.onConfigureAi,
           title: 'Custom Instructions',
           showPresets: false,
+          accountStore: widget.accountStore,
         ),
       ),
     ];

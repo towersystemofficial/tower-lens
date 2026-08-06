@@ -8,7 +8,9 @@ Intended users: people dealing with dense or high-friction text -- students, peo
 
 Core non-negotiable principles: offline-first/local-by-default storage, user-controlled deletion, no ads (unless explicitly revisited later), no forced subscriptions, and no provider API secrets ever shipped inside a production client.
 
-## 2. Current architecture and dependencies (verified against `main` after merged PR #28)
+**Project boundary:** This roadmap covers Tower Lens only. Other Tower Systems applications and repositories are separate products; they are not former names, foundations, or replatforming stages of Tower Lens.
+
+## 2. Current architecture and dependencies (reconciled against `main` after merged PR #64)
 
 **Framework:** Flutter, Android-first. iOS/other platforms are untouched `flutter create` scaffolding only.
 
@@ -52,9 +54,9 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 | Feature | Status |
 |---|---|
-| Home screen: text/instruction input, mocked run, save to library | Implemented (mocked AI) |
+| Home screen: text/instruction input, AI run, save to library | Implemented; mock fallback and private direct-Anthropic development path both remain available |
 | Local library: save/browse/search/sort/filter/delete, real files, survives uninstall | Implemented |
-| ToS/privacy mode: paste, mocked structured summary, save | Implemented (mocked AI) |
+| ToS/privacy mode: paste/import, structured analysis, save | Implemented; mock fallback and private direct-Anthropic development path both remain available |
 | Ingredient/allergy watchlist: manage list, high-fidelity scan, multi-pass AI risk analysis | **Implemented and device-verified through PR #45** |
 | Camera + OCR: live local recognition plus optional Claude-assisted High-Fidelity Mode | **Implemented and device-verified through PR #44** — High-Fidelity Mode is substantially more accurate; hostile real-world OCR stress testing is moved to beta testing |
 | Cohesive UI/UX redesign beyond the functional MVP shell | **Implemented and device-verified** — navigation, launcher layout, appearance/accessibility, Settings organization, theme consistency, crisp holographic surfaces, and app-wide polish are complete; deeper asset/shader art direction is deferred to Step 9 |
@@ -62,9 +64,9 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 | `TextAiService` abstraction with mock fallback | Implemented |
 | Real Anthropic API integration | **Implemented for private development** -- merged in PR #28; production still requires a backend |
 | Shared backend/proxy for production API key handling across the active app | Not started; the dormant Price Check feature has its own implemented backend |
-| Credits / metered billing | Not started (correctly deferred per scope) |
+| Credits / metered billing | **Client contract and preview UI implemented through PRs #61–64** — balance badge, Shop, estimates, actual-usage reporting, and zero-charge handling for unusable output exist; server-authoritative balances and atomic debit settlement are not started |
 | Accounts / authentication | Not started (correctly deferred per scope) |
-| Payments (Google Play Billing) | Not started (correctly deferred per scope) |
+| Payments (Google Play Billing) | Shop and refill-preference UI implemented; live Play purchase flow and backend verification not started |
 | Ads | Not implemented, not planned unless explicitly revisited |
 | Price-check / marketplace estimate mode | **Implemented, hidden, and deferred to beta/public release** — PR #59 merged the configurable remote client, server-side Claude identification and cited web research, separate Buyer/Seller calls, metadata-safe transient uploads, and real local folder persistence/import. The code is preserved, but its Tools card is hidden until activation, deployment, device verification, and prompt refinement resume for beta/public release. |
 | iOS support | Not started, explicitly deferred |
@@ -75,9 +77,9 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 ## 4. Current milestone and next milestone
 
-**Current milestone:** The core private-development app is implemented and device-verified through Step 6. Price Check's full staged code was merged in PR #59, but the feature is intentionally hidden from the launcher and deferred to Step 10 beta testing. Tower Lens now presents the four active tools followed by an always-last `More features coming soon` card. Production distribution infrastructure is Step 7, the public blurb and shader research are Steps 8–9, and beta testing follows in Step 10.
+**Current milestone:** The core private-development app is implemented and device-verified through Step 6. Price Check's full staged code was merged in PR #59, but the feature is intentionally hidden from the launcher and deferred to Step 10 beta testing. Public-information, Shop/balance preview, credit-pricing, actual-usage reporting, and safe zero-charge behavior were implemented through PR #64. Tower Lens now presents the four active tools followed by an always-last `More features coming soon` card. The tutorial is the first remaining Step 7 increment; shared production infrastructure follows it. The public blurb and shader research are Steps 8–9, and beta testing follows in Step 10.
 
-**Next milestone:** Prepare the active app for public distribution in Step 7. Price Check remains dormant until its activation, backend deployment, live-item device verification, and tool-specific prompt refinement are handled inside Step 10 beta testing.
+**Next milestone:** Build the first-launch/setup tutorial as an independent Step 7 increment. Then define and implement the shared production backend, Google authentication, server-authoritative balances and metering, Google Play Billing verification, and a Play-compatible storage approach. Price Check remains dormant until its activation, backend deployment, live-item device verification, and tool-specific prompt refinement are handled inside Step 10 beta testing.
 
 ## 5–6. Prioritized backlog
 
@@ -215,11 +217,11 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 
 ## 8. Release and monetization phases
 
-**MVP (current phase):** local-first, no accounts, no payments, and no backend. Mock responses remain the safe default; private builds can use the real Anthropic service behind `TextAiService`. No monetization infrastructure exists or is needed yet.
+**MVP (current phase):** local-first, no accounts, no live payments, and no shared production backend. Mock responses remain the safe default; private builds can use the real Anthropic service behind `TextAiService`. The client now contains the approved credit-pricing contract, balance/Shop preview, refill preferences, actual-usage reporting, and safe zero-charge behavior, but none of those local surfaces is an authoritative balance or purchase system.
 
 **Post-MVP, pre-commercial:** complete physical-device verification and use direct Claude API calls only for private development with a key supplied by `--dart-define`. This is not viable for distributed/public releases under the no-client-side-secrets principle.
 
-**Commercial phase (not started, no work should begin here until MVP + real API integration are solid):** backend/proxy holding the real API key server-side, credit-based metering (or subscription -- undecided), Google Play Billing integration for Android, no ads, no forced subscription, fair pay-as-you-go framing per original product principles.
+**Commercial beta infrastructure (partially specified; authoritative services not started):** shared backend/proxy holding the real API key server-side, Google authentication, server-authoritative balances and atomic metering, verified Google Play Billing purchases, no ads, and one-time pay-as-you-go credit packs. Subscriptions are excluded from beta under the approved billing model and may be reconsidered later only if users ask for them.
 
 ## 9. Recommended execution order
 
@@ -301,7 +303,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
    2. `PR 2 — Full functionality — COMPLETE; MERGED IN PR #59:` the repository now includes the remote backend/API proxy and production-safe provider-key custody; structured contracts for identification, confirmation, research, Buyer analysis, Seller analysis, prior-run summarization, and market-change comparison; cited Claude web research; dynamic token/duration estimates and timeouts; metadata-safe transient photos; local multi-file folder persistence/import; and focused automated coverage.
    3. `Activation and prompt refinement — DEFERRED TO BETA/PUBLIC RELEASE:` deploy the backend, restore the launcher entry, test real items on the Pixel 9a, and refine the identification, exclusion/legal-check, Default/In-depth research, evidence ranking, price-range, Buyer, Seller, previous-run summary, and market-change comparison prompts. Finalize the exact research-depth/search behavior during that release phase.
 
-7. **Prepare for public distribution.** Build the shared production backend for the active app, add accounts/authentication and Google Play Billing, and resolve broad Android storage permission before store release. Price Check deployment and activation remain excluded here and are handled under Step 10.
+7. **Prepare for public distribution.** First build the first-launch/setup tutorial as an independent increment. Then build the shared production backend for the active app, add Google authentication, server-authoritative balances/metering, and verified Google Play Billing purchases, and resolve broad Android storage permission before store release. Price Check deployment and activation remain excluded here and are handled under Step 10.
 
    - **Public-information UI complete:** Settings now opens real About Tower Lens, Terms of Service, Privacy Policy, Contact Developer, and Support Developer screens. Contact uses a private Web3Forms form with required subject/message fields and optional reply email; Support Developer opens Ko-fi. Generated AI results include an in-app report action that lets the user choose whether to include the output in a prefilled private contact form. The legal text is deliberately marked pre-release and must be reviewed/finalized once the production backend, account deletion flow, and billing behavior exist.
    - **Tutorial remains separate:** the Tutorials destination is preserved as a placeholder, but the first-launch/setup tutorial is its own follow-up increment and is not bundled into the public-information UI.

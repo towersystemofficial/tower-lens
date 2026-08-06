@@ -10,7 +10,6 @@ import 'services/text_ai_service_factory.dart';
 import 'screens/library_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/tools_screen.dart';
-import 'screens/tutorial_screen.dart';
 import 'theme/appearance_settings.dart';
 import 'widgets/prismatic_surface.dart';
 
@@ -212,7 +211,6 @@ class RootShell extends StatefulWidget {
 
 class _RootShellState extends State<RootShell> {
   static const _anthropicApiKeyPreference = 'anthropic_api_key';
-  static const _tutorialCompletedPreference = 'first_launch_tutorial_completed';
 
   final LibraryService _libraryService = LibraryService();
   final CreditAccountStore _creditAccountStore = PreviewCreditAccountStore();
@@ -222,7 +220,6 @@ class _RootShellState extends State<RootShell> {
   bool _ready = false;
   bool _usesRealAi = false;
   String _apiKey = '';
-  bool _showFirstLaunchTutorial = false;
 
   @override
   void dispose() {
@@ -245,22 +242,13 @@ class _RootShellState extends State<RootShell> {
       _featureSettings.load(),
     ]);
     final apiKey = preferences.getString(_anthropicApiKeyPreference) ?? '';
-    final tutorialCompleted =
-        preferences.getBool(_tutorialCompletedPreference) ?? false;
     if (!mounted) return;
     setState(() {
       _apiKey = apiKey;
       _usesRealAi = apiKey.isNotEmpty || hasBuildTimeAiCredential;
       _textAiService = createTextAiService(apiKey: apiKey);
-      _showFirstLaunchTutorial = !tutorialCompleted;
       _ready = true;
     });
-  }
-
-  Future<void> _completeTutorial() async {
-    final preferences = await SharedPreferences.getInstance();
-    await preferences.setBool(_tutorialCompletedPreference, true);
-    if (mounted) setState(() => _showFirstLaunchTutorial = false);
   }
 
   Future<void> _configureApiKey() async {
@@ -297,12 +285,6 @@ class _RootShellState extends State<RootShell> {
   Widget build(BuildContext context) {
     if (!_ready) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    if (_showFirstLaunchTutorial) {
-      return PrismaticBackground(
-        child: TutorialScreen(onComplete: _completeTutorial),
-      );
     }
 
     final screens = [

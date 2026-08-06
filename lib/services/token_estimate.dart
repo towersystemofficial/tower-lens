@@ -88,6 +88,39 @@ class TextAiTokenEstimator {
     );
   }
 
+  /// Conservative estimate for reconstructing OCR text from one camera image
+  /// plus the recent local OCR readings supplied as context.
+  static TokenEstimate estimateHighFidelityOcr({
+    required String frozenOcrText,
+    required Iterable<String> previousOcrCaptures,
+  }) {
+    final contextText = [
+      ...previousOcrCaptures,
+      frozenOcrText,
+    ].join('\n');
+    final contextTokens = _approximateTokens(contextText);
+    const promptTokens = 420;
+    const imageLowerTokens = 1200;
+    const imageUpperTokens = 3200;
+    final outputLower = _atLeast(300, (contextTokens * 0.65).round());
+    final outputUpper = _atLeast(900, (contextTokens * 1.35).round());
+
+    return TokenEstimate(
+      lowerBound: _roundDown(
+        promptTokens + imageLowerTokens + contextTokens + outputLower,
+      ),
+      upperBound: _roundUp(
+        promptTokens + imageUpperTokens + contextTokens + outputUpper,
+      ),
+      outputUpperBound: outputUpper,
+      requestTimeout: _requestTimeout(
+        TextAiTaskType.general,
+        outputUpper,
+      ),
+      confidencePercent: 70,
+    );
+  }
+
   static int requiredMaxOutputTokens({
     required TextAiTaskType taskType,
     required String sourceText,

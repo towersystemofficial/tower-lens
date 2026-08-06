@@ -451,19 +451,16 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
             child: Card(
               color: Colors.black87,
               child: widget.requireHighFidelity
-                  ? ListTile(
-                      leading: const Icon(Icons.verified_user_outlined,
+                  ? const ListTile(
+                      leading: Icon(Icons.verified_user_outlined,
                           color: Colors.white),
-                      title: const Text(
+                      title: Text(
                         'High-Fidelity Mode required',
                         style: TextStyle(color: Colors.white),
                       ),
                       subtitle: Text(
-                        _highFidelityEstimate(
-                          _liveText.trim(),
-                          _previousCaptures,
-                        ).buttonLabel,
-                        style: const TextStyle(color: Colors.white70),
+                        'Watchlist scans always use the most accurate OCR path',
+                        style: TextStyle(color: Colors.white70),
                       ),
                     )
                   : SwitchListTile(
@@ -475,14 +472,9 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
                         'High-Fidelity Mode',
                         style: TextStyle(color: Colors.white),
                       ),
-                      subtitle: Text(
-                        _highFidelity
-                            ? _highFidelityEstimate(
-                                _liveText.trim(),
-                                _previousCaptures,
-                              ).buttonLabel
-                            : 'Uses credits when enabled',
-                        style: const TextStyle(color: Colors.white70),
+                      subtitle: const Text(
+                        'Uses credits',
+                        style: TextStyle(color: Colors.white70),
                       ),
                     ),
             ),

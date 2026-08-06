@@ -3,6 +3,7 @@ import 'package:markdown_editor_live/markdown_editor_live.dart'
     show MarkdownEditingController;
 import 'package:path/path.dart' as p;
 import '../services/document_import_service.dart';
+import '../services/credit_account_store.dart';
 import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
 import '../services/token_estimate.dart';
@@ -17,6 +18,7 @@ class TosScreen extends StatefulWidget {
   final TextAiService textAiService;
   final bool usesRealAi;
   final VoidCallback onConfigureAi;
+  final CreditAccountStore? accountStore;
 
   const TosScreen({
     super.key,
@@ -24,6 +26,7 @@ class TosScreen extends StatefulWidget {
     required this.textAiService,
     required this.usesRealAi,
     required this.onConfigureAi,
+    this.accountStore,
   });
 
   @override
@@ -120,6 +123,19 @@ class _TosScreenState extends State<TosScreen> {
 
   Future<void> _run() async {
     if (!_canRun) return;
+    final account = widget.accountStore;
+    final required = _tokenEstimate.requiredStartingBalance;
+    if (account != null && account.isSignedIn && account.balance < required) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Not enough credits. This tool requires at least '
+            '${_formatCredits(required)} credits to start.',
+          ),
+        ),
+      );
+      return;
+    }
     setState(() {
       _isRunning = true;
       _output = '';
@@ -152,6 +168,11 @@ class _TosScreenState extends State<TosScreen> {
       if (mounted) setState(() => _isRunning = false);
     }
   }
+
+  static String _formatCredits(int value) => value.toString().replaceAllMapped(
+        RegExp(r'\B(?=(\d{3})+(?!\d))'),
+        (_) => ',',
+      );
 
   Future<void> _save() async {
     if (!widget.libraryService.isConfigured) {

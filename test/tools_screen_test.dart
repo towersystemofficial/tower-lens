@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tower_lens/screens/tools_screen.dart';
 import 'package:tower_lens/services/library_service.dart';
 import 'package:tower_lens/services/credit_account_store.dart';
+import 'package:tower_lens/services/feature_settings.dart';
 import 'package:tower_lens/services/text_ai_service.dart';
 import 'package:tower_lens/widgets/prismatic_surface.dart';
 import 'package:tower_lens/widgets/tool_visual.dart';
@@ -20,6 +21,7 @@ void main() {
           usesRealAi: false,
           onConfigureAi: () {},
           accountStore: PreviewCreditAccountStore(),
+          featureSettings: FeatureSettings(),
         ),
       ),
     );
@@ -52,6 +54,7 @@ void main() {
           usesRealAi: false,
           onConfigureAi: () {},
           accountStore: PreviewCreditAccountStore(),
+          featureSettings: FeatureSettings(),
         ),
       ),
     );

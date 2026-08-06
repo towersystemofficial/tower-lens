@@ -20,6 +20,9 @@ class TokenEstimate {
 
   int get creditUpperBound => CreditPricing.estimateUpperBound(upperBound);
 
+  int get requiredStartingBalance =>
+      CreditPricing.requiredBalanceForEstimate(creditUpperBound);
+
   String get buttonLabel =>
       '${_format(creditLowerBound)}–${_format(creditUpperBound)} credits, '
       '$confidencePercent% confidence';

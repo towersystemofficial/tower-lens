@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/library_service.dart';
 import '../services/credit_account_store.dart';
+import '../services/feature_settings.dart';
 import '../services/text_ai_service.dart';
 import '../services/tool_usage_service.dart';
 import '../theme/appearance_settings.dart';
@@ -20,6 +21,7 @@ class ToolsScreen extends StatefulWidget {
   final VoidCallback onConfigureAi;
   final ToolUsageService usageService;
   final CreditAccountStore accountStore;
+  final FeatureSettings featureSettings;
 
   const ToolsScreen({
     super.key,
@@ -28,6 +30,7 @@ class ToolsScreen extends StatefulWidget {
     required this.usesRealAi,
     required this.onConfigureAi,
     required this.accountStore,
+    required this.featureSettings,
     this.usageService = const ToolUsageService(),
   });
 
@@ -58,6 +61,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
           initialPreset: TextAiTaskType.summary,
           allowCustomInstructions: false,
           accountStore: widget.accountStore,
+          featureSettings: widget.featureSettings,
         ),
       ),
       _ToolDefinition(
@@ -72,6 +76,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
           usesRealAi: widget.usesRealAi,
           onConfigureAi: widget.onConfigureAi,
           accountStore: widget.accountStore,
+          featureSettings: widget.featureSettings,
         ),
       ),
       _ToolDefinition(
@@ -84,6 +89,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
           libraryService: widget.libraryService,
           textAiService: widget.textAiService,
           usesRealAi: widget.usesRealAi,
+          accountStore: widget.accountStore,
         ),
       ),
       _ToolDefinition(
@@ -100,6 +106,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
           title: 'Custom Instructions',
           showPresets: false,
           accountStore: widget.accountStore,
+          featureSettings: widget.featureSettings,
         ),
       ),
     ];

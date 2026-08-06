@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../services/credit_account_store.dart';
+import '../services/feature_settings.dart';
 import '../theme/appearance_settings.dart';
 import '../widgets/prismatic_surface.dart';
 import 'public_information_screen.dart';
+import 'planned_features_screen.dart';
 import 'shop_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -12,6 +14,7 @@ class SettingsScreen extends StatelessWidget {
   final VoidCallback onConfigureAi;
   final AppearanceSettings appearanceSettings;
   final CreditAccountStore accountStore;
+  final FeatureSettings featureSettings;
 
   const SettingsScreen({
     super.key,
@@ -19,6 +22,7 @@ class SettingsScreen extends StatelessWidget {
     required this.onConfigureAi,
     required this.appearanceSettings,
     required this.accountStore,
+    required this.featureSettings,
   });
 
   void _openPlaceholder(BuildContext context, String title) {
@@ -66,7 +70,17 @@ class SettingsScreen extends StatelessWidget {
             subtitle: Text(
               usesRealAi ? 'Anthropic AI configured' : 'Configure AI access',
             ),
-            onTap: onConfigureAi,
+            onTap: () => Navigator.push<void>(
+              context,
+              prismaticPageRoute(
+                context: context,
+                builder: (_) => GeneralSettingsScreen(
+                  usesRealAi: usesRealAi,
+                  onConfigureAi: onConfigureAi,
+                  settings: featureSettings,
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 10),
           _SettingsCard(
@@ -144,6 +158,19 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _SettingsCard(
+            icon: Icons.upcoming_outlined,
+            title: const Text('Planned Features'),
+            subtitle: const Text('Upcoming tools and features'),
+            onTap: () => Navigator.push<void>(
+              context,
+              prismaticPageRoute(
+                context: context,
+                builder: (_) => const PlannedFeaturesScreen(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _SettingsCard(
             icon: Icons.volunteer_activism_outlined,
             title: const Text('Support Developer'),
             subtitle: const Text('Support TowerSys through Ko-fi'),
@@ -151,6 +178,57 @@ class SettingsScreen extends StatelessWidget {
                 _openInformation(context, PublicInformationType.support),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class GeneralSettingsScreen extends StatelessWidget {
+  const GeneralSettingsScreen({
+    super.key,
+    required this.usesRealAi,
+    required this.onConfigureAi,
+    required this.settings,
+  });
+
+  final bool usesRealAi;
+  final VoidCallback onConfigureAi;
+  final FeatureSettings settings;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('General Settings')),
+      body: ListenableBuilder(
+        listenable: settings,
+        builder: (context, _) => ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+          children: [
+            const _SectionTitle(title: 'Scanning'),
+            GlassCard(
+              child: SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: settings.highFidelityDefault,
+                onChanged: settings.setHighFidelityDefault,
+                title: const Text('High-Fidelity Mode by default'),
+                subtitle: const Text(
+                  'Sets the initial OCR mode. You can still change it for '
+                  'each scan except Ingredient Watchlist scans.',
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const _SectionTitle(title: 'AI access'),
+            _SettingsCard(
+              icon: Icons.key_outlined,
+              title: Text(
+                usesRealAi ? 'Anthropic AI configured' : 'Configure AI access',
+              ),
+              subtitle: const Text('Private development configuration'),
+              onTap: onConfigureAi,
+            ),
+          ],
+        ),
       ),
     );
   }

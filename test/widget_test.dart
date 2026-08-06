@@ -90,11 +90,16 @@ void main() {
 
     await tester.tap(find.text('General Settings'));
     await tester.pump(const Duration(seconds: 1));
+    expect(find.text('High-Fidelity Mode by default'), findsOneWidget);
+    await tester.tap(find.text('Configure AI access'));
+    await tester.pump(const Duration(seconds: 1));
     await tester.enterText(find.byType(TextFormField), 'sk-ant-test-key');
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pump(const Duration(seconds: 1));
 
     expect(tester.takeException(), isNull);
+    await tester.pageBack();
+    await tester.pump(const Duration(seconds: 1));
     expect(find.text('Anthropic AI configured'), findsOneWidget);
     expect(
       find.text('API key saved. Tower Lens will use real Anthropic responses.'),
@@ -107,6 +112,7 @@ void main() {
       'Terms of Service',
       'Privacy Policy',
       'Contact Developer',
+      'Planned Features',
       'Support Developer',
     ]) {
       await tester.scrollUntilVisible(

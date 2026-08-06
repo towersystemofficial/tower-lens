@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'services/library_service.dart';
 import 'services/credit_account_store.dart';
+import 'services/feature_settings.dart';
 import 'services/text_ai_service.dart';
 import 'services/text_ai_service_factory.dart';
 import 'screens/library_screen.dart';
@@ -213,6 +214,7 @@ class _RootShellState extends State<RootShell> {
 
   final LibraryService _libraryService = LibraryService();
   final CreditAccountStore _creditAccountStore = PreviewCreditAccountStore();
+  final FeatureSettings _featureSettings = FeatureSettings();
   late TextAiService _textAiService;
   int _index = 0;
   bool _ready = false;
@@ -222,6 +224,7 @@ class _RootShellState extends State<RootShell> {
   @override
   void dispose() {
     _creditAccountStore.dispose();
+    _featureSettings.dispose();
     super.dispose();
   }
 
@@ -236,6 +239,7 @@ class _RootShellState extends State<RootShell> {
     await Future.wait([
       _libraryService.load(),
       _creditAccountStore.load(),
+      _featureSettings.load(),
     ]);
     final apiKey = preferences.getString(_anthropicApiKeyPreference) ?? '';
     if (!mounted) return;
@@ -290,6 +294,7 @@ class _RootShellState extends State<RootShell> {
         usesRealAi: _usesRealAi,
         onConfigureAi: _configureApiKey,
         accountStore: _creditAccountStore,
+        featureSettings: _featureSettings,
       ),
       LibraryScreen(libraryService: _libraryService),
       SettingsScreen(
@@ -297,6 +302,7 @@ class _RootShellState extends State<RootShell> {
         onConfigureAi: _configureApiKey,
         appearanceSettings: widget.appearanceSettings,
         accountStore: _creditAccountStore,
+        featureSettings: _featureSettings,
       ),
     ];
 

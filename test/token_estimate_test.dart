@@ -54,6 +54,21 @@ void main() {
     );
   });
 
+  test('high-fidelity OCR includes image and OCR context in its estimate', () {
+    final short = TextAiTokenEstimator.estimateHighFidelityOcr(
+      frozenOcrText: 'Short label',
+      previousOcrCaptures: const [],
+    );
+    final long = TextAiTokenEstimator.estimateHighFidelityOcr(
+      frozenOcrText: List.filled(500, 'ingredient').join(' '),
+      previousOcrCaptures: const ['Earlier OCR reading'],
+    );
+
+    expect(short.creditUpperBound, greaterThan(0));
+    expect(short.requiredStartingBalance % 1000, 0);
+    expect(long.upperBound, greaterThan(short.upperBound));
+  });
+
   test('does not charge failed requests even when the provider used tokens', () {
     expect(
       CreditPricing.chargeForCompletedRequest(

@@ -4,6 +4,7 @@ import 'package:markdown_editor_live/markdown_editor_live.dart'
 import 'package:path/path.dart' as p;
 import '../services/document_import_service.dart';
 import '../services/credit_account_store.dart';
+import '../services/feature_settings.dart';
 import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
 import '../services/token_estimate.dart';
@@ -23,6 +24,7 @@ class HomeScreen extends StatefulWidget {
   final bool allowCustomInstructions;
   final bool showPresets;
   final CreditAccountStore? accountStore;
+  final FeatureSettings? featureSettings;
 
   const HomeScreen({
     super.key,
@@ -35,6 +37,7 @@ class HomeScreen extends StatefulWidget {
     this.allowCustomInstructions = true,
     this.showPresets = true,
     this.accountStore,
+    this.featureSettings,
   });
 
   @override
@@ -170,6 +173,9 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (_) => CameraScanScreen(
           textAiService: widget.textAiService,
           usesRealAi: widget.usesRealAi,
+          accountStore: widget.accountStore,
+          initialHighFidelity:
+              widget.featureSettings?.highFidelityDefault ?? false,
         ),
       ),
     );

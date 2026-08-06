@@ -8,7 +8,9 @@ import 'package:markdown_editor_live/markdown_editor_live.dart'
     show MarkdownEditingController;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/credit_account_store.dart';
 import '../services/text_ai_service.dart';
+import '../services/token_estimate.dart';
 import '../widgets/markdown_editor.dart';
 
 class CameraScanScreen extends StatefulWidget {
@@ -17,11 +19,15 @@ class CameraScanScreen extends StatefulWidget {
     required this.textAiService,
     required this.usesRealAi,
     this.requireHighFidelity = false,
+    this.initialHighFidelity = false,
+    this.accountStore,
   });
 
   final TextAiService textAiService;
   final bool usesRealAi;
   final bool requireHighFidelity;
+  final bool initialHighFidelity;
+  final CreditAccountStore? accountStore;
 
   @override
   State<CameraScanScreen> createState() => _CameraScanScreenState();
@@ -78,6 +84,14 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
         }
         return;
       }
+      _highFidelity = true;
+      await _initializeCamera(ResolutionPreset.max);
+      return;
+    }
+    if (widget.initialHighFidelity &&
+        widget.usesRealAi &&
+        widget.textAiService is HighFidelityOcrService &&
+        await _acknowledgeHighFidelityPrivacy()) {
       _highFidelity = true;
       await _initializeCamera(ResolutionPreset.max);
       return;
@@ -151,6 +165,12 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
     if (_controller == null || _isProcessingFreeze) return;
     final frozenText = _liveText.trim();
     final earlierCaptures = List<String>.unmodifiable(_previousCaptures);
+    if (_highFidelity &&
+        !_hasEnoughCredits(
+          _highFidelityEstimate(frozenText, earlierCaptures),
+        )) {
+      return;
+    }
     setState(() {
       _isProcessingFreeze = true;
       _processingMessage =
@@ -222,6 +242,36 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
       );
     }
   }
+
+  TokenEstimate _highFidelityEstimate(
+    String frozenText,
+    Iterable<String> earlierCaptures,
+  ) =>
+      TextAiTokenEstimator.estimateHighFidelityOcr(
+        frozenOcrText: frozenText,
+        previousOcrCaptures: earlierCaptures,
+      );
+
+  bool _hasEnoughCredits(TokenEstimate estimate) {
+    final account = widget.accountStore;
+    if (account == null || !account.isSignedIn) return true;
+    final required = estimate.requiredStartingBalance;
+    if (account.balance >= required) return true;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Not enough credits. High-Fidelity Mode requires at least '
+          '${_formatCredits(required)} credits to start.',
+        ),
+      ),
+    );
+    return false;
+  }
+
+  static String _formatCredits(int value) => value.toString().replaceAllMapped(
+        RegExp(r'\B(?=(\d{3})+(?!\d))'),
+        (_) => ',',
+      );
 
   Future<void> _rescan() async {
     if (_controller == null) return;
@@ -401,16 +451,19 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
             child: Card(
               color: Colors.black87,
               child: widget.requireHighFidelity
-                  ? const ListTile(
-                      leading: Icon(Icons.verified_user_outlined,
+                  ? ListTile(
+                      leading: const Icon(Icons.verified_user_outlined,
                           color: Colors.white),
-                      title: Text(
+                      title: const Text(
                         'High-Fidelity Mode required',
                         style: TextStyle(color: Colors.white),
                       ),
                       subtitle: Text(
-                        'Watchlist scans always use the most accurate OCR path',
-                        style: TextStyle(color: Colors.white70),
+                        _highFidelityEstimate(
+                          _liveText.trim(),
+                          _previousCaptures,
+                        ).buttonLabel,
+                        style: const TextStyle(color: Colors.white70),
                       ),
                     )
                   : SwitchListTile(
@@ -422,9 +475,14 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
                         'High-Fidelity Mode',
                         style: TextStyle(color: Colors.white),
                       ),
-                      subtitle: const Text(
-                        'Uses credits',
-                        style: TextStyle(color: Colors.white70),
+                      subtitle: Text(
+                        _highFidelity
+                            ? _highFidelityEstimate(
+                                _liveText.trim(),
+                                _previousCaptures,
+                              ).buttonLabel
+                            : 'Uses credits when enabled',
+                        style: const TextStyle(color: Colors.white70),
                       ),
                     ),
             ),

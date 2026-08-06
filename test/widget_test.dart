@@ -14,6 +14,25 @@ import 'package:tower_lens/screens/settings_screen.dart';
 import 'package:tower_lens/theme/appearance_settings.dart';
 
 void main() {
+  testWidgets('first launch opens the tutorial and can be completed',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({
+      'appearance_motion_level': 'none',
+    });
+
+    await tester.pumpWidget(const TowerLensApp());
+    for (var i = 0;
+        i < 10 && find.text('Welcome to Tower Lens').evaluate().isEmpty;
+        i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    expect(find.text('Welcome to Tower Lens'), findsOneWidget);
+    await tester.tap(find.text('Skip'));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(NavigationBar), findsOneWidget);
+  });
+
   testWidgets('TowerLensApp loads and shows the bottom navigation destinations',
       (WidgetTester tester) async {
     // LibraryService.load() reads shared_preferences on startup; seed the
@@ -21,6 +40,7 @@ void main() {
     // MissingPluginException (there's no real platform channel in tests).
     SharedPreferences.setMockInitialValues({
       'appearance_motion_level': 'none',
+      'first_launch_tutorial_completed': true,
     });
 
     // Build our app and trigger a frame.
@@ -58,6 +78,7 @@ void main() {
       (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({
       'appearance_motion_level': 'none',
+      'first_launch_tutorial_completed': true,
     });
 
     await tester.pumpWidget(const TowerLensApp());
@@ -90,11 +111,16 @@ void main() {
 
     await tester.tap(find.text('General Settings'));
     await tester.pump(const Duration(seconds: 1));
+    expect(find.text('High-Fidelity Mode by default'), findsOneWidget);
+    await tester.tap(find.text('Configure AI access'));
+    await tester.pump(const Duration(seconds: 1));
     await tester.enterText(find.byType(TextFormField), 'sk-ant-test-key');
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pump(const Duration(seconds: 1));
 
     expect(tester.takeException(), isNull);
+    await tester.pageBack();
+    await tester.pump(const Duration(seconds: 1));
     expect(find.text('Anthropic AI configured'), findsOneWidget);
     expect(
       find.text('API key saved. Tower Lens will use real Anthropic responses.'),
@@ -107,6 +133,7 @@ void main() {
       'Terms of Service',
       'Privacy Policy',
       'Contact Developer',
+      'Planned Features',
       'Support Developer',
     ]) {
       await tester.scrollUntilVisible(

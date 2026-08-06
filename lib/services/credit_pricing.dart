@@ -32,6 +32,17 @@ class CreditPricing {
   static int estimateUpperBound(int providerTokens) =>
       _roundUp(_chargeForProviderTokens(providerTokens), 50);
 
+  /// Credits that must be available before a tool may start.
+  ///
+  /// The highest estimate is deliberately rounded up to the next 1,000 so a
+  /// request cannot begin on a balance that only narrowly covers an estimate.
+  static int requiredBalanceForEstimate(int estimatedMaximumCredits) {
+    if (estimatedMaximumCredits < 0) {
+      throw ArgumentError('Estimated credits cannot be negative.');
+    }
+    return _roundUp(estimatedMaximumCredits, 1000);
+  }
+
   static int normalPurchaseCredits(int wholeDollars) =>
       wholeDollars * creditsPerDollar;
 

@@ -5,7 +5,10 @@ import 'package:tower_lens/screens/tos_screen.dart';
 import 'package:tower_lens/services/library_service.dart';
 import 'package:tower_lens/services/text_ai_service.dart';
 
+import 'test_credit_account_store.dart';
+
 class _RecordingTextAiService implements TextAiService {
+  int calls = 0;
   TextAiTaskType? taskType;
   String? instruction;
 
@@ -15,6 +18,7 @@ class _RecordingTextAiService implements TextAiService {
     required String sourceText,
     required String instruction,
   }) async {
+    calls += 1;
     this.taskType = taskType;
     this.instruction = instruction;
     return const TextAiResult(output: 'Done');
@@ -22,6 +26,36 @@ class _RecordingTextAiService implements TextAiService {
 }
 
 void main() {
+  testWidgets('signed-in account cannot start above its balance', (
+    tester,
+  ) async {
+    final service = _RecordingTextAiService();
+    await tester.binding.setSurfaceSize(const Size(800, 1000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          libraryService: LibraryService(),
+          textAiService: service,
+          usesRealAi: true,
+          onConfigureAi: () {},
+          accountStore: TestCreditAccountStore(balance: 999),
+        ),
+      ),
+    );
+
+    await tester.enterText(find.byType(TextField).first, 'Source text');
+    await tester.enterText(find.byType(TextField).at(1), 'Explain this');
+    final runButton = find.byType(FilledButton);
+    await tester.ensureVisible(runButton);
+    await tester.tap(runButton);
+    await tester.pump();
+
+    expect(service.calls, 0);
+    expect(find.textContaining('Not enough credits'), findsOneWidget);
+    expect(find.textContaining('requires at least 2,000 credits'), findsOneWidget);
+  });
+
   testWidgets('preset selection disables custom instructions and toggles off', (
     tester,
   ) async {

@@ -3,6 +3,7 @@ import 'package:markdown_editor_live/markdown_editor_live.dart'
     show MarkdownEditingController;
 import 'package:path/path.dart' as p;
 import '../services/document_import_service.dart';
+import '../services/credit_account_store.dart';
 import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
 import '../services/token_estimate.dart';
@@ -21,6 +22,7 @@ class HomeScreen extends StatefulWidget {
   final TextAiTaskType? initialPreset;
   final bool allowCustomInstructions;
   final bool showPresets;
+  final CreditAccountStore? accountStore;
 
   const HomeScreen({
     super.key,
@@ -32,6 +34,7 @@ class HomeScreen extends StatefulWidget {
     this.initialPreset,
     this.allowCustomInstructions = true,
     this.showPresets = true,
+    this.accountStore,
   });
 
   @override
@@ -105,6 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _runTask() async {
     if (!_canRun) return;
+    if (!_hasEnoughCredits(_tokenEstimate)) return;
     setState(() {
       _isRunning = true;
       _output = '';
@@ -137,6 +141,27 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) setState(() => _isRunning = false);
     }
   }
+
+  bool _hasEnoughCredits(TokenEstimate estimate) {
+    final account = widget.accountStore;
+    if (account == null || !account.isSignedIn) return true;
+    final required = estimate.requiredStartingBalance;
+    if (account.balance >= required) return true;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Not enough credits. This tool requires at least '
+          '${_formatCredits(required)} credits to start.',
+        ),
+      ),
+    );
+    return false;
+  }
+
+  static String _formatCredits(int value) => value.toString().replaceAllMapped(
+        RegExp(r'\B(?=(\d{3})+(?!\d))'),
+        (_) => ',',
+      );
 
   Future<void> _scanText() async {
     final result = await Navigator.push<String>(

@@ -4,6 +4,7 @@ import 'package:markdown_editor_live/markdown_editor_live.dart'
 import 'package:path/path.dart' as p;
 import '../services/document_import_service.dart';
 import '../services/credit_account_store.dart';
+import '../services/feature_settings.dart';
 import '../services/library_service.dart';
 import '../services/text_ai_service.dart';
 import '../services/token_estimate.dart';
@@ -19,6 +20,7 @@ class TosScreen extends StatefulWidget {
   final bool usesRealAi;
   final VoidCallback onConfigureAi;
   final CreditAccountStore? accountStore;
+  final FeatureSettings? featureSettings;
 
   const TosScreen({
     super.key,
@@ -27,6 +29,7 @@ class TosScreen extends StatefulWidget {
     required this.usesRealAi,
     required this.onConfigureAi,
     this.accountStore,
+    this.featureSettings,
   });
 
   @override
@@ -62,6 +65,9 @@ class _TosScreenState extends State<TosScreen> {
         builder: (_) => CameraScanScreen(
           textAiService: widget.textAiService,
           usesRealAi: widget.usesRealAi,
+          accountStore: widget.accountStore,
+          initialHighFidelity:
+              widget.featureSettings?.highFidelityDefault ?? false,
         ),
       ),
     );

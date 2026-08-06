@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/library_service.dart';
+import '../services/credit_account_store.dart';
 import '../services/text_ai_service.dart';
 import '../services/watchlist_service.dart';
 import '../widgets/library_save_dialog.dart';
@@ -10,12 +11,14 @@ class WatchlistScreen extends StatefulWidget {
   final LibraryService libraryService;
   final TextAiService textAiService;
   final bool usesRealAi;
+  final CreditAccountStore? accountStore;
 
   const WatchlistScreen({
     super.key,
     required this.libraryService,
     required this.textAiService,
     required this.usesRealAi,
+    this.accountStore,
   });
 
   @override
@@ -73,6 +76,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> with SingleTickerProv
           textAiService: widget.textAiService,
           usesRealAi: widget.usesRealAi,
           requireHighFidelity: true,
+          accountStore: widget.accountStore,
         ),
       ),
     );

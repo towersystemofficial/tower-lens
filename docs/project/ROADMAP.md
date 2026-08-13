@@ -69,6 +69,7 @@ channel. TXT and Markdown imports are decoded locally in Dart.
 | Payments (Google Play Billing) | Shop and refill-preference UI implemented; live Play purchase flow and backend verification not started |
 | Ads | Not implemented, not planned unless explicitly revisited |
 | Price-check / marketplace estimate mode | **Implemented, hidden, and deferred to beta/public release** — PR #59 merged the configurable remote client, server-side Claude identification and cited web research, separate Buyer/Seller calls, metadata-safe transient uploads, and real local folder persistence/import. The code is preserved, but its Tools card is hidden until activation, deployment, device verification, and prompt refinement resume for beta/public release. |
+| CCG Card Scanner | **Planned after Price Check** — identify and price individual trading cards, initially targeting Pokémon, Magic: The Gathering, and Yu-Gi-Oh!; also support pack-opening sessions that compare the pack's purchase price with the combined current market value of the scanned pulls to estimate profit or loss |
 | iOS support | Not started, explicitly deferred |
 | PDF/Obsidian export beyond native Markdown | Not started |
 | PDF, TXT, and Markdown import | **Implemented and device-verified** — local extraction into editable Home/ToS source fields; all phone checks passed 2026-07-27 |
@@ -333,6 +334,15 @@ channel. TXT and Markdown imports are decoded locally in Dart.
    - Claude may make the smallest local grammatical or sentence-structure adjustment necessary to integrate that phrase naturally and preserve the source's ideas.
    - Claude must not rewrite the sentence as a whole. Preserve its original meaning, order of ideas, emphasis, and structure as closely as practical.
    - When neither a direct synonym nor an easy phrase replacement exists, Claude may use limited judgment to produce the clearest faithful substitution rather than forcing an awkward or inaccurate one-to-one replacement.
+
+12. **CCG Card Scanner.** Add a dedicated collectible-card tool after Price Check is activated and stable. The first supported games should be Pokémon, Magic: The Gathering, and Yu-Gi-Oh!, with an extension path for additional games.
+
+   - Scan one card to identify its game, card name, set, collector number, language, finish/foil treatment, and printing or variant when the image provides enough evidence.
+   - Retrieve current market pricing from a live, cited card-market data source. Show the pricing basis and timestamp; do not present an estimate as a guaranteed sale price, certified grade, or authenticity determination.
+   - Support a pack-opening session where the user enters or scans the pack and records its purchase price, then scans every pulled card into that session.
+   - Total the current estimated market value of the pulls and compare it with the pack cost to show the gross estimated profit or loss. Keep fees, shipping, taxes, condition adjustments, and unsold inventory out of the headline number unless they are explicitly entered or supported later.
+   - Preserve each scanned card as a separately reviewable result so the user can correct a mistaken set, printing, or variant before it affects the pack total.
+   - Decide pricing providers, condition handling, bulk-card scanning UX, supported sealed products, credit estimates, and save/export behavior during the tool's dedicated scoping pass rather than inheriting ordinary Price Check assumptions automatically.
 
 ## 10. Next task for Codex
 
